@@ -1,5 +1,6 @@
 package eu.stratuslab.storage.disk.main;
 
+import java.io.File;
 import java.util.logging.Logger;
 
 import org.restlet.Application;
@@ -7,11 +8,13 @@ import org.restlet.Restlet;
 import org.restlet.resource.Directory;
 import org.restlet.routing.Router;
 
-import eu.stratuslab.storage.disk.resources.DiskResource;
+import eu.stratuslab.storage.disk.resources.DisksResource;
 
 public class PersistentDiskApplication extends Application {
 
     protected Logger logger = getLogger();
+
+    public static final File diskStore = new File("/tmp/diskstore");
 
     public PersistentDiskApplication() {
 
@@ -34,8 +37,11 @@ public class PersistentDiskApplication extends Application {
         indexDir.setNegotiatingContent(false);
         indexDir.setIndexName("index.html");
 
-        // Defines a route for the resource "list of metadata entries"
-        router.attach("/disk", DiskResource.class);
+        router.attach("/disks/{uuid}", DisksResource.class);
+        router.attach("/disks/{uuid}/", DisksResource.class);
+
+        router.attach("/disks", DisksResource.class);
+        router.attach("/disks/", DisksResource.class);
 
         router.attach("/", indexDir);
 

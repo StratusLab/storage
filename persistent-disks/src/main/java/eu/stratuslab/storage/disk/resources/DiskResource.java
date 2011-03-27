@@ -21,17 +21,134 @@ package eu.stratuslab.storage.disk.resources;
 
 import static org.restlet.data.MediaType.TEXT_PLAIN;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Map;
+import java.util.Properties;
+
+import org.restlet.Request;
+import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.representation.StringRepresentation;
+import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
+import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
+
+import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 
 public class DiskResource extends ServerResource {
 
     @Get("txt")
     public Representation toText() {
-        return new StringRepresentation("got to DiskResource toText()",
-                TEXT_PLAIN);
+        return new StringRepresentation(propertiesToString(false), TEXT_PLAIN);
+    }
+
+    @Get("xml")
+    public Representation toXml() {
+        return new StringRepresentation(propertiesToString(true), TEXT_PLAIN);
+    }
+
+    @Delete
+    public void removeDisk() {
+
+        String uuid = getDiskId();
+
+        File diskLocation = new File(PersistentDiskApplication.diskStore, uuid);
+        File propertiesFile = new File(diskLocation, "disk.properties");
+        File contentsFile = new File(diskLocation, "contents");
+
+        if (!contentsFile.delete()) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "cannot delete " + contentsFile);
+        }
+
+        if (!propertiesFile.delete()) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "cannot delete " + propertiesFile);
+        }
+
+        if (!diskLocation.delete()) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "cannot delete " + diskLocation);
+        }
+    }
+
+    private String propertiesToString(boolean toXml) {
+
+        Properties properties = loadProperties();
+
+        ByteArrayOutputStream ostream = null;
+
+        try {
+
+            ostream = new ByteArrayOutputStream();
+            if (toXml) {
+                properties.storeToXML(ostream, "comment");
+            } else {
+                properties.store(ostream, "comment");
+            }
+            ostream.close();
+
+        } catch (IOException e) {
+
+        } finally {
+            if (ostream != null) {
+                try {
+                    ostream.close();
+                } catch (IOException e) {
+                    // TODO: Log this exception.
+                }
+            }
+        }
+
+        return ostream.toString();
+    }
+
+    private Properties loadProperties() {
+
+        Reader reader = null;
+        File propertyFile = getDiskPropertiesFile();
+        Properties properties = new Properties();
+        try {
+
+            reader = new FileReader(propertyFile);
+            properties.load(reader);
+
+        } catch (IOException e) {
+
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "cannot read properties file: " + propertyFile);
+
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    // TODO: Log this.
+                }
+            }
+        }
+
+        return properties;
+    }
+
+    private String getDiskId() {
+
+        Request request = getRequest();
+
+        Map<String, Object> attributes = request.getAttributes();
+
+        return attributes.get("uuid").toString();
+    }
+
+    private File getDiskPropertiesFile() {
+        String uuid = getDiskId();
+        return new File(PersistentDiskApplication.diskStore, uuid
+                + "/disk.properties");
     }
 
 }
