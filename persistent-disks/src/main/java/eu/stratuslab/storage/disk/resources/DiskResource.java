@@ -26,13 +26,18 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
 import org.restlet.Request;
+import org.restlet.data.LocalReference;
+import org.restlet.data.MediaType;
 import org.restlet.data.Status;
+import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.representation.StringRepresentation;
+import org.restlet.resource.ClientResource;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
@@ -47,10 +52,21 @@ public class DiskResource extends ServerResource {
         return new StringRepresentation(propertiesToString(false), TEXT_PLAIN);
     }
 
-    @Get("xml")
-    public Representation toXml() {
-        return new StringRepresentation(propertiesToString(true), TEXT_PLAIN);
+    @Get("html")
+    public Representation toHtml() {
+        LocalReference ref = LocalReference.createClapReference("/disk.ftl");
+        Representation diskFtl = new ClientResource(ref).get();
+
+        Map<String, Object> values = new HashMap<String, Object>();
+        values.put("properties", propertiesToString(false));
+
+        return new TemplateRepresentation(diskFtl, values, MediaType.TEXT_HTML);
     }
+
+    // @Get("xml")
+    // public Representation toXml() {
+    // return new StringRepresentation(propertiesToString(true), TEXT_PLAIN);
+    // }
 
     @Delete
     public void removeDisk() {

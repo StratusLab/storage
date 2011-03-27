@@ -8,7 +8,10 @@ import org.restlet.Restlet;
 import org.restlet.resource.Directory;
 import org.restlet.routing.Router;
 
+import eu.stratuslab.storage.disk.resources.DiskResource;
 import eu.stratuslab.storage.disk.resources.DisksResource;
+import eu.stratuslab.storage.disk.resources.ForceTrailingSlashResource;
+import eu.stratuslab.storage.disk.resources.UploadResource;
 
 public class PersistentDiskApplication extends Application {
 
@@ -37,11 +40,15 @@ public class PersistentDiskApplication extends Application {
         indexDir.setNegotiatingContent(false);
         indexDir.setIndexName("index.html");
 
-        router.attach("/disks/{uuid}", DisksResource.class);
-        router.attach("/disks/{uuid}/", DisksResource.class);
+        router.attach("/disks/{uuid}", ForceTrailingSlashResource.class);
+        router.attach("/disks/{uuid}/", DiskResource.class);
 
-        router.attach("/disks", DisksResource.class);
+        router.attach("/disks", ForceTrailingSlashResource.class);
         router.attach("/disks/", DisksResource.class);
+
+        // Defines a route for the upload form
+        router.attach("/upload", ForceTrailingSlashResource.class);
+        router.attach("/upload/", UploadResource.class);
 
         router.attach("/", indexDir);
 

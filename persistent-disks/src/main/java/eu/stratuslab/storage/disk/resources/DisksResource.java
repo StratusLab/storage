@@ -21,6 +21,7 @@ package eu.stratuslab.storage.disk.resources;
 
 import static org.restlet.data.MediaType.APPLICATION_WWW_FORM;
 import static org.restlet.data.MediaType.MULTIPART_FORM_DATA;
+import static org.restlet.data.MediaType.TEXT_HTML;
 import static org.restlet.data.MediaType.TEXT_PLAIN;
 
 import java.io.File;
@@ -87,8 +88,16 @@ public class DisksResource extends ServerResource {
 
     @Get("txt")
     public Representation toText() {
-        String list = listDisks();
-        return new StringRepresentation(list);
+        Map<String, String> links = listDisks();
+        String contents = linksToText(links);
+        return new StringRepresentation(contents, TEXT_PLAIN);
+    }
+
+    @Get("html")
+    public Representation toHtml() {
+        Map<String, String> links = listDisks();
+        String contents = linksToHtml(links);
+        return new StringRepresentation(contents, TEXT_HTML);
     }
 
     private static Properties processMultipartForm() {
@@ -128,7 +137,11 @@ public class DisksResource extends ServerResource {
                     "disk already exists: " + uuid);
         }
 
-        diskLocation.mkdirs();
+        if (!diskLocation.mkdirs()) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "cannot write to disk store: " + diskLocation);
+        }
+
         if (!diskLocation.canWrite()) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "cannot write to disk store: " + diskLocation);
@@ -178,15 +191,7 @@ public class DisksResource extends ServerResource {
 
     }
 
-    private String listDisks() {
-        File store = PersistentDiskApplication.diskStore;
-
-        Map<String, String> links = new HashMap<String, String>();
-
-        for (String name : store.list()) {
-            String link = name;
-            links.put(name, link);
-        }
+    private String linksToText(Map<String, String> links) {
 
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<String, String> entry : links.entrySet()) {
@@ -194,5 +199,36 @@ public class DisksResource extends ServerResource {
         }
 
         return sb.toString();
+    }
+
+    private String linksToHtml(Map<String, String> links) {
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html>\n<head><title>Disks</title></head>\n<body>\n");
+        sb.append("<ul>\n");
+        for (Map.Entry<String, String> entry : links.entrySet()) {
+            sb.append("<li><a href=\"" + entry.getValue() + "\">"
+                    + entry.getKey() + "</a>\n");
+        }
+        sb.append("</ul>\n</body>\n</html>\n");
+
+        return sb.toString();
+    }
+
+    private Map<String, String> listDisks() {
+
+        File store = PersistentDiskApplication.diskStore;
+
+        Map<String, String> links = new HashMap<String, String>();
+
+        String[] files = store.list();
+        if (files != null) {
+            for (String name : files) {
+                String link = name;
+                links.put(name, link);
+            }
+        }
+
+        return links;
     }
 }
