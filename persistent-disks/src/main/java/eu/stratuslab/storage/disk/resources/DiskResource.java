@@ -21,27 +21,17 @@ package eu.stratuslab.storage.disk.resources;
 
 import static org.restlet.data.MediaType.TEXT_PLAIN;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Map;
-
-import org.restlet.Request;
-import org.restlet.data.MediaType;
-import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.representation.StringRepresentation;
 import org.restlet.resource.Get;
-import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
-import org.w3c.dom.Document;
 
 public class DiskResource extends ServerResource {
 
     @Get("txt")
     public Representation toText() {
-        return new StringRepresentation("got to DiskResource toText()", TEXT_PLAIN);
+        return new StringRepresentation("got to DiskResource toText()",
+                TEXT_PLAIN);
     }
 
 }
