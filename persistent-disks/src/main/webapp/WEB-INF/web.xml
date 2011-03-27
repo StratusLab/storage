@@ -19,7 +19,7 @@
         </servlet-class>
         <init-param>
             <param-name>org.restlet.application</param-name>
-            <param-value>eu.stratuslab.storage.disk.PersistentDiskApplication</param-value>
+            <param-value>eu.stratuslab.storage.disk.main.PersistentDiskApplication</param-value>
         </init-param>
     </servlet>
 
