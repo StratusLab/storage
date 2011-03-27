@@ -1,0 +1,298 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+ 
+  <groupId>eu.stratuslab.storage</groupId>
+  <artifactId>storage</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>StratusLab Storage</name>
+
+  <url>http://hudson.stratuslab.eu/</url>
+
+  <description>
+This repository contains the storage services used in the StratusLab
+cloud.  This currently includes persistent storage with a "disk" 
+abstraction.
+</description>
+
+  <packaging>pom</packaging>
+
+  <modules>
+    <module>persistent-disks</module>
+  </modules>
+
+  <properties>
+    <jetty.version>7.2.2.v20101205</jetty.version>
+  </properties>
+
+  <licenses>
+    <license>
+      <name>Apache 2</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <organization>
+    <name>StratusLab</name>
+    <url>http://stratuslab.eu/</url>
+  </organization>
+
+  <issueManagement>
+    <system>JIRA</system>
+    <url>http://jira.stratuslab.eu:8080/</url>
+  </issueManagement>
+
+  <ciManagement>
+    <system>Hudson</system>
+    <url>http://hudson.stratuslab.eu:8080/</url>
+  </ciManagement>
+
+  <scm>
+    <connection>scm:git:ssh://apache@code.stratuslab.eu/ext/git/stratuslab-storage.git</connection>
+    <developerConnection>scm:git:ssh://apache@code.stratuslab.eu/ext/git/stratuslab-storage.git</developerConnection>
+  </scm>
+
+  <repositories>
+    <repository>
+      <releases>
+	<enabled>true</enabled>
+	<updatePolicy>always</updatePolicy>
+	<checksumPolicy>fail</checksumPolicy>
+      </releases>
+      <snapshots>
+	<enabled>false</enabled>
+	<updatePolicy>never</updatePolicy>
+	<checksumPolicy>fail</checksumPolicy>
+      </snapshots>
+      <id>StratusLabReleases</id>
+      <name>StratusLab Releases</name>
+      <url>http://repo.stratuslab.eu:8081/content/repositories/releases/</url>
+      <layout>default</layout>
+    </repository>
+
+    <repository>  
+      <id>maven-restlet</id>  
+      <name>Public online Restlet repository</name>  
+      <url>http://maven.restlet.org</url>  
+    </repository>
+    <repository>
+      <id>openrdf</id>
+      <name>Public online sesame repository</name>                  
+      <url>http://repo.aduna-software.org/maven2/releases</url>
+    </repository>
+    <repository>
+    <id>talis</id>
+    <name>Public online talis repository</name>
+    <url>http://oss.talisplatform.com/content/repositories/talis-releases</url>
+    </repository>
+    
+  </repositories>
+
+  <distributionManagement>
+    <repository>
+      <id>stratuslab.releases</id>
+      <name>Releases</name>
+      <url>http://repo.stratuslab.eu:8081/content/repositories/releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>stratuslab.snapshots</id>
+      <name>Snapshots</name>
+      <url>http://repo.stratuslab.eu:8081/content/repositories/snapshots/</url>
+    </snapshotRepository>
+    <site>
+      <id>hudson.webserver</id>
+      <url>scp://hudson.stratuslab.eu/var/www/storage</url>
+    </site>
+  </distributionManagement>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+	<groupId>log4j</groupId>
+	<artifactId>log4j</artifactId>
+	<version>1.2.16</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>1.5.8</version>
+      </dependency>
+      <dependency>
+	<groupId>org.eclipse.jetty</groupId>
+	<artifactId>jetty-server</artifactId>
+	<version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+	<groupId>org.eclipse.jetty</groupId>
+	<artifactId>jetty-plus</artifactId>
+	<version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.8.2</version>
+      </dependency>
+      <dependency>  
+        <groupId>org.restlet.jee</groupId>  
+        <artifactId>org.restlet</artifactId>  
+        <version>2.0.4</version>  
+      </dependency>  
+      <dependency>  
+        <groupId>org.restlet.jee</groupId>  
+        <artifactId>org.restlet.ext.xml</artifactId>  
+        <version>2.0.4</version>  
+      </dependency>
+      <dependency>
+        <groupId>org.restlet.jee</groupId>
+        <artifactId>org.restlet.ext.servlet</artifactId>
+        <version>2.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.restlet.jee</groupId>
+        <artifactId>org.restlet.ext.freemarker</artifactId>
+        <version>2.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.restlet.jee</groupId>
+        <artifactId>org.restlet.ext.fileupload</artifactId>
+        <version>2.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>javax.servlet</groupId>
+        <artifactId>servlet-api</artifactId>
+        <version>2.5</version>
+      </dependency> 
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>1.3.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <show>public</show>
+        </configuration>
+      </plugin>
+      <plugin>
+	<groupId>org.codehaus.mojo</groupId>
+	<artifactId>jdepend-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </reporting>
+  
+  <build>
+
+    <pluginManagement>
+      <plugins>
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-clean-plugin</artifactId>
+	  <version>2.4.1</version>
+	</plugin>
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-deploy-plugin</artifactId>
+	  <version>2.5</version>
+	</plugin>
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-dependency-plugin</artifactId>
+	  <version>2.1</version>
+	</plugin>
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-install-plugin</artifactId>
+	  <version>2.3.1</version>
+	</plugin>
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-jar-plugin</artifactId>
+	  <version>2.3.1</version>
+	</plugin>
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-war-plugin</artifactId>
+	  <version>2.1.1</version>
+	</plugin>
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-resources-plugin</artifactId>
+	  <version>2.4.3</version>
+	  <configuration>
+	    <encoding>UTF-8</encoding>
+	  </configuration>
+	</plugin>
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-site-plugin</artifactId>
+	  <version>2.2</version>
+	</plugin>
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-surefire-plugin</artifactId>
+	  <version>2.7.2</version>
+	</plugin>
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-compiler-plugin</artifactId>
+	  <version>2.3.2</version>
+	  <configuration>
+	    <encoding>UTF-8</encoding>
+	    <target>1.5</target>
+	    <source>1.5</source>
+	  </configuration>
+	</plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.7</version>
+	  <configuration>
+	    <encoding>UTF-8</encoding>
+	  </configuration>
+        </plugin>
+	<plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+	  <artifactId>maven-assembly-plugin</artifactId>
+	  <version>2.2</version>
+	</plugin>
+
+	<plugin>
+	  <groupId>org.mortbay.jetty</groupId>
+	  <artifactId>jetty-maven-plugin</artifactId>
+	  <version>${jetty.version}</version>
+	</plugin>
+
+	<plugin>
+	  <groupId>org.codehaus.mojo</groupId>
+	  <artifactId>exec-maven-plugin</artifactId>
+	  <version>1.2</version>
+	</plugin>
+
+	<plugin>
+	  <groupId>org.codehaus.mojo</groupId>
+	  <artifactId>findbugs-maven-plugin</artifactId>
+	  <version>2.3.1</version>
+	</plugin>
+
+	<plugin>
+	  <groupId>org.codehaus.mojo</groupId>
+	  <artifactId>jdepend-maven-plugin</artifactId>
+	  <version>2.0-beta-2</version>
+	</plugin>
+
+      </plugins>
+
+    </pluginManagement>
+
+  </build>
+
+</project>
