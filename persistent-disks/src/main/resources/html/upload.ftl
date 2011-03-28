@@ -1,11 +1,8 @@
 <html>
-<head>
-<meta http-equiv="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
- <title>Upload Disk Description</title>
-</head>
-<body>
 
-    <br>
+  <body>
+
+    <hr/>
     
     <form action="../disks/" enctype="multipart/form-data" method="POST">
       <table>
@@ -20,7 +17,7 @@
       </table>
     </form>
     
-    <br>
+    <hr/>
 
     <form action="../disks/" enctype="application/x-www-form-urlencoded" method="POST">
       <table>
@@ -35,7 +32,7 @@
       </table>
     </form>
     
-    <br>
+    <hr/>
 
-</body>
+  </body>
 </html>

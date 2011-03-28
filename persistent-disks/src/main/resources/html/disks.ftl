@@ -1,8 +1,9 @@
 <html>
-  <head>
-    <meta http-equiv="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
-    <title>disks</title>
-  </head>
+
+<head>
+  <meta http-equiv="CONTENT-TYPE" CONTENT="text/html; charset=UTF-8">
+  <title>StratusLab Persistent Disk Storage</title>
+</head>
   
   <body>
 
@@ -13,5 +14,5 @@
     </#list>
     </ul>
 
-  </body>
+   </body>
 </html>

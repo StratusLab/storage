@@ -1,9 +1,11 @@
 <html>
-  <head>
-    <meta http-equiv="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
-    <title>Upload Disk Description</title>
-  </head>
-  <body>
+
+<head>
+  <meta http-equiv="CONTENT-TYPE" CONTENT="text/html; charset=UTF-8">
+  <title>StratusLab Persistent Disk Storage</title>
+</head>
+  
+   <body>
 
     <table>
       <#assign keys=properties?keys>
@@ -12,7 +14,7 @@
       </#list>
     </table>
     
-    <br>
+    <hr/>
 
     <form action="./?method=delete" enctype="application/x-www-form-urlencoded" method="POST">
       <table>
@@ -20,5 +22,5 @@
       </table>
     </form>
 
-  </body>
+   </body>
 </html>
