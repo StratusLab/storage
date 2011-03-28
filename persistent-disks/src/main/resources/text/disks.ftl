@@ -1,4 +1,4 @@
-<#assign keys=links?keys>
-<#list keys as key>
-$key=${links[key]}
+<#list disks as disk>
+${disk.size} | ${disk.tag} | ${disk.uuid}
 </#list>
+

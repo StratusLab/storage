@@ -20,15 +20,18 @@
 package eu.stratuslab.storage.disk.resources;
 
 import static org.restlet.data.MediaType.APPLICATION_WWW_FORM;
-import static org.restlet.data.MediaType.MULTIPART_FORM_DATA;
 import static org.restlet.data.MediaType.TEXT_HTML;
 import static org.restlet.data.MediaType.TEXT_PLAIN;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
 import java.io.Writer;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
@@ -60,10 +63,8 @@ public class DisksResource extends BaseResource {
         MediaType mediaType = entity.getMediaType();
 
         Properties diskProperties = null;
-        if (MULTIPART_FORM_DATA.equals(mediaType, true)) {
-            diskProperties = processMultipartForm();
-        } else if (APPLICATION_WWW_FORM.equals(mediaType, true)) {
-            diskProperties = processWWWForm();
+        if (APPLICATION_WWW_FORM.equals(mediaType, true)) {
+            diskProperties = processWebForm();
         } else {
             throw new ResourceException(
                     Status.CLIENT_ERROR_UNSUPPORTED_MEDIA_TYPE, mediaType
@@ -90,22 +91,17 @@ public class DisksResource extends BaseResource {
 
     @Get("txt")
     public Representation toText() {
-        Map<String, String> links = listDisks();
+        Map<String, Object> links = listDisks();
         return linksToText(links);
     }
 
     @Get("html")
     public Representation toHtml() {
-        Map<String, String> links = listDisks();
+        Map<String, Object> links = listDisks();
         return linksToHtml(links);
     }
 
-    private static Properties processMultipartForm() {
-        Properties properties = initializeProperties();
-        return properties;
-    }
-
-    private Properties processWWWForm() {
+    private Properties processWebForm() {
         Properties properties = initializeProperties();
 
         Request request = getRequest();
@@ -224,42 +220,62 @@ public class DisksResource extends BaseResource {
 
     }
 
-    private Representation linksToHtml(Map<String, String> links) {
-
+    private Representation linksToHtml(Map<String, Object> infoTree) {
         Representation tpl = templateRepresentation("/html/disks.ftl");
-
-        Map<String, Object> infoTree = new HashMap<String, Object>();
-        infoTree.put("links", links);
-
         return new TemplateRepresentation(tpl, infoTree, TEXT_HTML);
-
     }
 
-    private Representation linksToText(Map<String, String> links) {
-
+    private Representation linksToText(Map<String, Object> infoTree) {
         Representation tpl = templateRepresentation("/text/disks.ftl");
-
-        Map<String, Object> infoTree = new HashMap<String, Object>();
-        infoTree.put("links", links);
-
         return new TemplateRepresentation(tpl, infoTree, TEXT_PLAIN);
-
     }
 
-    private Map<String, String> listDisks() {
+    private Map<String, Object> listDisks() {
 
         File store = PersistentDiskApplication.DISK_STORE;
 
-        Map<String, String> links = new HashMap<String, String>();
+        Map<String, Object> info = new HashMap<String, Object>();
+        List<Properties> diskInfoList = new LinkedList<Properties>();
+        info.put("disks", diskInfoList);
 
         String[] files = store.list();
         if (files != null) {
             for (String name : files) {
+                File propertyFile = new File(store, name + "/disk.properties");
+                Properties properties = loadProperties(propertyFile);
                 String link = name;
-                links.put(name, link);
+                properties.put("link", link);
+                diskInfoList.add(properties);
+            }
+        }
+        return info;
+    }
+
+    private Properties loadProperties(File propertyFile) {
+
+        Reader reader = null;
+        Properties properties = new Properties();
+        try {
+
+            reader = new FileReader(propertyFile);
+            properties.load(reader);
+
+        } catch (IOException e) {
+
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "cannot read properties file: " + propertyFile);
+
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    // TODO: Log this.
+                }
             }
         }
 
-        return links;
+        return properties;
     }
+
 }
