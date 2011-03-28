@@ -89,8 +89,7 @@ public class DisksResource extends BaseResource {
     @Get("txt")
     public Representation toText() {
         Map<String, String> links = listDisks();
-        String contents = linksToText(links);
-        return new StringRepresentation(contents, TEXT_PLAIN);
+        return linksToText(links);
     }
 
     @Get("html")
@@ -190,16 +189,6 @@ public class DisksResource extends BaseResource {
 
     }
 
-    private String linksToText(Map<String, String> links) {
-
-        StringBuilder sb = new StringBuilder();
-        for (Map.Entry<String, String> entry : links.entrySet()) {
-            sb.append(entry.getKey() + " -> " + entry.getValue() + "\n");
-        }
-
-        return sb.toString();
-    }
-
     private Representation linksToHtml(Map<String, String> links) {
 
         Representation tpl = templateRepresentation("/html/disks.ftl");
@@ -208,6 +197,17 @@ public class DisksResource extends BaseResource {
         infoTree.put("links", links);
 
         return new TemplateRepresentation(tpl, infoTree, TEXT_HTML);
+
+    }
+
+    private Representation linksToText(Map<String, String> links) {
+
+        Representation tpl = templateRepresentation("/text/disks.ftl");
+
+        Map<String, Object> infoTree = new HashMap<String, Object>();
+        infoTree.put("links", links);
+
+        return new TemplateRepresentation(tpl, infoTree, TEXT_PLAIN);
 
     }
 

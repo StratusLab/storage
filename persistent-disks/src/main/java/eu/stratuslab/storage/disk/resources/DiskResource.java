@@ -19,9 +19,9 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
-import static org.restlet.data.MediaType.*;
+import static org.restlet.data.MediaType.TEXT_HTML;
+import static org.restlet.data.MediaType.TEXT_PLAIN;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -34,7 +34,6 @@ import org.restlet.Request;
 import org.restlet.data.Status;
 import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.representation.Representation;
-import org.restlet.representation.StringRepresentation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
@@ -45,7 +44,12 @@ public class DiskResource extends BaseResource {
 
     @Get("txt")
     public Representation toText() {
-        return new StringRepresentation(propertiesToString(false), TEXT_PLAIN);
+        Representation tpl = templateRepresentation("/text/disk.ftl");
+
+        Map<String, Object> infoTree = new HashMap<String, Object>();
+        infoTree.put("properties", loadProperties());
+
+        return new TemplateRepresentation(tpl, infoTree, TEXT_PLAIN);
     }
 
     @Get("html")
@@ -57,11 +61,6 @@ public class DiskResource extends BaseResource {
 
         return new TemplateRepresentation(tpl, infoTree, TEXT_HTML);
     }
-
-    // @Get("xml")
-    // public Representation toXml() {
-    // return new StringRepresentation(propertiesToString(true), TEXT_PLAIN);
-    // }
 
     @Delete
     public void removeDisk() {
@@ -86,37 +85,6 @@ public class DiskResource extends BaseResource {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "cannot delete " + diskLocation);
         }
-    }
-
-    private String propertiesToString(boolean toXml) {
-
-        Properties properties = loadProperties();
-
-        ByteArrayOutputStream ostream = null;
-
-        try {
-
-            ostream = new ByteArrayOutputStream();
-            if (toXml) {
-                properties.storeToXML(ostream, "comment");
-            } else {
-                properties.store(ostream, "comment");
-            }
-            ostream.close();
-
-        } catch (IOException e) {
-
-        } finally {
-            if (ostream != null) {
-                try {
-                    ostream.close();
-                } catch (IOException e) {
-                    // TODO: Log this exception.
-                }
-            }
-        }
-
-        return ostream.toString();
     }
 
     private Properties loadProperties() {
