@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
+import org.restlet.Request;
+import org.restlet.data.Form;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.freemarker.TemplateRepresentation;
@@ -103,8 +105,19 @@ public class DisksResource extends BaseResource {
         return properties;
     }
 
-    private static Properties processWWWForm() {
+    private Properties processWWWForm() {
         Properties properties = initializeProperties();
+
+        Request request = getRequest();
+        Representation entity = request.getEntity();
+        Form form = new Form(entity);
+        for (String name : form.getNames()) {
+            String value = form.getFirstValue(name);
+            if (value != null) {
+                properties.put(name, value);
+            }
+        }
+
         return properties;
     }
 
@@ -118,7 +131,29 @@ public class DisksResource extends BaseResource {
     private static void validateDiskProperties(Properties diskProperties)
             throws ResourceException {
 
-        // FIXME: Add real implementation.
+        if (!diskProperties.containsKey("uuid")) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "missing UUID for disk");
+        }
+
+        if (!diskProperties.containsKey("size")) {
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "size must be specified");
+        }
+
+        String size = diskProperties.getProperty("size");
+
+        try {
+            int gigabytes = Integer.parseInt(size);
+            if (gigabytes <= 0) {
+                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                        "size must be a positive integer");
+            }
+        } catch (NumberFormatException e) {
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "size must be a valid long value");
+        }
+
     }
 
     private static void initializeDisk(Properties properties)
