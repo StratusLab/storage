@@ -126,7 +126,7 @@ public class DisksResource extends BaseResource {
 
         String uuid = properties.getProperty("uuid");
 
-        File diskLocation = new File(PersistentDiskApplication.diskStore, uuid);
+        File diskLocation = new File(PersistentDiskApplication.DISK_STORE, uuid);
         File propertiesFile = new File(diskLocation, "disk.properties");
         File contentsFile = new File(diskLocation, "contents");
 
@@ -213,7 +213,7 @@ public class DisksResource extends BaseResource {
 
     private Map<String, String> listDisks() {
 
-        File store = PersistentDiskApplication.diskStore;
+        File store = PersistentDiskApplication.DISK_STORE;
 
         Map<String, String> links = new HashMap<String, String>();
 

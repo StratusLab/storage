@@ -67,7 +67,7 @@ public class DiskResource extends BaseResource {
 
         String uuid = getDiskId();
 
-        File diskLocation = new File(PersistentDiskApplication.diskStore, uuid);
+        File diskLocation = new File(PersistentDiskApplication.DISK_STORE, uuid);
         File propertiesFile = new File(diskLocation, "disk.properties");
         File contentsFile = new File(diskLocation, "contents");
 
@@ -126,7 +126,7 @@ public class DiskResource extends BaseResource {
 
     private File getDiskPropertiesFile() {
         String uuid = getDiskId();
-        return new File(PersistentDiskApplication.diskStore, uuid
+        return new File(PersistentDiskApplication.DISK_STORE, uuid
                 + "/disk.properties");
     }
 

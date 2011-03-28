@@ -17,7 +17,7 @@ public class PersistentDiskApplication extends Application {
 
     protected Logger logger = getLogger();
 
-    public static final File diskStore = new File("/tmp/diskstore");
+    public static final File DISK_STORE = new File("/tmp/diskstore");
 
     public PersistentDiskApplication() {
 
