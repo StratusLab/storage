@@ -33,22 +33,21 @@ public class PersistentDiskApplication extends Application {
     @Override
     public Restlet createInboundRoot() {
 
-        // Create a router Restlet that defines routes.
         Router router = new Router(getContext());
 
         Directory indexDir = new Directory(getContext(), "war:///");
         indexDir.setNegotiatingContent(false);
         indexDir.setIndexName("index.html");
 
-        router.attach("/disks/{uuid}", ForceTrailingSlashResource.class);
         router.attach("/disks/{uuid}/", DiskResource.class);
+        router.attach("/disks/{uuid}", ForceTrailingSlashResource.class);
 
-        router.attach("/disks", ForceTrailingSlashResource.class);
         router.attach("/disks/", DisksResource.class);
+        router.attach("/disks", ForceTrailingSlashResource.class);
 
         // Defines a route for the upload form
-        router.attach("/upload", ForceTrailingSlashResource.class);
         router.attach("/upload/", UploadResource.class);
+        router.attach("/upload", ForceTrailingSlashResource.class);
 
         router.attach("/", indexDir);
 
