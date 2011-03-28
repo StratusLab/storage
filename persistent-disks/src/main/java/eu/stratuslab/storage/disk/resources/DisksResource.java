@@ -33,10 +33,13 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
+import org.restlet.data.LocalReference;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
+import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.representation.StringRepresentation;
+import org.restlet.resource.ClientResource;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
@@ -96,8 +99,7 @@ public class DisksResource extends ServerResource {
     @Get("html")
     public Representation toHtml() {
         Map<String, String> links = listDisks();
-        String contents = linksToHtml(links);
-        return new StringRepresentation(contents, TEXT_HTML);
+        return linksToHtml(links);
     }
 
     private static Properties processMultipartForm() {
@@ -201,18 +203,17 @@ public class DisksResource extends ServerResource {
         return sb.toString();
     }
 
-    private String linksToHtml(Map<String, String> links) {
+    private Representation linksToHtml(Map<String, String> links) {
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html>\n<head><title>Disks</title></head>\n<body>\n");
-        sb.append("<ul>\n");
-        for (Map.Entry<String, String> entry : links.entrySet()) {
-            sb.append("<li><a href=\"" + entry.getValue() + "\">"
-                    + entry.getKey() + "</a>\n");
-        }
-        sb.append("</ul>\n</body>\n</html>\n");
+        LocalReference ref = LocalReference.createClapReference("/disks.ftl");
+        Representation disksFtl = new ClientResource(ref).get();
 
-        return sb.toString();
+        Map<String, Object> infoTree = new HashMap<String, Object>();
+        infoTree.put("links", links);
+
+        return new TemplateRepresentation(disksFtl, infoTree,
+                MediaType.TEXT_HTML);
+
     }
 
     private Map<String, String> listDisks() {

@@ -58,7 +58,7 @@ public class DiskResource extends ServerResource {
         Representation diskFtl = new ClientResource(ref).get();
 
         Map<String, Object> values = new HashMap<String, Object>();
-        values.put("properties", propertiesToString(false));
+        values.put("properties", loadProperties());
 
         return new TemplateRepresentation(diskFtl, values, MediaType.TEXT_HTML);
     }
