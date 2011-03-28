@@ -33,21 +33,18 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
-import org.restlet.data.LocalReference;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.representation.StringRepresentation;
-import org.restlet.resource.ClientResource;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
-import org.restlet.resource.ServerResource;
 
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 
-public class DisksResource extends ServerResource {
+public class DisksResource extends BaseResource {
 
     @Post
     public Representation createDisk(Representation entity)
@@ -205,14 +202,12 @@ public class DisksResource extends ServerResource {
 
     private Representation linksToHtml(Map<String, String> links) {
 
-        LocalReference ref = LocalReference.createClapReference("/disks.ftl");
-        Representation disksFtl = new ClientResource(ref).get();
+        Representation tpl = templateRepresentation("/html/disks.ftl");
 
         Map<String, Object> infoTree = new HashMap<String, Object>();
         infoTree.put("links", links);
 
-        return new TemplateRepresentation(disksFtl, infoTree,
-                MediaType.TEXT_HTML);
+        return new TemplateRepresentation(tpl, infoTree, TEXT_HTML);
 
     }
 

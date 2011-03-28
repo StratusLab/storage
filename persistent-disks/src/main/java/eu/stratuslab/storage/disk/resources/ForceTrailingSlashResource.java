@@ -30,26 +30,28 @@ import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.Put;
-import org.restlet.resource.ServerResource;
 
-public class ForceTrailingSlashResource extends ServerResource {
+public class ForceTrailingSlashResource extends BaseResource {
+
+    private static final Representation EMPTY_REP = new StringRepresentation(
+            "", TEXT_PLAIN);
 
     @Get
     public Representation redirectGet() {
         setRedirectRef();
-        return new StringRepresentation("dummy representation", TEXT_PLAIN);
+        return EMPTY_REP;
     }
 
     @Post
     public Representation redirectPost(Representation entity) {
         setRedirectRef();
-        return new StringRepresentation("dummy representation", TEXT_PLAIN);
+        return EMPTY_REP;
     }
 
     @Put
     public Representation redirectPut(Representation entity) {
         setRedirectRef();
-        return new StringRepresentation("dummy representation", TEXT_PLAIN);
+        return EMPTY_REP;
     }
 
     @Delete

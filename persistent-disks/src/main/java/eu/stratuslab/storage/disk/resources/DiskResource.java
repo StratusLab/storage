@@ -19,7 +19,7 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
-import static org.restlet.data.MediaType.TEXT_PLAIN;
+import static org.restlet.data.MediaType.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -31,21 +31,17 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.restlet.Request;
-import org.restlet.data.LocalReference;
-import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.representation.StringRepresentation;
-import org.restlet.resource.ClientResource;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
-import org.restlet.resource.ServerResource;
 
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 
-public class DiskResource extends ServerResource {
+public class DiskResource extends BaseResource {
 
     @Get("txt")
     public Representation toText() {
@@ -54,13 +50,12 @@ public class DiskResource extends ServerResource {
 
     @Get("html")
     public Representation toHtml() {
-        LocalReference ref = LocalReference.createClapReference("/disk.ftl");
-        Representation diskFtl = new ClientResource(ref).get();
+        Representation tpl = templateRepresentation("/html/disk.ftl");
 
-        Map<String, Object> values = new HashMap<String, Object>();
-        values.put("properties", loadProperties());
+        Map<String, Object> infoTree = new HashMap<String, Object>();
+        infoTree.put("properties", loadProperties());
 
-        return new TemplateRepresentation(diskFtl, values, MediaType.TEXT_HTML);
+        return new TemplateRepresentation(tpl, infoTree, TEXT_HTML);
     }
 
     // @Get("xml")
