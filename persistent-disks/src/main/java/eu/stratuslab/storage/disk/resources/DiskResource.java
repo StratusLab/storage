@@ -87,6 +87,13 @@ public class DiskResource extends BaseResource {
                     "cannot delete " + diskLocation);
         }
 
+        // Sleep for a couple of seconds to see if this resolves an issue with
+        // the deleted file still being visible.
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException consumed) {
+        }
+
         // FIXME: This should probably be done earlier.
         try {
             DiskUtils.restartServer();

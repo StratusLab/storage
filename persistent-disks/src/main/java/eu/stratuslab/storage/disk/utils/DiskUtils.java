@@ -14,7 +14,7 @@ public class DiskUtils {
     // Template for an iSCSI target entry. Fields passed to the formatter should
     // be the path for the disk store and the uuid.
     private static final String TARGET_TEMPLATE = "Target iqn.2011-01.eu.stratuslab:%2$s\n"
-            + "\tLun 0 Path=%1$s%2$s/contents,Type=fileio\n\n";
+            + "\tLun 0 Path=%1$s/%2$s/contents,Type=fileio\n\n";
 
     public static String createTargetConfiguration() {
 
