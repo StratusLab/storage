@@ -77,13 +77,6 @@ public class DiskResource extends BaseResource {
                     "cannot delete " + contentsFile);
         }
 
-        try {
-            DiskUtils.restartServer();
-        } catch (IOException e) {
-            // Log this.
-            System.err.println("error restarting server: " + e.getMessage());
-        }
-
         if (!propertiesFile.delete()) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "cannot delete " + propertiesFile);
@@ -93,6 +86,15 @@ public class DiskResource extends BaseResource {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "cannot delete " + diskLocation);
         }
+
+        // FIXME: This should probably be done earlier.
+        try {
+            DiskUtils.restartServer();
+        } catch (IOException e) {
+            // Log this.
+            System.err.println("error restarting server: " + e.getMessage());
+        }
+
     }
 
     private Properties loadProperties() {
