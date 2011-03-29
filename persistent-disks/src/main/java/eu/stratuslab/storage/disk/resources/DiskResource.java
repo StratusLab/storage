@@ -39,6 +39,7 @@ import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class DiskResource extends BaseResource {
 
@@ -74,6 +75,13 @@ public class DiskResource extends BaseResource {
         if (!contentsFile.delete()) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "cannot delete " + contentsFile);
+        }
+
+        try {
+            DiskUtils.restartServer();
+        } catch (IOException e) {
+            // Log this.
+            System.err.println("error restarting server: " + e.getMessage());
         }
 
         if (!propertiesFile.delete()) {
