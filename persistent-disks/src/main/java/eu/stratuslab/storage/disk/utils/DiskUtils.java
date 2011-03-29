@@ -87,7 +87,7 @@ public class DiskUtils {
 
     public static void restartServer() throws IOException {
 
-        File cfgFile = new File("/etc/iet/iet.conf");
+        File cfgFile = new File("/etc/iet/ietd.conf");
         File initFile = new File("/etc/init.d/iscsi-target");
 
         if (cfgFile.canWrite()) {
