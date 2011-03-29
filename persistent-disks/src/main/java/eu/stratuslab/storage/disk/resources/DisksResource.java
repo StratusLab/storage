@@ -48,6 +48,7 @@ import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class DisksResource extends BaseResource {
 
@@ -74,6 +75,13 @@ public class DisksResource extends BaseResource {
         validateDiskProperties(diskProperties);
 
         initializeDisk(diskProperties);
+
+        try {
+            DiskUtils.restartServer();
+        } catch (IOException e) {
+            // Log this.
+            System.err.println("error restarting server: " + e.getMessage());
+        }
 
         String uuid = diskProperties.getProperty("uuid");
 
@@ -213,11 +221,37 @@ public class DisksResource extends BaseResource {
                 throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                         "contents file already exists: " + location);
             }
+
+            int sizeInGB = Integer.parseInt(properties.get("size").toString());
+            zeroFile(location, sizeInGB);
+
         } catch (IOException e) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "cannot create contents file: " + location);
         }
 
+    }
+
+    private static void zeroFile(File file, int sizeInGB) {
+
+        try {
+
+            DiskUtils.zeroFile(file, sizeInGB);
+
+        } catch (IOException e) {
+
+            if (!file.delete()) {
+                // TODO: Log this.
+                throw new ResourceException(
+                        Status.SERVER_ERROR_INSUFFICIENT_STORAGE, e
+                                .getMessage()
+                                + "; cannot delete resource");
+            }
+
+            throw new ResourceException(
+                    Status.SERVER_ERROR_INSUFFICIENT_STORAGE, e.getMessage());
+
+        }
     }
 
     private Representation linksToHtml(Map<String, Object> infoTree) {
