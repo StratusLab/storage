@@ -16,6 +16,10 @@ public class DiskUtils {
     private static final String TARGET_TEMPLATE = "Target iqn.2011-01.eu.stratuslab:%2$s\n"
             + "\tLun 0 Path=%1$s/%2$s/contents,Type=fileio\n\n";
 
+    private DiskUtils() {
+
+    }
+
     public static String createTargetConfiguration() {
 
         File store = PersistentDiskApplication.DISK_STORE;

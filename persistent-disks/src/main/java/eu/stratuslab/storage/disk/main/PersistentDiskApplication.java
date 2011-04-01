@@ -1,7 +1,6 @@
 package eu.stratuslab.storage.disk.main;
 
 import java.io.File;
-import java.util.logging.Logger;
 
 import org.restlet.Application;
 import org.restlet.Restlet;
@@ -15,9 +14,9 @@ import eu.stratuslab.storage.disk.resources.UploadResource;
 
 public class PersistentDiskApplication extends Application {
 
-    protected Logger logger = getLogger();
+    public static final String DEFAULT_DISK_STORE = "/tmp/diskstore";
 
-    public static final File DISK_STORE = new File("/tmp/diskstore");
+    public static final File DISK_STORE = new File(DEFAULT_DISK_STORE);
 
     public PersistentDiskApplication() {
 
@@ -27,7 +26,6 @@ public class PersistentDiskApplication extends Application {
         setAuthor("Charles Loomis");
 
         getTunnelService().setUserAgentTunnel(true);
-
     }
 
     @Override

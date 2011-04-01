@@ -52,9 +52,10 @@ import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class DisksResource extends BaseResource {
 
+    private static final String UUID_KEY = "uuid";
+
     @Post
-    public Representation createDisk(Representation entity)
-            throws ResourceException {
+    public Representation createDisk(Representation entity) {
 
         if (entity == null) {
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
@@ -83,7 +84,7 @@ public class DisksResource extends BaseResource {
             System.err.println("error restarting server: " + e.getMessage());
         }
 
-        String uuid = diskProperties.getProperty("uuid");
+        String uuid = diskProperties.getProperty(UUID_KEY);
 
         setStatus(Status.SUCCESS_CREATED);
         Representation rep = new StringRepresentation("disk created: " + uuid,
@@ -128,14 +129,13 @@ public class DisksResource extends BaseResource {
     private static Properties initializeProperties() {
         Properties properties = new Properties();
         String uuid = UUID.randomUUID().toString();
-        properties.put("uuid", uuid);
+        properties.put(UUID_KEY, uuid);
         return properties;
     }
 
-    private static void validateDiskProperties(Properties diskProperties)
-            throws ResourceException {
+    private static void validateDiskProperties(Properties diskProperties) {
 
-        if (!diskProperties.containsKey("uuid")) {
+        if (!diskProperties.containsKey(UUID_KEY)) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "missing UUID for disk");
         }
@@ -160,10 +160,9 @@ public class DisksResource extends BaseResource {
 
     }
 
-    private static void initializeDisk(Properties properties)
-            throws ResourceException {
+    private static void initializeDisk(Properties properties) {
 
-        String uuid = properties.getProperty("uuid");
+        String uuid = properties.getProperty(UUID_KEY);
 
         File diskLocation = new File(PersistentDiskApplication.DISK_STORE, uuid);
         File propertiesFile = new File(diskLocation, "disk.properties");
@@ -190,8 +189,7 @@ public class DisksResource extends BaseResource {
 
     }
 
-    private static void storeDiskProperties(Properties properties, File location)
-            throws ResourceException {
+    private static void storeDiskProperties(Properties properties, File location) {
 
         Writer writer = null;
         try {
@@ -214,7 +212,7 @@ public class DisksResource extends BaseResource {
     }
 
     private static void initializeDiskContents(Properties properties,
-            File location) throws ResourceException {
+            File location) {
 
         try {
             if (!location.createNewFile()) {
