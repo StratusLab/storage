@@ -9,7 +9,7 @@ import java.io.Writer;
 
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 
-public class DiskUtils {
+public final class DiskUtils {
 
     // Template for an iSCSI target entry. Fields passed to the formatter should
     // be the path for the disk store and the uuid.
