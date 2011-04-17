@@ -4,9 +4,9 @@
   <groupId>eu.stratuslab.storage</groupId>
   <artifactId>persistent-disk</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>StratusLab Persistent Disk Server</name>
+  <name>StratusLab Persistent Disk Server Parent POM</name>
 
-  <packaging>war</packaging>
+  <packaging>pom</packaging>
 
   <parent>
     <groupId>eu.stratuslab.storage</groupId>
@@ -14,82 +14,37 @@
     <version>0.0.1-SNAPSHOT</version>
   </parent>
 
-  <dependencies>
-    <dependency>  
-        <groupId>org.restlet.jee</groupId>  
-        <artifactId>org.restlet</artifactId>  
-    </dependency>  
-    <dependency>  
-        <groupId>org.restlet.jee</groupId>  
-        <artifactId>org.restlet.ext.xml</artifactId>  
-    </dependency>
-    <dependency>
-         <groupId>org.restlet.jee</groupId>
-         <artifactId>org.restlet.ext.servlet</artifactId>
-    </dependency>
-    <dependency>
-         <groupId>org.restlet.jee</groupId>
-         <artifactId>org.restlet.ext.freemarker</artifactId>
-    </dependency>
-    <dependency>
-         <groupId>org.restlet.jee</groupId>
-         <artifactId>org.restlet.ext.fileupload</artifactId>
-    </dependency>
+  <modules>
+  	<module>war</module>
+  	<module>jetty-rpm</module>
+  </modules>
 
-    <dependency>
-        <groupId>javax.servlet</groupId>
-        <artifactId>servlet-api</artifactId>
-        <scope>compile</scope>
-    </dependency> 
+  <profiles>
+
+    <profile>
+      <id>build-rpm</id>
+      <activation>
+        <file>
+          <exists>/usr/bin/rpmbuild</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>jetty-rpm</module>
+      </modules>
+    </profile>
+
+    <!--<profile>
+      <id>build-deb</id>
+      <activation>
+        <file>
+          <exists>/usr/bin/fakeroot</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>deb</module>
+      </modules>
+    </profile>
     
-  </dependencies>
- 
-
-  <build>
-
-      <plugins>
-         <plugin>
-               <groupId>org.mortbay.jetty</groupId>
-               <artifactId>jetty-maven-plugin</artifactId>
-               <configuration>
-                  <webApp>${basedir}/target/server-0.0.1-SNAPSHOT.war</webApp>
-               </configuration>
-               <executions>
-               <execution>
-                   <id>start-jetty</id>
-               <goals>
-               <goal>deploy-war</goal>
-               </goals>
-                  <configuration>
-                      <daemon>true</daemon>
-                      <reload>manual</reload>
-                  </configuration>
-               </execution>
-               <execution>
-                <id>stop-jetty</id>
-               <goals>
-                    <goal>stop</goal>
-                </goals>
-                </execution>
-             </executions>
-         </plugin>
-
-         <plugin>
-           <groupId>org.codehaus.mojo</groupId>
-           <artifactId>findbugs-maven-plugin</artifactId>
-           <executions>
-	         <execution>
-	             <id>run-findbugs</id>
-	             <phase>process-classes</phase>
-	             <goals>
-	                 <goal>check</goal>
-	             </goals>
-	          </execution>
-	     </executions>
-          </plugin>
-
-      </plugins>
-
-  </build>
+  --></profiles>
 
 </project>
