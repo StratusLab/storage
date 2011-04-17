@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>eu.stratuslab.storage</groupId>
-  <artifactId>persistent-disk</artifactId>
+  <artifactId>persistent-disk-parent</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>StratusLab Persistent Disk Server Parent POM</name>
 
@@ -15,10 +15,10 @@
   </parent>
 
   <modules>
-  	<module>war</module>
-  	<module>jetty-rpm</module>
+    <module>war</module>
+    <module>jetty-rpm</module>
   </modules>
-
+  
   <profiles>
 
     <profile>
@@ -34,17 +34,17 @@
     </profile>
 
     <!--<profile>
-      <id>build-deb</id>
-      <activation>
+        <id>build-deb</id>
+        <activation>
         <file>
-          <exists>/usr/bin/fakeroot</exists>
+        <exists>/usr/bin/fakeroot</exists>
         </file>
-      </activation>
-      <modules>
+        </activation>
+        <modules>
         <module>deb</module>
-      </modules>
-    </profile>
-    
-  --></profiles>
+        </modules>
+        </profile>
+        
+    --></profiles>
 
 </project>
