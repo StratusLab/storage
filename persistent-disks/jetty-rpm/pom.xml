@@ -231,7 +231,7 @@
             </mapping>
 
             <mapping>
-              <directory>/var/lib/stratuslab/persistent-disk</directory>
+              <directory>/var/lib/stratuslab/diskstore</directory>
               <filemode>0755</filemode>
               <username>root</username>
               <groupname>root</groupname>
