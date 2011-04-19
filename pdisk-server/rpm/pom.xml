@@ -109,8 +109,8 @@
         <extensions>true</extensions>
         <configuration>
           <release>${RELEASE}</release>
-          <summary>StratusLab Persistent Disk (Jetty) Package</summary>
-          <name>pdisk</name>
+          <summary>StratusLab Persistent Disk Server</summary>
+          <name>pdisk-server</name>
           <group>System</group>
           <vendor>StratusLab</vendor>
           <packager>StratusLab</packager>
