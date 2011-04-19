@@ -1,0 +1,26 @@
+<assembly>
+  <id>distribution</id>
+  
+  <includeBaseDirectory>false</includeBaseDirectory>
+  
+  <formats>
+    <format>tar.gz</format>
+  </formats>
+  
+  <fileSets>
+
+    <fileSet>
+      <outputDirectory>sbin</outputDirectory>
+      <fileMode>755</fileMode>
+      <directory>src/main/scripts</directory>
+    </fileSet>
+
+    <fileSet>
+      <outputDirectory>share</outputDirectory>
+      <fileMode>644</fileMode>
+      <directory>src/main/share</directory>
+    </fileSet>
+
+  </fileSets>
+  
+</assembly>

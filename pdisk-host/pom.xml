@@ -1,0 +1,50 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>eu.stratuslab.storage</groupId>
+  <artifactId>storage-pdisk-host-pom</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>Persistent Disk Host POM</name>
+
+  <packaging>pom</packaging>
+
+  <parent>
+    <groupId>eu.stratuslab.storage</groupId>
+    <artifactId>storage</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+
+  <modules>
+    <module>tar</module>
+    <module>rpm</module>
+  </modules>
+  
+  <profiles>
+
+    <profile>
+      <id>build-rpm</id>
+      <activation>
+        <file>
+          <exists>/usr/bin/rpmbuild</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>rpm</module>
+      </modules>
+    </profile>
+
+    <!--<profile>
+        <id>build-deb</id>
+        <activation>
+        <file>
+        <exists>/usr/bin/fakeroot</exists>
+        </file>
+        </activation>
+        <modules>
+        <module>deb</module>
+        </modules>
+        </profile>
+        
+    --></profiles>
+
+</project>
