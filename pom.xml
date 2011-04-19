@@ -17,7 +17,8 @@ abstraction.
   <packaging>pom</packaging>
 
   <modules>
-    <module>pdisk</module>
+    <module>pdisk-server</module>
+    <module>pdisk-host</module>
   </modules>
 
   <properties>
