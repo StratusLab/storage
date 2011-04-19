@@ -17,7 +17,7 @@ abstraction.
   <packaging>pom</packaging>
 
   <modules>
-    <module>persistent-disks</module>
+    <module>pdisk</module>
   </modules>
 
   <properties>
