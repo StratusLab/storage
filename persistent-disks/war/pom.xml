@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>eu.stratuslab.storage</groupId>
-  <artifactId>persistent-disk</artifactId>
+  <artifactId>storage-pdisk-war</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>StratusLab Persistent Disk Server</name>
 
@@ -10,7 +10,7 @@
 
   <parent>
     <groupId>eu.stratuslab.storage</groupId>
-    <artifactId>storage</artifactId>
+    <artifactId>storage-pdisk-pom</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
 
