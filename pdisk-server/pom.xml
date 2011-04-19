@@ -2,9 +2,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>eu.stratuslab.storage</groupId>
-  <artifactId>storage-pdisk-pom</artifactId>
+  <artifactId>storage-pdisk-server-pom</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>StratusLab Persistent Disk Server Parent POM</name>
+  <name>Persistent Disk Server POM</name>
 
   <packaging>pom</packaging>
 
@@ -16,7 +16,6 @@
 
   <modules>
     <module>war</module>
-    <module>rpm</module>
   </modules>
   
   <profiles>
@@ -33,18 +32,6 @@
       </modules>
     </profile>
 
-    <!--<profile>
-        <id>build-deb</id>
-        <activation>
-        <file>
-        <exists>/usr/bin/fakeroot</exists>
-        </file>
-        </activation>
-        <modules>
-        <module>deb</module>
-        </modules>
-        </profile>
-        
-    --></profiles>
+  </profiles>
 
 </project>

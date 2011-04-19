@@ -3,22 +3,22 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>eu.stratuslab.storage</groupId>
-  <artifactId>storage-pdisk-rpm</artifactId>
+  <artifactId>storage-pdisk-server-rpm</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>StratusLab Persistent Disk Server RPM</name>
+  <name>Persistent Disk Server RPM</name>
 
   <packaging>rpm</packaging>
 
   <parent>
     <groupId>eu.stratuslab.storage</groupId>
-    <artifactId>storage-pdisk-pom</artifactId>
+    <artifactId>storage-pdisk-server-pom</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
 
   <dependencies>
     <dependency>
       <groupId>eu.stratuslab.storage</groupId>
-      <artifactId>storage-pdisk-war</artifactId>
+      <artifactId>storage-pdisk-server-war</artifactId>
       <type>war</type>
       <version>0.0.1-SNAPSHOT</version>
     </dependency>
@@ -26,7 +26,7 @@
   
   <properties> 
     <installation.dir>/opt/stratuslab/storage/pdisk</installation.dir>
-    <persistent-disk-war>storage-pdisk-war-${project.version}.war</persistent-disk-war>
+    <persistent-disk-war>storage-pdisk-server-war-${project.version}.war</persistent-disk-war>
     <maven.build.timestamp.format>yyyyMMdd.HHmmss</maven.build.timestamp.format> 
     <RELEASE>0.${maven.build.timestamp}</RELEASE>
   </properties>
@@ -92,7 +92,7 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>eu.stratuslab.storage</groupId>
-                  <artifactId>storage-pdisk-war</artifactId>
+                  <artifactId>storage-pdisk-server-war</artifactId>
                   <type>war</type>
                 </artifactItem>
               </artifactItems>
