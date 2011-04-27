@@ -170,6 +170,7 @@
 		    <include>**/*</include>
 		  </includes>
 		  <excludes>
+                    <exclude>*.cfg</exclude>
 		    <exclude>etc/login/*</exclude>
 		    <exclude>etc/overrides/*</exclude>
 		  </excludes>
