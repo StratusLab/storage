@@ -23,6 +23,9 @@ abstraction.
 
   <properties>
     <jetty.version>7.4.0.v20110414</jetty.version>
+
+    <nexus.release.repository.name>releases</nexus.release.repository.name>
+    <nexus.snapshot.repository.name>snapshots</nexus.snapshot.repository.name>
   </properties>
 
   <licenses>
@@ -92,16 +95,16 @@ abstraction.
     <repository>
       <id>stratuslab.releases</id>
       <name>Releases</name>
-      <url>http://repo.stratuslab.eu:8081/content/repositories/releases/</url>
+      <url>http://repo.stratuslab.eu:8081/content/repositories/${nexus.release.repository.name}</url>
     </repository>
     <snapshotRepository>
       <id>stratuslab.snapshots</id>
       <name>Snapshots</name>
-      <url>http://repo.stratuslab.eu:8081/content/repositories/snapshots/</url>
+      <url>http://repo.stratuslab.eu:8081/content/repositories/${nexus.snapshot.repository.name}</url>
     </snapshotRepository>
     <site>
       <id>hudson.webserver</id>
-      <url>scp://hudson.stratuslab.eu/var/www/storage</url>
+      <url>scp://hudson.stratuslab.eu/var/www/one</url>
     </site>
   </distributionManagement>
 
