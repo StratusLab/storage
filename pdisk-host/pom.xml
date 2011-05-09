@@ -16,7 +16,6 @@
 
   <modules>
     <module>tar</module>
-    <module>rpm</module>
   </modules>
   
   <profiles>
