@@ -6,6 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.util.logging.Logger;
 
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 
@@ -15,6 +16,8 @@ public final class DiskUtils {
     // be the path for the disk store and the uuid.
     private static final String TARGET_TEMPLATE = "Target iqn.2011-01.eu.stratuslab:%2$s\n"
             + "\tLun 0 Path=%1$s/%2$s/contents,Type=fileio\n\n";
+
+    private static final Logger LOGGER = Logger.getLogger("org.restlet");
 
     private DiskUtils() {
 
@@ -54,7 +57,8 @@ public final class DiskUtils {
                 try {
                     writer.close();
                 } catch (IOException consumed) {
-                    // TODO: Log this.
+                    LOGGER.severe("error closing file (" + file + "): "
+                            + consumed.getMessage());
                 }
             }
         }
@@ -82,7 +86,8 @@ public final class DiskUtils {
                 try {
                     ostream.close();
                 } catch (IOException consumed) {
-                    // TODO: Log this.
+                    LOGGER.severe("error closing file (" + file + "): "
+                            + consumed.getMessage());
                 }
             }
         }
@@ -116,17 +121,14 @@ public final class DiskUtils {
                 int rc = process.exitValue();
 
                 if (rc != 0) {
-                    // FIXME: Log this.
-                    System.err.println("iscsi-target restart failed: " + rc);
+                    LOGGER.severe("iscsi-target restart failed: " + rc);
                 }
             } else {
-                // FIXME: Log this.
-                System.err.println("cannot run iscsi-target script");
+                LOGGER.severe("cannot run iscsi-target script");
             }
 
         } else {
-            // FIXME: Log this.
-            System.err.println("cannot write to iet.conf file");
+            LOGGER.severe("cannot write to iet.conf file");
         }
 
     }

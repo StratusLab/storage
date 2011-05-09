@@ -81,7 +81,7 @@ public class DisksResource extends BaseResource {
             DiskUtils.restartServer();
         } catch (IOException e) {
             // Log this.
-            System.err.println("error restarting server: " + e.getMessage());
+            LOGGER.severe("error restarting server: " + e.getMessage());
         }
 
         String uuid = diskProperties.getProperty(UUID_KEY);

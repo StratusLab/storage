@@ -98,8 +98,7 @@ public class DiskResource extends BaseResource {
         try {
             DiskUtils.restartServer();
         } catch (IOException e) {
-            // Log this.
-            System.err.println("error restarting server: " + e.getMessage());
+            LOGGER.severe("error restarting server: " + e.getMessage());
         }
 
     }
