@@ -24,11 +24,7 @@ import static org.restlet.data.MediaType.TEXT_HTML;
 import static org.restlet.data.MediaType.TEXT_PLAIN;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -165,7 +161,6 @@ public class DisksResource extends BaseResource {
 		String uuid = properties.getProperty(UUID_KEY);
 
 		File diskLocation = new File(PersistentDiskApplication.DISK_STORE, uuid);
-		File propertiesFile = new File(diskLocation, "disk.properties");
 		File contentsFile = new File(diskLocation, "contents");
 
 		if (diskLocation.exists()) {
@@ -182,10 +177,6 @@ public class DisksResource extends BaseResource {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"cannot write to disk store: " + diskLocation);
 		}
-
-		/* ****** FIXME: BEGIN Remove ****** */
-		storeDiskProperties(properties, propertiesFile);
-		/* ****** FIXME: END Remove ****** */
 
 		storeDiskProperties(properties);
 		initializeDiskContents(properties, contentsFile);
@@ -215,29 +206,6 @@ public class DisksResource extends BaseResource {
 			createZkNode(diskRoot + "/" + key, content);
 		}
 	}
-
-	/* ****** FIXME: BEGIN Remove ****** */
-	private void storeDiskProperties(Properties properties, File location) {
-		Writer writer = null;
-		try {
-
-			writer = new FileWriter(location);
-			properties.store(writer, "comment");
-
-		} catch (IOException e) {
-
-		} finally {
-			if (writer != null) {
-				try {
-					writer.close();
-				} catch (IOException consumed) {
-					// TODO: Log this error.
-				}
-			}
-		}
-	}
-
-	/* ****** FIXME: END Remove ****** */
 
 	private void initializeDiskContents(Properties properties, File location) {
 
@@ -310,51 +278,7 @@ public class DisksResource extends BaseResource {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"unable to retrieve disks properties: " + e.getMessage());
 		}
-
-		/* ****** FIXME: BEGIN Remove ****** */
-		// File store = PersistentDiskApplication.DISK_STORE;
-		//
-		// String[] files = store.list();
-		// if (files != null) {
-		// for (String name : files) {
-		// File propertyFile = new File(store, name + "/disk.properties");
-		// Properties properties = loadProperties(propertyFile);
-		// String link = name;
-		// properties.put("link", link);
-		// diskInfoList.add(properties);
-		// }
-		// }
-		/* ****** FIXME: END Remove ****** */
+		
 		return info;
 	}
-
-	// Will be removed when file-stored properties will be removed
-	@Deprecated
-	private Properties loadProperties(File propertyFile) {
-
-		Reader reader = null;
-		Properties properties = new Properties();
-		try {
-
-			reader = new FileReader(propertyFile);
-			properties.load(reader);
-
-		} catch (IOException e) {
-
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"cannot read properties file: " + propertyFile);
-
-		} finally {
-			if (reader != null) {
-				try {
-					reader.close();
-				} catch (IOException e) {
-					// TODO: Log this.
-				}
-			}
-		}
-
-		return properties;
-	}
-
 }

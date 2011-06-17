@@ -23,9 +23,7 @@ import static org.restlet.data.MediaType.TEXT_HTML;
 import static org.restlet.data.MediaType.TEXT_PLAIN;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -38,8 +36,6 @@ import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
-import org.restlet.routing.Redirector;
-
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
@@ -77,14 +73,6 @@ public class DiskResource extends BaseResource {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"cannot delete " + contentsFile);
 		}
-
-		/* ****** FIXME: BEGIN Remove ****** */
-		File propertiesFile = new File(diskLocation, "disk.properties");
-		if (!propertiesFile.delete()) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"cannot delete " + propertiesFile);
-		}
-		/* ****** FIXME: END Remove ****** */
 
 		if (!diskLocation.delete()) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -131,31 +119,6 @@ public class DiskResource extends BaseResource {
 					"unable to retrieve properties");
 		}
 
-		/* ****** FIXME: BEGIN Remove ****** */
-		Reader reader = null;
-		File propertyFile = getDiskPropertiesFile();
-
-		try {
-
-			reader = new FileReader(propertyFile);
-			properties.load(reader);
-
-		} catch (IOException e) {
-
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"cannot read properties file: " + propertyFile);
-
-		} finally {
-			if (reader != null) {
-				try {
-					reader.close();
-				} catch (IOException e) {
-					// TODO: Log this.
-				}
-			}
-		}
-		/* ****** FIXME: END Remove ****** */
-
 		return properties;
 	}
 
@@ -167,13 +130,4 @@ public class DiskResource extends BaseResource {
 
 		return attributes.get("uuid").toString();
 	}
-
-	// Will be removed when file-stored properties will be removed
-	@Deprecated
-	private File getDiskPropertiesFile() {
-		String uuid = getDiskId();
-		return new File(PersistentDiskApplication.DISK_STORE, uuid
-				+ "/disk.properties");
-	}
-
 }
