@@ -17,80 +17,97 @@ import eu.stratuslab.storage.disk.resources.CreateResource;
 
 public class PersistentDiskApplication extends Application {
 
-    public static final String CFG_FILENAME = "/etc/stratuslab/persistent-disk.cfg";
+	public static final String CFG_FILENAME = "/etc/stratuslab/persistent-disk.cfg";
 
-    public static final String DEFAULT_DISK_STORE = "/tmp/diskstore";
+	public static final String DEFAULT_DISK_STORE = "/tmp/diskstore";
 
-    public static final String ZK_ADDRESS = "127.0.0.1";
-    public static final int ZK_PORT = 2181;
-    public static final String ZK_ROOT = "/disks";
-    
-    public static final File DISK_STORE;
+	public static final String DEFAULT_ZK_ADDRESS = "127.0.0.1";
+	public static final String DEFAULT_ZK_PORT = "2181";
+	public static final String DEFAULT_ZK_ROOT_PATH = "/disks";
 
-    static {
-        DISK_STORE = getDiskStoreDirectory();
-    }
+	public static final Properties CONFIGURATION;
+	public static final File DISK_STORE;
+	public static final String ZK_ADDRESS;
+	public static final int ZK_PORT;
+	public static final String ZK_ROOT_PATH;
 
-    public PersistentDiskApplication() {
+	static {
+		CONFIGURATION = readConfigFile();
+		DISK_STORE = getDiskStoreDirectory();
+		ZK_ADDRESS = getConfigValue("disk.store.zk_address", DEFAULT_ZK_ADDRESS);
+		ZK_PORT = Integer.parseInt(getConfigValue("disk.store.zk_port", DEFAULT_ZK_PORT));
+		ZK_ROOT_PATH = getConfigValue("disk.store.zk_root_path", DEFAULT_ZK_ROOT_PATH);
+	}
 
-        setName("StratusLab Persistent Disk Server");
-        setDescription("StratusLab server for persistent disk storage.");
-        setOwner("StratusLab");
-        setAuthor("Charles Loomis");
+	public PersistentDiskApplication() {
 
-        getTunnelService().setUserAgentTunnel(true);
-    }
+		setName("StratusLab Persistent Disk Server");
+		setDescription("StratusLab server for persistent disk storage.");
+		setOwner("StratusLab");
+		setAuthor("Charles Loomis");
 
-    public static File getDiskStoreDirectory() {
+		getTunnelService().setUserAgentTunnel(true);
+	}
 
-        String diskStoreDir = DEFAULT_DISK_STORE;
+	public static Properties readConfigFile() {
+		File cfgFile = new File(CFG_FILENAME);
+		Properties properties = new Properties();
 
-        File cfgFile = new File(CFG_FILENAME);
-        if (cfgFile.exists()) {
-            Properties properties = new Properties();
-            FileReader reader = null;
-            try {
-                reader = new FileReader(cfgFile);
-                properties.load(reader);
-            } catch (IOException consumed) {
-                // TODO: Log this error.
-            } finally {
-                if (reader!=null) {
-                    try {
-                        reader.close();
-                    } catch (IOException consumed) {
-                        // TODO: Log this error.
-                    }
-                }
-            }
-            diskStoreDir = properties.getProperty("disk.store.dir", DEFAULT_DISK_STORE);
-        }
+		if (cfgFile.exists()) {
+			FileReader reader = null;
+			try {
+				reader = new FileReader(cfgFile);
+				properties.load(reader);
+			} catch (IOException consumed) {
+				// TODO: Log this error.
+			} finally {
+				if (reader != null) {
+					try {
+						reader.close();
+					} catch (IOException consumed) {
+						// TODO: Log this error.
+					}
+				}
+			}
+		}
 
-        return new File(diskStoreDir);
-    }
+		return properties;
+	}
 
-    @Override
-    public Restlet createInboundRoot() {
+	public static String getConfigValue(String key, String defaultValue) {
+		String configValue = CONFIGURATION.getProperty(key, defaultValue);
+		return configValue;
+	}
 
-        Router router = new Router(getContext());
+	public static File getDiskStoreDirectory() {
+		String diskStoreDir = getConfigValue("disk.store.dir",
+				DEFAULT_DISK_STORE);
 
-        Directory indexDir = new Directory(getContext(), "war:///");
-        indexDir.setNegotiatingContent(false);
-        indexDir.setIndexName("index.html");
+		return new File(diskStoreDir);
+	}
 
-        router.attach("/disks/{uuid}/", DiskResource.class);
-        router.attach("/disks/{uuid}", ForceTrailingSlashResource.class);
+	@Override
+	public Restlet createInboundRoot() {
 
-        router.attach("/disks/", DisksResource.class);
-        router.attach("/disks", ForceTrailingSlashResource.class);
+		Router router = new Router(getContext());
 
-        // Defines a route for the upload form
-        router.attach("/create/", CreateResource.class);
-        router.attach("/create", ForceTrailingSlashResource.class);
+		Directory indexDir = new Directory(getContext(), "war:///");
+		indexDir.setNegotiatingContent(false);
+		indexDir.setIndexName("index.html");
 
-        router.attach("/", indexDir);
+		router.attach("/disks/{uuid}/", DiskResource.class);
+		router.attach("/disks/{uuid}", ForceTrailingSlashResource.class);
 
-        return router;
-    }
+		router.attach("/disks/", DisksResource.class);
+		router.attach("/disks", ForceTrailingSlashResource.class);
+
+		// Defines a route for the upload form
+		router.attach("/create/", CreateResource.class);
+		router.attach("/create", ForceTrailingSlashResource.class);
+
+		router.attach("/", indexDir);
+
+		return router;
+	}
 
 }

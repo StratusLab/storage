@@ -35,8 +35,8 @@ public class BaseResource extends ServerResource implements Watcher {
 			zk = new ZooKeeper(PersistentDiskApplication.ZK_ADDRESS,
 					PersistentDiskApplication.ZK_PORT, this);
 
-			if (!zkPathExists(PersistentDiskApplication.ZK_ROOT)) {
-				createZkNode(PersistentDiskApplication.ZK_ROOT, "pdisk");
+			if (!zkPathExists(PersistentDiskApplication.ZK_ROOT_PATH)) {
+				createZkNode(PersistentDiskApplication.ZK_ROOT_PATH, "pdisk");
 			}
 		} catch (IOException e) {
 			LOGGER.severe("Unable to connect to ZooKeeper: " + e.getMessage());
@@ -95,7 +95,7 @@ public class BaseResource extends ServerResource implements Watcher {
 	}
 
 	protected String buildZkDiskPath(String uuid) {
-		return PersistentDiskApplication.ZK_ROOT + "/" + uuid;
+		return PersistentDiskApplication.ZK_ROOT_PATH + "/" + uuid;
 	}
 
 	protected List<String> listZkSubTreeBFS(final String pathRoot)

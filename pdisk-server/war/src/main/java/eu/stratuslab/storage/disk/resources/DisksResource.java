@@ -263,7 +263,7 @@ public class DisksResource extends BaseResource {
 
 		try {
 			List<String> disks = zk.getChildren(
-					PersistentDiskApplication.ZK_ROOT, false);
+					PersistentDiskApplication.ZK_ROOT_PATH, false);
 
 			for (String uuid : disks) {
 				Properties properties = loadZkProperties(buildZkDiskPath(uuid));
