@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.zookeeper.KeeperException;
 import org.restlet.Request;
 import org.restlet.data.Status;
 import org.restlet.ext.freemarker.TemplateRepresentation;
@@ -37,113 +38,142 @@ import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
+import org.restlet.routing.Redirector;
 
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class DiskResource extends BaseResource {
 
-    @Get("txt")
-    public Representation toText() {
-        Representation tpl = templateRepresentation("/text/disk.ftl");
+	@Get("txt")
+	public Representation toText() {
+		Representation tpl = templateRepresentation("/text/disk.ftl");
 
-        Map<String, Object> infoTree = new HashMap<String, Object>();
-        infoTree.put("properties", loadProperties());
+		Map<String, Object> infoTree = new HashMap<String, Object>();
+		infoTree.put("properties", loadProperties());
 
-        return new TemplateRepresentation(tpl, infoTree, TEXT_PLAIN);
-    }
+		return new TemplateRepresentation(tpl, infoTree, TEXT_PLAIN);
+	}
 
-    @Get("html")
-    public Representation toHtml() {
-        Representation tpl = templateRepresentation("/html/disk.ftl");
+	@Get("html")
+	public Representation toHtml() {
+		Representation tpl = templateRepresentation("/html/disk.ftl");
 
-        Map<String, Object> infoTree = new HashMap<String, Object>();
-        infoTree.put("properties", loadProperties());
+		Map<String, Object> infoTree = new HashMap<String, Object>();
+		infoTree.put("properties", loadProperties());
 
-        return new TemplateRepresentation(tpl, infoTree, TEXT_HTML);
-    }
+		return new TemplateRepresentation(tpl, infoTree, TEXT_HTML);
+	}
 
-    @Delete
-    public void removeDisk() {
+	@Delete
+	public void removeDisk() {
+		String uuid = getDiskId();
+		File diskLocation = new File(PersistentDiskApplication.DISK_STORE, uuid);
+		File contentsFile = new File(diskLocation, "contents");
 
-        String uuid = getDiskId();
+		deleteRecursiveZkDiskProperties(getZkDiskPath());
 
-        File diskLocation = new File(PersistentDiskApplication.DISK_STORE, uuid);
-        File propertiesFile = new File(diskLocation, "disk.properties");
-        File contentsFile = new File(diskLocation, "contents");
+		if (!contentsFile.delete()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"cannot delete " + contentsFile);
+		}
 
-        if (!contentsFile.delete()) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "cannot delete " + contentsFile);
-        }
+		/* ****** FIXME: BEGIN Remove ****** */
+		File propertiesFile = new File(diskLocation, "disk.properties");
+		if (!propertiesFile.delete()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"cannot delete " + propertiesFile);
+		}
+		/* ****** FIXME: END Remove ****** */
 
-        if (!propertiesFile.delete()) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "cannot delete " + propertiesFile);
-        }
+		if (!diskLocation.delete()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"cannot delete " + diskLocation);
+		}
 
-        if (!diskLocation.delete()) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "cannot delete " + diskLocation);
-        }
+		// Sleep for a couple of seconds to see if this resolves an issue with
+		// the deleted file still being visible.
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException consumed) {
+		}
 
-        // Sleep for a couple of seconds to see if this resolves an issue with
-        // the deleted file still being visible.
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException consumed) {
-        }
+		// FIXME: This should probably be done earlier.
+		try {
+			DiskUtils.restartServer();
+		} catch (IOException e) {
+			LOGGER.severe("error restarting server: " + e.getMessage());
+		}
 
-        // FIXME: This should probably be done earlier.
-        try {
-            DiskUtils.restartServer();
-        } catch (IOException e) {
-            LOGGER.severe("error restarting server: " + e.getMessage());
-        }
+		// TODO: Redirect user to main page
+	}
 
-    }
+	private String getZkDiskPath() {
+		return buildZkDiskPath(getDiskId());
+	}
 
-    private Properties loadProperties() {
+	private Properties loadProperties() {
+		Properties properties;
+		String zkPropertiesPath = getZkDiskPath();
 
-        Reader reader = null;
-        File propertyFile = getDiskPropertiesFile();
-        Properties properties = new Properties();
-        try {
+		if (!zkPathExists(zkPropertiesPath)) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"uuid does not exists");
+		}
 
-            reader = new FileReader(propertyFile);
-            properties.load(reader);
+		try {
+			properties = loadZkProperties(zkPropertiesPath);
+		} catch (KeeperException e) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"unable to retrieve properties");
+		} catch (InterruptedException e) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"unable to retrieve properties");
+		}
 
-        } catch (IOException e) {
+		/* ****** FIXME: BEGIN Remove ****** */
+		Reader reader = null;
+		File propertyFile = getDiskPropertiesFile();
 
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "cannot read properties file: " + propertyFile);
+		try {
 
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    // TODO: Log this.
-                }
-            }
-        }
+			reader = new FileReader(propertyFile);
+			properties.load(reader);
 
-        return properties;
-    }
+		} catch (IOException e) {
 
-    private String getDiskId() {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"cannot read properties file: " + propertyFile);
 
-        Request request = getRequest();
+		} finally {
+			if (reader != null) {
+				try {
+					reader.close();
+				} catch (IOException e) {
+					// TODO: Log this.
+				}
+			}
+		}
+		/* ****** FIXME: END Remove ****** */
 
-        Map<String, Object> attributes = request.getAttributes();
+		return properties;
+	}
 
-        return attributes.get("uuid").toString();
-    }
+	private String getDiskId() {
 
-    private File getDiskPropertiesFile() {
-        String uuid = getDiskId();
-        return new File(PersistentDiskApplication.DISK_STORE, uuid
-                + "/disk.properties");
-    }
+		Request request = getRequest();
+
+		Map<String, Object> attributes = request.getAttributes();
+
+		return attributes.get("uuid").toString();
+	}
+
+	// Will be removed when file-stored properties will be removed
+	@Deprecated
+	private File getDiskPropertiesFile() {
+		String uuid = getDiskId();
+		return new File(PersistentDiskApplication.DISK_STORE, uuid
+				+ "/disk.properties");
+	}
 
 }

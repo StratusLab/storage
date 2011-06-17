@@ -21,6 +21,10 @@ public class PersistentDiskApplication extends Application {
 
     public static final String DEFAULT_DISK_STORE = "/tmp/diskstore";
 
+    public static final String ZK_ADDRESS = "127.0.0.1";
+    public static final int ZK_PORT = 2181;
+    public static final String ZK_ROOT = "/disks";
+    
     public static final File DISK_STORE;
 
     static {
