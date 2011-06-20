@@ -49,7 +49,7 @@ import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class DisksResource extends BaseResource {
-
+	
 	@Post
 	public Representation createDisk(Representation entity) {
 
@@ -91,7 +91,6 @@ public class DisksResource extends BaseResource {
 				+ diskRelativeUrl);
 
 		return rep;
-
 	}
 
 	@Get("txt")
@@ -129,7 +128,7 @@ public class DisksResource extends BaseResource {
 		return properties;
 	}
 
-	private void validateDiskProperties(Properties diskProperties) {
+	private static void validateDiskProperties(Properties diskProperties) {
 
 		if (!diskProperties.containsKey(UUID_KEY)) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -156,10 +155,25 @@ public class DisksResource extends BaseResource {
 
 	}
 
-	private void initializeDisk(Properties properties) {
+	private static void initializeDisk(Properties properties) {
+		String uuid = properties.getProperty(UUID_KEY).toString();
+		int size = Integer.parseInt(properties.getProperty("size").toString());
 
-		String uuid = properties.getProperty(UUID_KEY);
+		if (PersistentDiskApplication.DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
+			initializeFileDisk(uuid, size);
+		} else {
+			try {
+				initializeLVMDisk(uuid, size);
+			} catch (IOException e) {
+				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+						"an error occured while creating LVM volume");
+			}
+		}
 
+		storeDiskProperties(properties);
+	}
+
+	private static void initializeFileDisk(String uuid, int size) {
 		File diskLocation = new File(PersistentDiskApplication.DISK_STORE, uuid);
 		File contentsFile = new File(diskLocation, "contents");
 
@@ -178,12 +192,40 @@ public class DisksResource extends BaseResource {
 					"cannot write to disk store: " + diskLocation);
 		}
 
-		storeDiskProperties(properties);
-		initializeDiskContents(properties, contentsFile);
-
+		initializeFileDiskContents(contentsFile, size);
 	}
 
-	private void storeDiskProperties(Properties properties) {
+	private static void initializeLVMDisk(String uuid, int size) throws IOException {
+		File lvcreateBin = new File(PersistentDiskApplication.LVCREATE_DIR,
+				"lvcreate");
+		String lvSize = size + "G";
+
+		if (lvcreateBin.canExecute()) {
+			ProcessBuilder pb = new ProcessBuilder(
+					lvcreateBin.getAbsolutePath(), "-L", lvSize,
+					PersistentDiskApplication.LVM_GROUPE_PATH, "-n", uuid);
+			Process process = pb.start();
+
+			boolean blocked = true;
+			while (blocked) {
+				try {
+					process.waitFor();
+					blocked = false;
+				} catch (InterruptedException consumed) {
+					// Just continue with the loop.
+				}
+			}
+			int rc = process.exitValue();
+
+			if (rc != 0) {
+				LOGGER.severe("lvcreate command failled: " + rc);
+			}
+		} else {
+			LOGGER.severe("cannot execute lvcreate command");
+		}
+	}
+
+	private static void storeDiskProperties(Properties properties) {
 		String diskRoot = buildZkDiskPath(properties.get(UUID_KEY).toString());
 		Enumeration<?> propertiesEnum = properties.propertyNames();
 
@@ -207,7 +249,7 @@ public class DisksResource extends BaseResource {
 		}
 	}
 
-	private void initializeDiskContents(Properties properties, File location) {
+	private static void initializeFileDiskContents(File location, int size) {
 
 		try {
 			if (!location.createNewFile()) {
@@ -215,8 +257,7 @@ public class DisksResource extends BaseResource {
 						"contents file already exists: " + location);
 			}
 
-			int sizeInGB = Integer.parseInt(properties.get("size").toString());
-			zeroFile(location, sizeInGB);
+			zeroFile(location, size);
 
 		} catch (IOException e) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -225,12 +266,9 @@ public class DisksResource extends BaseResource {
 
 	}
 
-	private void zeroFile(File file, int sizeInGB) {
-
+	private static void zeroFile(File file, int sizeInGB) {
 		try {
-
 			DiskUtils.zeroFile(file, sizeInGB);
-
 		} catch (IOException e) {
 
 			if (!file.delete()) {
@@ -239,10 +277,8 @@ public class DisksResource extends BaseResource {
 						Status.SERVER_ERROR_INSUFFICIENT_STORAGE,
 						e.getMessage() + "; cannot delete resource");
 			}
-
 			throw new ResourceException(
 					Status.SERVER_ERROR_INSUFFICIENT_STORAGE, e.getMessage());
-
 		}
 	}
 
@@ -256,18 +292,16 @@ public class DisksResource extends BaseResource {
 		return new TemplateRepresentation(tpl, infoTree, TEXT_PLAIN);
 	}
 
-	private Map<String, Object> listDisks() {
+	private static Map<String, Object> listDisks() {
 		Map<String, Object> info = new HashMap<String, Object>();
 		List<Properties> diskInfoList = new LinkedList<Properties>();
 		info.put("disks", diskInfoList);
 
 		try {
-			List<String> disks = zk.getChildren(
-					PersistentDiskApplication.ZK_ROOT_PATH, false);
+			List<String> disks = getDisks();
 
 			for (String uuid : disks) {
 				Properties properties = loadZkProperties(buildZkDiskPath(uuid));
-				// FIXME: Why do we not use directly uuid instead of link?
 				properties.put("link", uuid);
 				diskInfoList.add(properties);
 			}
@@ -278,7 +312,7 @@ public class DisksResource extends BaseResource {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"unable to retrieve disks properties: " + e.getMessage());
 		}
-		
+
 		return info;
 	}
 }

@@ -16,20 +16,32 @@ import eu.stratuslab.storage.disk.resources.ForceTrailingSlashResource;
 import eu.stratuslab.storage.disk.resources.CreateResource;
 
 public class PersistentDiskApplication extends Application {
+	public enum DiskType {
+		LVM, FILE;
+	}
 
 	public static final String CFG_FILENAME = "/etc/stratuslab/persistent-disk.cfg";
+	public static final String LVCREATE_DIR = "/sbin";
+	public static final String LVREMOVE_DIR = "/sbin";
 
-	public static final String DEFAULT_DISK_STORE = "/tmp/diskstore";
-
+	// ZooKeeper default configuration
 	public static final String DEFAULT_ZK_ADDRESS = "127.0.0.1";
 	public static final String DEFAULT_ZK_PORT = "2181";
 	public static final String DEFAULT_ZK_ROOT_PATH = "/disks";
+
+	// Disk creation (file and LVM)
+	public static final String DEFAULT_DISK_TYPE = "lvm"; // Can be "lvm" or "file"
+	public static final String DEFAULT_DISK_STORE = "/tmp/diskstore";
+	public static final String DEFAULT_LVM_GROUP_NAME = "/dev/vg.02";
+	
 
 	public static final Properties CONFIGURATION;
 	public static final File DISK_STORE;
 	public static final String ZK_ADDRESS;
 	public static final int ZK_PORT;
 	public static final String ZK_ROOT_PATH;
+	public static final DiskType DISK_TYPE;
+	public static final String LVM_GROUPE_PATH;
 
 	static {
 		CONFIGURATION = readConfigFile();
@@ -37,6 +49,8 @@ public class PersistentDiskApplication extends Application {
 		ZK_ADDRESS = getConfigValue("disk.store.zk_address", DEFAULT_ZK_ADDRESS);
 		ZK_PORT = Integer.parseInt(getConfigValue("disk.store.zk_port", DEFAULT_ZK_PORT));
 		ZK_ROOT_PATH = getConfigValue("disk.store.zk_root_path", DEFAULT_ZK_ROOT_PATH);
+		DISK_TYPE = getDiskType();
+		LVM_GROUPE_PATH = getConfigValue("disk.store.lvm.group.name", DEFAULT_LVM_GROUP_NAME);
 	}
 
 	public PersistentDiskApplication() {
@@ -84,6 +98,16 @@ public class PersistentDiskApplication extends Application {
 				DEFAULT_DISK_STORE);
 
 		return new File(diskStoreDir);
+	}
+	
+	public static DiskType getDiskType() {
+		String diskType = getConfigValue("disk.store.disk_type",
+				DEFAULT_DISK_TYPE);
+		
+		if (diskType == "lvm")
+			return DiskType.LVM;
+		else
+			return DiskType.FILE;
 	}
 
 	@Override

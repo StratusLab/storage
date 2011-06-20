@@ -40,7 +40,7 @@ import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class DiskResource extends BaseResource {
-
+	
 	@Get("txt")
 	public Representation toText() {
 		Representation tpl = templateRepresentation("/text/disk.ftl");
@@ -65,13 +65,12 @@ public class DiskResource extends BaseResource {
 	public void removeDisk() {
 		String uuid = getDiskId();
 		File diskLocation = new File(PersistentDiskApplication.DISK_STORE, uuid);
-		File contentsFile = new File(diskLocation, "contents");
 
 		deleteRecursiveZkDiskProperties(getZkDiskPath());
 
-		if (!contentsFile.delete()) {
+		if (!deleteDisk(uuid)) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"cannot delete " + contentsFile);
+					"cannot delete disk content: " + uuid);
 		}
 
 		if (!diskLocation.delete()) {
@@ -94,6 +93,55 @@ public class DiskResource extends BaseResource {
 		}
 
 		// TODO: Redirect user to main page
+	}
+	
+	private static Boolean deleteDisk(String uuid) {
+		if (PersistentDiskApplication.DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
+			File diskContents = new File(PersistentDiskApplication.DISK_STORE
+					+ uuid + "/contents");
+			
+			return diskContents.delete();
+		} else {
+			try {
+				return deleteLVMDisk(uuid);
+			} catch (IOException e) {
+				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+						"an error occured while removing volume " + uuid);
+			}
+		}
+	}
+
+	private static Boolean deleteLVMDisk(String uuid) throws IOException {
+		File lvremoveBin = new File(PersistentDiskApplication.LVREMOVE_DIR, "lvremove");
+		String volumePath = PersistentDiskApplication.LVM_GROUPE_PATH + "/"
+				+ uuid;
+
+		if (lvremoveBin.canExecute()) {
+			ProcessBuilder pb = new ProcessBuilder(
+					lvremoveBin.getAbsolutePath(), "-f", volumePath);
+			Process process = pb.start();
+
+			boolean blocked = true;
+			while (blocked) {
+				try {
+					process.waitFor();
+					blocked = false;
+				} catch (InterruptedException consumed) {
+					// Just continue with the loop.
+				}
+			}
+			int rc = process.exitValue();
+
+			if (rc != 0) {
+				LOGGER.severe("lvcreate command failled: " + rc);
+				return false;
+			} else {
+				return true;
+			}
+		} else {
+			LOGGER.severe("cannot execute lvcreate command");
+			return false;
+		}
 	}
 
 	private String getZkDiskPath() {
