@@ -36,11 +36,13 @@ import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
+import org.restlet.routing.Redirector;
+
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class DiskResource extends BaseResource {
-	
+
 	@Get("txt")
 	public Representation toText() {
 		Representation tpl = templateRepresentation("/text/disk.ftl");
@@ -53,12 +55,16 @@ public class DiskResource extends BaseResource {
 
 	@Get("html")
 	public Representation toHtml() {
-		Representation tpl = templateRepresentation("/html/disk.ftl");
-
-		Map<String, Object> infoTree = new HashMap<String, Object>();
-		infoTree.put("properties", loadProperties());
-
-		return new TemplateRepresentation(tpl, infoTree, TEXT_HTML);
+		Map<String, Object> infos = createInfoStructure("Disk info");
+		infos.put("properties", loadProperties());
+		infos.put("url", getRequest().getResourceRef().toString());
+			
+		String queryString = getRequest().getResourceRef().getQuery();
+		if (queryString != null && queryString.equals("created")) {
+			infos.put("created", true);
+		}
+		
+		return createTemplateRepresentation("html/disk.ftl", infos, TEXT_HTML);
 	}
 
 	@Delete
@@ -92,14 +98,14 @@ public class DiskResource extends BaseResource {
 			LOGGER.severe("error restarting server: " + e.getMessage());
 		}
 
-		// TODO: Redirect user to main page
+		redirectSeeOther("/disks/?deleted");
 	}
-	
+
 	private static Boolean deleteDisk(String uuid) {
 		if (PersistentDiskApplication.DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
-			File diskContents = new File(PersistentDiskApplication.DISK_STORE
-					+ uuid + "/contents");
-			
+			File diskContents = new File(PersistentDiskApplication.DISK_STORE,
+					uuid + "/contents");
+
 			return diskContents.delete();
 		} else {
 			try {
@@ -112,7 +118,8 @@ public class DiskResource extends BaseResource {
 	}
 
 	private static Boolean deleteLVMDisk(String uuid) throws IOException {
-		File lvremoveBin = new File(PersistentDiskApplication.LVREMOVE_DIR, "lvremove");
+		File lvremoveBin = new File(PersistentDiskApplication.LVREMOVE_DIR,
+				"lvremove");
 		String volumePath = PersistentDiskApplication.LVM_GROUPE_PATH + "/"
 				+ uuid;
 

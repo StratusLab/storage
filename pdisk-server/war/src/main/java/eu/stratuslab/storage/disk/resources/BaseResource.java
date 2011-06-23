@@ -2,8 +2,10 @@ package eu.stratuslab.storage.disk.resources;
 
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -13,13 +15,16 @@ import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooKeeper.States;
 import org.restlet.data.LocalReference;
+import org.restlet.data.MediaType;
 import org.restlet.data.Status;
+import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.ClientResource;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
 
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import freemarker.template.Configuration;
 
 public class BaseResource extends ServerResource {
 
@@ -29,10 +34,40 @@ public class BaseResource extends ServerResource {
 
 	public static final ZooKeeper ZK = initializeZooKeeper();
 
+	@Deprecated
 	protected Representation templateRepresentation(String tpl) {
 		LocalReference ref = LocalReference.createClapReference(tpl);
 		return new ClientResource(ref).get();
 	}
+
+	private Configuration getFreeMarkerConfiguration() {
+		return ((PersistentDiskApplication) getApplication())
+				.getFreeMarkerConfiguration();
+	}
+
+	protected TemplateRepresentation createTemplateRepresentation(String tpl,
+			Map<String, Object> info, MediaType mediaType) {
+
+		Configuration freeMarkerConfig = getFreeMarkerConfiguration();
+
+		return new TemplateRepresentation(tpl, freeMarkerConfig, info,
+				mediaType);
+	}
+	
+	protected Map<String, Object> createInfoStructure(String title) {
+
+        Map<String, Object> info = new HashMap<String, Object>();
+
+        // Add the standard base URL declaration.
+        info.put("baseurl", getRequest().getRootRef().toString());
+
+        // Add the title if appropriate.
+        if (title != null && !"".equals(title)) {
+            info.put("title", title);
+        }
+
+        return info;
+    }
 
 	public static List<String> getDisks() throws KeeperException,
 			InterruptedException {
@@ -69,7 +104,8 @@ public class BaseResource extends ServerResource {
 
 		try {
 			if (zk.exists(PersistentDiskApplication.ZK_ROOT_PATH, false) == null) {
-				zk.create(PersistentDiskApplication.ZK_ROOT_PATH, "pdisk".getBytes(), Ids.OPEN_ACL_UNSAFE,
+				zk.create(PersistentDiskApplication.ZK_ROOT_PATH,
+						"pdisk".getBytes(), Ids.OPEN_ACL_UNSAFE,
 						CreateMode.PERSISTENT);
 			}
 		} catch (KeeperException e) {

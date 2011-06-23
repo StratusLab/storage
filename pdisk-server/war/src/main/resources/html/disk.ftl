@@ -1,26 +1,23 @@
-<html>
+<#include "/html/header.ftl">
 
-<head>
-  <meta http-equiv="CONTENT-TYPE" CONTENT="text/html; charset=UTF-8">
-  <title>StratusLab Persistent Disk Storage</title>
-</head>
-  
-   <body>
+    <#if created??>
+        <p class="success">
+            Your disk have been created successfully.
+        </p>
+    </#if>
 
-    <table>
+      <#escape x as x?html>
       <#assign keys=properties?keys>
+      <dl>
       <#list keys as key>
-      <tr><td>${key}</td><td>${properties[key]}</td></tr>
+        <dt>${key?capitalize}:</dt>
+        <dd>${properties[key]}</dd>
       </#list>
-    </table>
-    
-    <hr/>
+      </dl>
+      </#escape>
 
-    <form action="./?method=delete" enctype="application/x-www-form-urlencoded" method="POST">
-      <table>
-        <tr><td><input type="submit" value="delete"></td></tr>
-      </table>
+    <form action="${url}?method=delete" enctype="application/x-www-form-urlencoded" method="POST">
+      <p><input type="submit" value="Delete"></p>
     </form>
 
-   </body>
-</html>
+<#include "/html/footer.ftl">

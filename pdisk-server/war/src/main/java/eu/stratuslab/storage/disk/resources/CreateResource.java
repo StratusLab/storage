@@ -1,5 +1,9 @@
 package eu.stratuslab.storage.disk.resources;
 
+import static org.restlet.data.MediaType.TEXT_HTML;
+
+import java.util.Map;
+
 import org.restlet.data.MediaType;
 import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.representation.Representation;
@@ -9,8 +13,8 @@ public class CreateResource extends BaseResource {
 
     @Get("html")
     public Representation toHtml() {
-        Representation tpl = templateRepresentation("/html/upload.ftl");
-        return new TemplateRepresentation(tpl, MediaType.TEXT_HTML);
+    	Map<String, Object> infos = createInfoStructure("Create a disk");
+		return createTemplateRepresentation("html/upload.ftl", infos, TEXT_HTML);
     }
 
 }

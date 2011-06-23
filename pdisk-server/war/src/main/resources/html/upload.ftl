@@ -1,26 +1,18 @@
-<html>
+<#include "/html/header.ftl">
 
-  <body>
-
-    <hr/>
-
-    <form action="../disks/" enctype="application/x-www-form-urlencoded" method="POST">
-      <table>
-        <tbody>
-          <tr>
-            <td>Size (GB)</td><td><input type="text" name="size" size="40"></td>
-          </tr>
-          <tr>
-            <td>Tag</td><td><input type="text" name="tag" size="40"></td>
-          </tr>
-          <tr>
-            <td><input type="submit" value="create"></td><td></td>
-          </tr>
-        </tbody>
-      </table>
-    </form>
+<form action="disks/" enctype="application/x-www-form-urlencoded" method="POST">
+    <p> 
+        <label for="size">Size (GB):</label>
+        <input type="text" name="size" id="size" size="10" /> 
+    </p>
+    <p> 
+        <label for="tag">Tag:</label>
+        <input type="text" name="tag" id="tag" size="40" /> 
+    </p>
+        
+    <p>
+        <input type="submit" value="Create" />
+    </p>
+</form>
     
-    <hr/>
-
-  </body>
-</html>
+<#include "/html/footer.ftl">

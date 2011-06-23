@@ -49,9 +49,9 @@ import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class DisksResource extends BaseResource {
-	
+
 	@Post
-	public Representation createDisk(Representation entity) {
+	public void createDisk(Representation entity) {
 
 		if (entity == null) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
@@ -83,14 +83,8 @@ public class DisksResource extends BaseResource {
 		String uuid = diskProperties.getProperty(UUID_KEY);
 
 		setStatus(Status.SUCCESS_CREATED);
-		Representation rep = new StringRepresentation("disk created: " + uuid,
-				TEXT_PLAIN);
 
-		String diskRelativeUrl = "/disks/" + uuid;
-		rep.setLocationRef(getRequest().getResourceRef().getIdentifier()
-				+ diskRelativeUrl);
-
-		return rep;
+		redirectSeeOther("/disks/" + uuid + "/?created");
 	}
 
 	@Get("txt")
@@ -101,8 +95,15 @@ public class DisksResource extends BaseResource {
 
 	@Get("html")
 	public Representation toHtml() {
-		Map<String, Object> links = listDisks();
-		return linksToHtml(links);
+		Map<String, Object> infos = createInfoStructure("Disks list");
+		infos.putAll(listDisks());
+		
+		String queryString = getRequest().getResourceRef().getQuery();
+		if (queryString != null && queryString.equals("deleted")) {
+			infos.put("deleted", true);
+		}
+		
+		return createTemplateRepresentation("html/disks.ftl", infos, TEXT_HTML);
 	}
 
 	private Properties processWebForm() {
@@ -195,7 +196,8 @@ public class DisksResource extends BaseResource {
 		initializeFileDiskContents(contentsFile, size);
 	}
 
-	private static void initializeLVMDisk(String uuid, int size) throws IOException {
+	private static void initializeLVMDisk(String uuid, int size)
+			throws IOException {
 		File lvcreateBin = new File(PersistentDiskApplication.LVCREATE_DIR,
 				"lvcreate");
 		String lvSize = size + "G";
@@ -280,11 +282,6 @@ public class DisksResource extends BaseResource {
 			throw new ResourceException(
 					Status.SERVER_ERROR_INSUFFICIENT_STORAGE, e.getMessage());
 		}
-	}
-
-	private Representation linksToHtml(Map<String, Object> infoTree) {
-		Representation tpl = templateRepresentation("/html/disks.ftl");
-		return new TemplateRepresentation(tpl, infoTree, TEXT_HTML);
 	}
 
 	private Representation linksToText(Map<String, Object> infoTree) {
