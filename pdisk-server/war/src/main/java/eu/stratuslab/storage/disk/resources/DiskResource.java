@@ -31,42 +31,37 @@ import java.util.Properties;
 import org.apache.zookeeper.KeeperException;
 import org.restlet.Request;
 import org.restlet.data.Status;
-import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
-import org.restlet.routing.Redirector;
-
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class DiskResource extends BaseResource {
-
-	@Get("txt")
-	public Representation toText() {
-		Representation tpl = templateRepresentation("/text/disk.ftl");
-
-		Map<String, Object> infoTree = new HashMap<String, Object>();
-		infoTree.put("properties", loadProperties());
-
-		return new TemplateRepresentation(tpl, infoTree, TEXT_PLAIN);
-	}
 
 	@Get("html")
 	public Representation toHtml() {
 		Map<String, Object> infos = createInfoStructure("Disk info");
 		infos.put("properties", loadProperties());
 		infos.put("url", getRequest().getResourceRef().toString());
-			
+
 		String queryString = getRequest().getResourceRef().getQuery();
 		if (queryString != null && queryString.equals("created")) {
 			infos.put("created", true);
 		}
-		
+
 		return createTemplateRepresentation("html/disk.ftl", infos, TEXT_HTML);
 	}
 
+	@Get
+	public Representation toText() {
+		Map<String, Object> infos = new HashMap<String, Object>();
+		infos.put("properties", loadProperties());
+
+		return createTemplateRepresentation("json/disk.ftl", infos, TEXT_PLAIN);
+	}
+	
 	@Delete
 	public void removeDisk() {
 		String uuid = getDiskId();
@@ -151,10 +146,6 @@ public class DiskResource extends BaseResource {
 		}
 	}
 
-	private String getZkDiskPath() {
-		return buildZkDiskPath(getDiskId());
-	}
-
 	private Properties loadProperties() {
 		Properties properties;
 		String zkPropertiesPath = getZkDiskPath();
@@ -184,5 +175,9 @@ public class DiskResource extends BaseResource {
 		Map<String, Object> attributes = request.getAttributes();
 
 		return attributes.get("uuid").toString();
+	}
+	
+	private String getZkDiskPath() {
+		return buildZkDiskPath(getDiskId());
 	}
 }

@@ -38,9 +38,7 @@ import org.restlet.Request;
 import org.restlet.data.Form;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
-import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.representation.Representation;
-import org.restlet.representation.StringRepresentation;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
@@ -49,6 +47,25 @@ import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class DisksResource extends BaseResource {
+
+	@Get("html")
+	public Representation toHtml() {
+		Map<String, Object> infos = createInfoStructure("Disks list");
+		infos.putAll(listDisks());
+
+		String queryString = getRequest().getResourceRef().getQuery();
+		if (queryString != null && queryString.equals("deleted")) {
+			infos.put("deleted", true);
+		}
+
+		return createTemplateRepresentation("html/disks.ftl", infos, TEXT_HTML);
+	}
+
+	@Get
+	public Representation toText() {
+		Map<String, Object> infos = listDisks();
+		return createTemplateRepresentation("json/disks.ftl", infos, TEXT_PLAIN);
+	}
 
 	@Post
 	public void createDisk(Representation entity) {
@@ -85,25 +102,6 @@ public class DisksResource extends BaseResource {
 		setStatus(Status.SUCCESS_CREATED);
 
 		redirectSeeOther("/disks/" + uuid + "/?created");
-	}
-
-	@Get("txt")
-	public Representation toText() {
-		Map<String, Object> links = listDisks();
-		return linksToText(links);
-	}
-
-	@Get("html")
-	public Representation toHtml() {
-		Map<String, Object> infos = createInfoStructure("Disks list");
-		infos.putAll(listDisks());
-		
-		String queryString = getRequest().getResourceRef().getQuery();
-		if (queryString != null && queryString.equals("deleted")) {
-			infos.put("deleted", true);
-		}
-		
-		return createTemplateRepresentation("html/disks.ftl", infos, TEXT_HTML);
 	}
 
 	private Properties processWebForm() {
@@ -284,11 +282,6 @@ public class DisksResource extends BaseResource {
 		}
 	}
 
-	private Representation linksToText(Map<String, Object> infoTree) {
-		Representation tpl = templateRepresentation("/text/disks.ftl");
-		return new TemplateRepresentation(tpl, infoTree, TEXT_PLAIN);
-	}
-
 	private static Map<String, Object> listDisks() {
 		Map<String, Object> info = new HashMap<String, Object>();
 		List<Properties> diskInfoList = new LinkedList<Properties>();
@@ -299,7 +292,6 @@ public class DisksResource extends BaseResource {
 
 			for (String uuid : disks) {
 				Properties properties = loadZkProperties(buildZkDiskPath(uuid));
-				properties.put("link", uuid);
 				diskInfoList.add(properties);
 			}
 		} catch (KeeperException e) {

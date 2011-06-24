@@ -31,7 +31,7 @@
             <tr class="${zebra(disk_index)}">
               <td>${disk.tag!}</td>
               <td class="center">${disk.size} GB</td>
-              <td><a href="disks/${disk.link}">${disk.uuid}</a></td>
+              <td><a href="disks/${disk.uuid}">${disk.uuid}</a></td>
             </tr>
             </#list>
           </tbody>

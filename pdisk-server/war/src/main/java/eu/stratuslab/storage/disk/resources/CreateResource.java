@@ -4,8 +4,6 @@ import static org.restlet.data.MediaType.TEXT_HTML;
 
 import java.util.Map;
 
-import org.restlet.data.MediaType;
-import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 
@@ -16,5 +14,5 @@ public class CreateResource extends BaseResource {
     	Map<String, Object> infos = createInfoStructure("Create a disk");
 		return createTemplateRepresentation("html/upload.ftl", infos, TEXT_HTML);
     }
-
+    
 }
