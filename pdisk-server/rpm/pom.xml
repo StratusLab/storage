@@ -257,7 +257,7 @@
             </mapping>
 
             <mapping>
-              <directory>${installation.dir}/zookeeper</directory>
+              <directory>${installation.dir}/zookeeper/</directory>
               <filemode>644</filemode>
               <username>root</username>
               <groupname>root</groupname>
