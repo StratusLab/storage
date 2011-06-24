@@ -153,6 +153,10 @@ TMPDIR=${TMPDIR:-/tmp}
 ##################################################
 JETTY_INSTALL_TRACE_FILE="etc/jetty.xml"
 
+##################################################
+# ZooKeeper server location
+##################################################
+ZOOKEEPER_SERVER_CMD=/opt/stratuslab/storage/pdisk/zookeeper
 
 ##################################################
 # Try to determine JETTY_HOME if not set
@@ -551,5 +555,8 @@ case "$ACTION" in
 
     ;;
 esac
+    
+## ZooKeeper management
+$ZOOKEEPER_SERVER_CMD $ACTION
 
 exit 0
