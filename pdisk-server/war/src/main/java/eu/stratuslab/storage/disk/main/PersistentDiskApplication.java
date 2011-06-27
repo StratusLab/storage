@@ -9,8 +9,10 @@ import org.restlet.Application;
 import org.restlet.Context;
 import org.restlet.Restlet;
 import org.restlet.data.LocalReference;
+import org.restlet.data.Status;
 import org.restlet.ext.freemarker.ContextTemplateLoader;
 import org.restlet.resource.Directory;
+import org.restlet.resource.ResourceException;
 import org.restlet.routing.Router;
 
 import eu.stratuslab.storage.disk.resources.DiskResource;
@@ -51,13 +53,13 @@ public class PersistentDiskApplication extends Application {
 
 	static {
 		CONFIGURATION = readConfigFile();
+		DISK_TYPE = getDiskType();
 		DISK_STORE = getDiskStoreDirectory();
 		ZK_ADDRESS = getConfigValue("disk.store.zk_address", DEFAULT_ZK_ADDRESS);
 		ZK_PORT = Integer.parseInt(getConfigValue("disk.store.zk_port",
 				DEFAULT_ZK_PORT));
 		ZK_ROOT_PATH = getConfigValue("disk.store.zk_root_path",
 				DEFAULT_ZK_ROOT_PATH);
-		DISK_TYPE = getDiskType();
 		LVM_GROUPE_PATH = getConfigValue("disk.store.lvm.group.name",
 				DEFAULT_LVM_GROUP_NAME);
 	}
@@ -105,8 +107,20 @@ public class PersistentDiskApplication extends Application {
 	public static File getDiskStoreDirectory() {
 		String diskStoreDir = getConfigValue("disk.store.dir",
 				DEFAULT_DISK_STORE);
+		
+		File diskStoreHandler = new File(diskStoreDir);
+		
+		// Don't need check if we not use it 
+		if (DISK_TYPE == DiskType.LVM) {
+			return diskStoreHandler;
+		}
+		
+		if (!diskStoreHandler.canWrite() || !diskStoreHandler.canRead()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"disk store have to be readable and writtable.");
+		}
 
-		return new File(diskStoreDir);
+		return diskStoreHandler;
 	}
 
 	public static DiskType getDiskType() {

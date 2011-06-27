@@ -65,9 +65,4 @@ public class ForceTrailingSlashResource extends BaseResource {
         Response response = getResponse();
         response.redirectPermanent(redirect);
     }
-    
-    private String getCurrentUrl() {
-    	return getRequest().getRootRef().toString();
-    }
-
 }

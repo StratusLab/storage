@@ -44,7 +44,7 @@ public class DiskResource extends BaseResource {
 	public Representation toHtml() {
 		Map<String, Object> infos = createInfoStructure("Disk info");
 		infos.put("properties", loadProperties());
-		infos.put("url", getRequest().getResourceRef().toString());
+		infos.put("url", getCurrentUrl().replaceAll("\\?.*", ""));
 
 		String queryString = getRequest().getResourceRef().getQuery();
 		if (queryString != null && queryString.equals("created")) {
@@ -73,14 +73,6 @@ public class DiskResource extends BaseResource {
 					"cannot delete disk content: " + uuid);
 		}
 
-		// Sleep for a couple of seconds to see if this resolves an issue with
-		// the deleted file still being visible.
-		try {
-			Thread.sleep(2000);
-		} catch (InterruptedException consumed) {
-		}
-
-		// FIXME: This should probably be done earlier.
 		try {
 			DiskUtils.restartServer();
 		} catch (IOException e) {
@@ -92,10 +84,9 @@ public class DiskResource extends BaseResource {
 
 	private static Boolean deleteDisk(String uuid) {
 		if (PersistentDiskApplication.DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
-			File diskLocation = new File(PersistentDiskApplication.DISK_STORE, uuid);
-			File diskContents = new File(diskLocation, "contents");
+			File diskFile = new File(PersistentDiskApplication.DISK_STORE, uuid);
 
-			return true && diskContents.delete() && diskLocation.delete();
+			return diskFile.delete();
 		} else {
 			try {
 				return deleteLVMDisk(uuid);

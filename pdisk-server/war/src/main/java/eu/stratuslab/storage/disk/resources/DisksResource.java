@@ -173,25 +173,14 @@ public class DisksResource extends BaseResource {
 	}
 
 	private static void initializeFileDisk(String uuid, int size) {
-		File diskLocation = new File(PersistentDiskApplication.DISK_STORE, uuid);
-		File contentsFile = new File(diskLocation, "contents");
+		File diskFile = new File(PersistentDiskApplication.DISK_STORE, uuid);
 
-		if (diskLocation.exists()) {
+		if (diskFile.exists()) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"disk already exists: " + uuid);
 		}
 
-		if (!diskLocation.mkdirs()) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"cannot write to disk store: " + diskLocation);
-		}
-
-		if (!diskLocation.canWrite()) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"cannot write to disk store: " + diskLocation);
-		}
-
-		initializeFileDiskContents(contentsFile, size);
+		initializeFileDiskContents(diskFile, size);
 	}
 
 	private static void initializeLVMDisk(String uuid, int size)

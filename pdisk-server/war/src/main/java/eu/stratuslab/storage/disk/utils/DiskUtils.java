@@ -27,7 +27,6 @@ public final class DiskUtils {
 		StringBuilder sb = new StringBuilder();
 		List<String> disks = null;
 		String storePath;
-		String diskSuffix = "";
 
 		try {
 			ZooKeeper zk = new ZooKeeper(PersistentDiskApplication.ZK_ADDRESS,
@@ -45,7 +44,6 @@ public final class DiskUtils {
 
 		if (PersistentDiskApplication.DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
 			storePath = PersistentDiskApplication.DISK_STORE.getName();
-			diskSuffix = "/contents";
 		} else {
 			storePath = PersistentDiskApplication.LVM_GROUPE_PATH;
 		}
@@ -55,8 +53,7 @@ public final class DiskUtils {
 		}
 
 		for (String uuid : disks) {
-			sb.append(String.format(TARGET_TEMPLATE, storePath, uuid
-					+ diskSuffix));
+			sb.append(String.format(TARGET_TEMPLATE, storePath, uuid));
 		}
 
 		return sb.toString();
