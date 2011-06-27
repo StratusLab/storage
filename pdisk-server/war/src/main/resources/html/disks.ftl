@@ -14,7 +14,7 @@
         </p>
     </#if>
 
-    <p class="right"><a href="create/">New disk</a></p>
+    <p class="right"><a href="${baseurl}/create/">New disk</a></p>
 
     <#if disks?has_content>
         <#escape x as x?html>
@@ -31,7 +31,7 @@
             <tr class="${zebra(disk_index)}">
               <td>${disk.tag!}</td>
               <td class="center">${disk.size} GB</td>
-              <td><a href="disks/${disk.uuid}">${disk.uuid}</a></td>
+              <td><a href="${baseurl}/disks/${disk.uuid}">${disk.uuid}</a></td>
             </tr>
             </#list>
           </tbody>
@@ -45,9 +45,9 @@
         </table>
         </#escape>
     <#else> 
-            <p>No disk found. Try to <a href="/create/">add one</a>!</p>
+            <p>No disk found. Try to <a href="${baseurl}/create/">add one</a>!</p>
     </#if>
     
-    <p class="right"><a href="create/">New disk</a></p>
+    <p class="right"><a href="${baseurl}/create/">New disk</a></p>
     
 <#include "/html/footer.ftl">

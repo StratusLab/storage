@@ -21,7 +21,6 @@ package eu.stratuslab.storage.disk.resources;
 
 import static org.restlet.data.MediaType.TEXT_PLAIN;
 
-import org.restlet.Request;
 import org.restlet.Response;
 import org.restlet.data.Reference;
 import org.restlet.representation.Representation;
@@ -61,10 +60,7 @@ public class ForceTrailingSlashResource extends BaseResource {
 
     private void setRedirectRef() {
 
-        Request request = getRequest();
-        Reference ref = request.getResourceRef();
-        String sref = ref.toString() + "/";
-        Reference redirect = new Reference(sref);
+        Reference redirect = new Reference(getApplicationBaseUrl() + "/");
 
         Response response = getResponse();
         response.redirectPermanent(redirect);

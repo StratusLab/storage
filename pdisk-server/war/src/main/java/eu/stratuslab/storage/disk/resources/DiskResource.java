@@ -93,7 +93,7 @@ public class DiskResource extends BaseResource {
 			LOGGER.severe("error restarting server: " + e.getMessage());
 		}
 
-		redirectSeeOther("/disks/?deleted");
+		redirectSeeOther(getApplicationBaseUrl() + "/disks/?deleted");
 	}
 
 	private static Boolean deleteDisk(String uuid) {

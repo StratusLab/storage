@@ -101,7 +101,7 @@ public class DisksResource extends BaseResource {
 
 		setStatus(Status.SUCCESS_CREATED);
 
-		redirectSeeOther("/disks/" + uuid + "/?created");
+		redirectSeeOther(getApplicationBaseUrl() + "/disks/" + uuid + "/?created");
 	}
 
 	private Properties processWebForm() {

@@ -14,18 +14,17 @@
  
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
    
-    <link rel="stylesheet" type="text/css" href="css/stratuslab.css" media="screen" title="Default" /> 
-    <link rel="shortcut icon" type="images/x-icon" href="css/favicon.ico" /> 
+    <link rel="stylesheet" type="text/css" href="${baseurl}/css/stratuslab.css" media="screen" title="Default" /> 
+    <link rel="shortcut icon" type="images/x-icon" href="${baseurl}/css/favicon.ico" /> 
 </head>
 <body>
 <header>
     <h1>Persistent Disk Storage</h1>
     <nav>
         <ul>
-            <li><a href="${baseurl}">Home</a></li>
-            <li><a href="disks/">Disks</a></li>
-            <li><a href="create/">Create</a></li>
-            <li><a href="#">Login</a></li>
+            <li><a href="${baseurl}/">Home</a></li>
+            <li><a href="${baseurl}/disks/">Disks</a></li>
+            <li><a href="${baseurl}/create/">Create</a></li>
         </ul>
     </nav>
 </header>

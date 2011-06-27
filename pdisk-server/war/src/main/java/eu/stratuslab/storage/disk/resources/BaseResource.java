@@ -59,7 +59,7 @@ public class BaseResource extends ServerResource {
         Map<String, Object> info = new HashMap<String, Object>();
 
         // Add the standard base URL declaration.
-        info.put("baseurl", getRequest().getRootRef().toString());
+        info.put("baseurl", getApplicationBaseUrl());
 
         // Add the title if appropriate.
         if (title != null && !"".equals(title)) {
@@ -68,6 +68,10 @@ public class BaseResource extends ServerResource {
 
         return info;
     }
+	
+	protected String getApplicationBaseUrl() {
+		return getRequest().getRootRef().toString();
+	}
 
 	public static List<String> getDisks() throws KeeperException,
 			InterruptedException {
