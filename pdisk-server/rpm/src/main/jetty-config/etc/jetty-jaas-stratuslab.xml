@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <!-- Specify the location of the login configuration.
+         Both password and certificate configurations are in the file. -->
+    <Call class="java.lang.System" name="setProperty">
+      <Arg>java.security.auth.login.config</Arg>
+      <Arg>${configuration.dir}/login.conf</Arg>
+    </Call>
+
+    <!-- Realm for checking username/password pairs. -->
+    <Call name="addBean">
+      <Arg>
+          <New class="org.eclipse.jetty.plus.jaas.JAASLoginService">
+           <Set name="Name">StratusLab Password Realm</Set>
+           <Set name="LoginModuleName">stratuslab-pswd</Set>
+          </New>
+      </Arg>
+    </Call>
+
+    <!-- Realm for use of X509 certificates. -->
+    <Call name="addBean">
+      <Arg>
+          <New class="org.eclipse.jetty.plus.jaas.JAASLoginService">
+           <Set name="Name">StratusLab Certificate Realm</Set>
+           <Set name="LoginModuleName">stratuslab-cert</Set>
+          </New>
+      </Arg>
+    </Call>
+
+</Configure>
