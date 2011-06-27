@@ -82,42 +82,6 @@
             </configuration>
           </execution>
 
-	  <execution>
-	    <id>copy-jars</id>
-	    <goals>
-	      <goal>copy</goal>
-	    </goals>
-	    <configuration>
-	      <outputDirectory>${project.build.directory}/dependency/jars</outputDirectory>
-	      <artifactItems>
-		<artifactItem>
-		  <groupId>bouncycastle</groupId>
-		  <artifactId>bcprov-jdk16</artifactId>
-		</artifactItem>
-		<artifactItem>
-		  <groupId>log4j</groupId>
-		  <artifactId>log4j</artifactId>
-		</artifactItem>
-		<artifactItem>
-		  <groupId>org.glite.security</groupId>
-		  <artifactId>trustmanager</artifactId>
-		</artifactItem>
-		<artifactItem>
-		  <groupId>org.glite.security</groupId>
-		  <artifactId>util-java</artifactId>
-		</artifactItem>
-		<artifactItem>
-		  <groupId>eu.stratuslab.authn</groupId>
-		  <artifactId>authn-ssl</artifactId>
-		</artifactItem>
-		<artifactItem>
-		  <groupId>eu.stratuslab.authn</groupId>
-		  <artifactId>authn-login-module</artifactId>
-		</artifactItem>
-	      </artifactItems>
-	    </configuration>
-	  </execution>
-
           <execution>
             <id>copy-war</id>
             <goals>
@@ -188,22 +152,6 @@
 		  <location>src/main/scripts</location>
 		  <includes>
 		    <include>generate-jetty-certificate.sh</include>
-		  </includes>
-		</source>
-	      </sources>
-	    </mapping>
-
-	    <mapping>
-	      <directory>${installation.dir}/lib/ext</directory>
-	      <filemode>644</filemode>
-	      <username>root</username>
-	      <groupname>root</groupname>
-	      <directoryIncluded>false</directoryIncluded>
-	      <sources>
-		<source>
-		  <location>target/dependency/jars/</location>
-		  <includes>
-		    <include>*.jar</include>
 		  </includes>
 		</source>
 	      </sources>
@@ -283,20 +231,6 @@
                 </source>
               </sources>
             </mapping>
-
-	    <mapping>
-	      <directory>${configuration.dir}</directory>
-	      <filemode>644</filemode>
-	      <username>root</username>
-	      <groupname>root</groupname>
-	      <directoryIncluded>false</directoryIncluded>
-	      <configuration>noreplace</configuration>
-	      <sources>
-		<source>
-		  <location>target/service-config</location>
-		</source>
-	      </sources>
-	    </mapping>
 
             <mapping>
               <directory>/var/lib/stratuslab/storage/pdisk</directory>
