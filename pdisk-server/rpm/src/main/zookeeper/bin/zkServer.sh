@@ -101,9 +101,9 @@ upgrade)
     ;;
 restart)
     shift
-    "$0" stop ${@}
+    /bin/sh "$0" stop ${@}
     sleep 3
-    "$0" start ${@}
+    /bin/sh "$0" start ${@}
     ;;
 status)
     STAT=`echo stat | nc localhost $(grep clientPort "$ZOOCFG" | sed -e 's/.*=//') 2> /dev/null| grep Mode`

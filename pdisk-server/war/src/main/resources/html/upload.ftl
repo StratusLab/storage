@@ -1,6 +1,6 @@
 <#include "/html/header.ftl">
 
-<form action="disks/" enctype="application/x-www-form-urlencoded" method="POST">
+<form action="${baseurl}/disks/" enctype="application/x-www-form-urlencoded" method="POST">
     <p> 
         <label for="size">Size (GB):</label>
         <input type="text" name="size" id="size" size="10" /> 

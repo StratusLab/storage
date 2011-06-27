@@ -557,6 +557,6 @@ case "$ACTION" in
 esac
     
 ## ZooKeeper management
-/bin/sh $ZOOKEEPER_SERVER_CMD $ACTION
+/bin/sh $ZOOKEEPER_SERVER_CMD $ACTION &>> /var/log/zookeeper.log
 
 exit 0

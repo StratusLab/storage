@@ -60,10 +60,14 @@ public class ForceTrailingSlashResource extends BaseResource {
 
     private void setRedirectRef() {
 
-        Reference redirect = new Reference(getApplicationBaseUrl() + "/");
+        Reference redirect = new Reference(getCurrentUrl() + "/");
 
         Response response = getResponse();
         response.redirectPermanent(redirect);
+    }
+    
+    private String getCurrentUrl() {
+    	return getRequest().getRootRef().toString();
     }
 
 }

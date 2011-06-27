@@ -14,12 +14,9 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooKeeper.States;
-import org.restlet.data.LocalReference;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.freemarker.TemplateRepresentation;
-import org.restlet.representation.Representation;
-import org.restlet.resource.ClientResource;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
 
@@ -33,12 +30,6 @@ public class BaseResource extends ServerResource {
 	protected static final Logger LOGGER = Logger.getLogger("org.restlet");
 
 	public static final ZooKeeper ZK = initializeZooKeeper();
-
-	@Deprecated
-	protected Representation templateRepresentation(String tpl) {
-		LocalReference ref = LocalReference.createClapReference(tpl);
-		return new ClientResource(ref).get();
-	}
 
 	private Configuration getFreeMarkerConfiguration() {
 		return ((PersistentDiskApplication) getApplication())

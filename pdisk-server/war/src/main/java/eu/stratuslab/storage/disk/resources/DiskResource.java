@@ -65,18 +65,12 @@ public class DiskResource extends BaseResource {
 	@Delete
 	public void removeDisk() {
 		String uuid = getDiskId();
-		File diskLocation = new File(PersistentDiskApplication.DISK_STORE, uuid);
-
+		
 		deleteRecursiveZkDiskProperties(getZkDiskPath());
 
 		if (!deleteDisk(uuid)) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"cannot delete disk content: " + uuid);
-		}
-
-		if (!diskLocation.delete()) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"cannot delete " + diskLocation);
 		}
 
 		// Sleep for a couple of seconds to see if this resolves an issue with
@@ -98,10 +92,10 @@ public class DiskResource extends BaseResource {
 
 	private static Boolean deleteDisk(String uuid) {
 		if (PersistentDiskApplication.DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
-			File diskContents = new File(PersistentDiskApplication.DISK_STORE,
-					uuid + "/contents");
+			File diskLocation = new File(PersistentDiskApplication.DISK_STORE, uuid);
+			File diskContents = new File(diskLocation, "contents");
 
-			return diskContents.delete();
+			return true && diskContents.delete() && diskLocation.delete();
 		} else {
 			try {
 				return deleteLVMDisk(uuid);

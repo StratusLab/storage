@@ -25,7 +25,7 @@ public class PersistentDiskApplication extends Application {
 		LVM, FILE;
 	}
 
-	public static final String CFG_FILENAME = "/etc/stratuslab/persistent-disk.cfg";
+	public static final String CFG_FILENAME = "/etc/stratuslab/pdisk.cfg";
 	public static final String LVCREATE_DIR = "/sbin";
 	public static final String LVREMOVE_DIR = "/sbin";
 
@@ -114,8 +114,10 @@ public class PersistentDiskApplication extends Application {
 		String diskType = getConfigValue("disk.store.disk_type",
 				DEFAULT_DISK_TYPE);
 
-		if (diskType == "lvm")
+		if (diskType.equalsIgnoreCase("lvm"))
 			return DiskType.LVM;
+		else if (diskType.equalsIgnoreCase("file"))
+			return DiskType.FILE;
 		else
 			return DiskType.FILE;
 	}
