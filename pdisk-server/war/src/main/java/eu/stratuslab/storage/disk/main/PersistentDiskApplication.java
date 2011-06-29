@@ -111,14 +111,15 @@ public class PersistentDiskApplication extends Application {
 		File diskStoreHandler = new File(diskStoreDir);
 		
 		// Don't need check if we not use it 
-		if (DISK_TYPE == DiskType.LVM) {
+		if (PersistentDiskApplication.DISK_TYPE == DiskType.LVM) {
 			return diskStoreHandler;
 		}
 		
-		if (!diskStoreHandler.canWrite() || !diskStoreHandler.canRead()) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"disk store have to be readable and writtable.");
-		}
+//		if (PersistentDiskApplication.DISK_TYPE != DiskType.LVM && 
+//				(!diskStoreHandler.canWrite() || !diskStoreHandler.canRead())) {
+//			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+//					"disk store have to be readable and writable.");
+//		}
 
 		return diskStoreHandler;
 	}

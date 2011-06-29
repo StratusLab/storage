@@ -23,9 +23,9 @@ abstraction.
 
   <properties>
     <jetty.version>7.4.0.v20110414</jetty.version>
-
-    <nexus.release.repository.name>releases</nexus.release.repository.name>
-    <nexus.snapshot.repository.name>snapshots</nexus.snapshot.repository.name>
+    <stratuslab.authn.version>0.0.13</stratuslab.authn.version>
+    <nexus.release.repository.name>fedora-14-releases</nexus.release.repository.name>
+    <nexus.snapshot.repository.name>fedora-14-snapshots</nexus.snapshot.repository.name>
   </properties>
 
   <licenses>
@@ -69,7 +69,7 @@ abstraction.
       </snapshots>
       <id>StratusLabReleases</id>
       <name>StratusLab Releases</name>
-      <url>http://repo.stratuslab.eu:8081/content/repositories/releases/</url>
+      <url>http://repo.stratuslab.eu:8081/content/repositories/fedora-14-releases/</url>
       <layout>default</layout>
     </repository>
 
@@ -169,6 +169,46 @@ abstraction.
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-io</artifactId>
         <version>1.3.2</version>
+      </dependency>
+      <dependency>
+    	<groupId>org.apache.zookeeper</groupId>
+    	<artifactId>zookeeper</artifactId>
+    	<version>3.3.3</version>
+      </dependency>
+      <dependency>
+	<groupId>org.apache.xmlrpc</groupId>
+	<artifactId>xmlrpc-client</artifactId>
+	<version>3.1.3</version>
+      </dependency>
+      <dependency>
+	<groupId>org.apache.xmlrpc</groupId>
+	<artifactId>xmlrpc-server</artifactId>
+	<version>3.1.3</version>
+      </dependency>
+      <dependency>
+	<groupId>bouncycastle</groupId>
+	<artifactId>bcprov-jdk16</artifactId>
+	<version>140</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.stratuslab.authn</groupId>
+        <artifactId>authn-ssl</artifactId>
+        <version>${stratuslab.authn.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>eu.stratuslab.authn</groupId>
+        <artifactId>authn-login-module</artifactId>
+        <version>${stratuslab.authn.version}</version>
+      </dependency>
+      <dependency>
+	<groupId>org.glite.security</groupId>
+	<artifactId>trustmanager</artifactId>
+	<version>2.5.5</version>
+      </dependency>
+      <dependency>
+	<groupId>org.glite.security</groupId>
+	<artifactId>util-java</artifactId>
+	<version>2.8.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

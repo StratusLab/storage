@@ -35,18 +35,47 @@
          <groupId>org.restlet.jee</groupId>
          <artifactId>org.restlet.ext.fileupload</artifactId>
     </dependency>
-
     <dependency>
         <groupId>javax.servlet</groupId>
         <artifactId>servlet-api</artifactId>
         <scope>compile</scope>
     </dependency>
-
     <dependency>
     	<groupId>org.apache.zookeeper</groupId>
     	<artifactId>zookeeper</artifactId>
-    	<version>3.3.3</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>bouncycastle</groupId>
+      <artifactId>bcprov-jdk16</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glite.security</groupId>
+      <artifactId>trustmanager</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.glite.security</groupId>
+      <artifactId>util-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>eu.stratuslab.authn</groupId>
+      <artifactId>authn-ssl</artifactId>
+      <version>0.0.13-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
   </dependencies>
  
 
@@ -58,6 +87,66 @@
                <artifactId>jetty-maven-plugin</artifactId>
                <configuration>
                   <webApp>${basedir}/target/server-0.0.1-SNAPSHOT.war</webApp>
+		    <!-- This is for convenience so that the src/etc/login.conf file
+			 can stay unmodified when copied to $jetty.home/etc directory -->
+		  <systemProperties>
+		    <systemProperty>
+		      <name>sSLImplementation</name>
+		      <value>org.glite.security.trustmanager.tomcat.TMSSLImplementation</value>
+		    </systemProperty>
+		    <systemProperty>
+		      <name>javax.net.debug</name>
+		      <value>SSL</value>
+		    </systemProperty>
+		    <systemProperty>
+		      <name>sslCAFiles</name>
+		      <value>/etc/grid-security/certificates/*.0</value>
+		    </systemProperty>
+		    <systemProperty>
+		      <name>crlFiles</name>
+		      <value>/etc/grid-security/certificates*.r0</value>
+		    </systemProperty>
+		    <systemProperty>
+		      <name>sslCertFile</name>
+		      <value>/etc/grid-security/hostcert.pem</value>
+		    </systemProperty>
+		    <systemProperty>
+		      <name>sslKey</name>
+		      <value>/etc/grid-security/hostkey.pem</value>
+		    </systemProperty>
+		    <systemProperty>
+		      <name>log4jConfFile</name>
+		      <value>/var/log4j-trustmanager.properties</value>
+		    </systemProperty>
+
+		    <systemProperty>
+		      <name>jetty.home</name>
+		      <value>${basedir}/src/main/config</value>
+		    </systemProperty>
+
+		    <!-- Mandatory. This system property tells JAAS where to find
+			 the login module configuration file -->
+		    <systemProperty>
+		      <name>java.security.auth.login.config</name>
+		      <value>${basedir}/src/main/config/etc/login.conf</value>
+		    </systemProperty>
+
+		  </systemProperties>
+
+		  <connectors>
+		    <connector implementation="eu.stratuslab.ssl.GridSslSelectChannelConnector">
+		      <SslTrustManagerFactoryAlgorithm>GridTM</SslTrustManagerFactoryAlgorithm>
+		      <port>8443</port>
+		      <maxIdleTime>30000</maxIdleTime>
+		      <keystore>${basedir}/src/main/certs/jetty.jks</keystore>
+		      <password>jettycred</password>
+		      <keyPassword>jettycred</keyPassword>
+		      <truststore>${basedir}/src/main/certs/jetty.jks</truststore>
+		      <trustPassword>jettycred</trustPassword>
+		      <!-- <needClientAuth>true</needClientAuth> -->
+		      <wantClientAuth>true</wantClientAuth>
+		    </connector>
+		  </connectors>
                </configuration>
                <executions>
                <execution>
