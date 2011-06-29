@@ -23,7 +23,7 @@ abstraction.
 
   <properties>
     <jetty.version>7.4.0.v20110414</jetty.version>
-    <stratuslab.authn.version>0.0.13</stratuslab.authn.version>
+    <stratuslab.authn.version>0.0.15-SNAPSHOT</stratuslab.authn.version>
     <nexus.release.repository.name>fedora-14-releases</nexus.release.repository.name>
     <nexus.snapshot.repository.name>fedora-14-snapshots</nexus.snapshot.repository.name>
   </properties>

@@ -68,7 +68,6 @@
     <dependency>
       <groupId>eu.stratuslab.authn</groupId>
       <artifactId>authn-ssl</artifactId>
-      <version>0.0.13-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

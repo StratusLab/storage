@@ -26,9 +26,11 @@
   
   <properties> 
     <installation.dir>/opt/stratuslab/storage/pdisk</installation.dir>
+    <configuration.dir>/etc/stratuslab/storage/pdisk</configuration.dir>
     <persistent-disk-war>storage-pdisk-server-war-${project.version}.war</persistent-disk-war>
     <maven.build.timestamp.format>yyyyMMdd.HHmmss</maven.build.timestamp.format> 
     <RELEASE>0.${maven.build.timestamp}</RELEASE>
+    <authn-proxy-war>storage-pdisk-server-war-${project.version}.war</authn-proxy-war>
   </properties>
 
   <build>
@@ -51,6 +53,7 @@
                   <nonFilteredFileExtensions>
                     <nonFilteredFileExtension>jks</nonFilteredFileExtension>
                   </nonFilteredFileExtensions>
+              <directoryIncluded>false</directoryIncluded>
 	          <resources>
 		    <resource>
 		      <directory>${basedir}/src/main/jetty-config</directory>
@@ -231,7 +234,7 @@
 		  <excludes>
                     <exclude>*.cfg</exclude>
 		    <exclude>etc/login/*</exclude>
-		    <exclude>etc/overrides/*</exclude>
+		    <!--<exclude>etc/overrides/*</exclude>-->
 		  </excludes>
 		</source>
 	      </sources>
@@ -289,6 +292,20 @@
 	          </sources>
 	        </mapping>
 
+	        <!--<mapping>
+	          <directory>${configuration.dir}/etc/overrides</directory>
+	          <filemode>644</filemode>
+	          <username>root</username>
+	          <groupname>root</groupname>
+	          <directoryIncluded>false</directoryIncluded>
+	          <configuration>noreplace</configuration>
+	          <sources>
+		        <source>
+		          <location>src/main/jetty-config/etc/overrides</location>
+		        </source>
+	          </sources>
+	        </mapping>-->
+
             <mapping>
               <directory>/etc/stratuslab/</directory>
               <filemode>0600</filemode>
@@ -345,7 +362,6 @@
                 </source>
               </sources>
             </mapping>
-
           </mappings>
         </configuration>
       </plugin>
