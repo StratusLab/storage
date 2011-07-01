@@ -8,18 +8,20 @@ import java.util.Properties;
 import org.restlet.Application;
 import org.restlet.Context;
 import org.restlet.Restlet;
+import org.restlet.data.ChallengeScheme;
 import org.restlet.data.LocalReference;
-import org.restlet.data.Status;
 import org.restlet.ext.freemarker.ContextTemplateLoader;
+import org.restlet.ext.jaas.JaasUtils;
+import org.restlet.ext.jaas.JaasVerifier;
 import org.restlet.resource.Directory;
-import org.restlet.resource.ResourceException;
 import org.restlet.routing.Router;
-
+import org.restlet.security.ChallengeAuthenticator;
 import eu.stratuslab.storage.disk.resources.DiskResource;
 import eu.stratuslab.storage.disk.resources.DisksResource;
 import eu.stratuslab.storage.disk.resources.ForceTrailingSlashResource;
 import eu.stratuslab.storage.disk.resources.CreateResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
+import eu.stratuslab.storage.disk.utils.DumpVerifier;
 import freemarker.template.Configuration;
 
 public class PersistentDiskApplication extends Application {
@@ -37,7 +39,8 @@ public class PersistentDiskApplication extends Application {
 	public static final String DEFAULT_ZK_ROOT_PATH = "/disks";
 
 	// Disk creation (file and LVM)
-	public static final String DEFAULT_DISK_TYPE = "file"; // Can be "lvm"|"file"
+	public static final String DEFAULT_DISK_TYPE = "file"; // Can be
+															// "lvm"|"file"
 	public static final String DEFAULT_DISK_STORE = "/tmp/diskstore";
 	public static final String DEFAULT_LVM_GROUP_NAME = "/dev/vg.02";
 
@@ -107,19 +110,19 @@ public class PersistentDiskApplication extends Application {
 	public static File getDiskStoreDirectory() {
 		String diskStoreDir = getConfigValue("disk.store.dir",
 				DEFAULT_DISK_STORE);
-		
+
 		File diskStoreHandler = new File(diskStoreDir);
-		
-		// Don't need check if we not use it 
+
+		// Don't need check if we not use it
 		if (PersistentDiskApplication.DISK_TYPE == DiskType.LVM) {
 			return diskStoreHandler;
 		}
-		
-//		if (PersistentDiskApplication.DISK_TYPE != DiskType.LVM && 
-//				(!diskStoreHandler.canWrite() || !diskStoreHandler.canRead())) {
-//			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-//					"disk store have to be readable and writable.");
-//		}
+
+		// if (PersistentDiskApplication.DISK_TYPE != DiskType.LVM &&
+		// (!diskStoreHandler.canWrite() || !diskStoreHandler.canRead())) {
+		// throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+		// "disk store have to be readable and writable.");
+		// }
 
 		return diskStoreHandler;
 	}
@@ -142,6 +145,12 @@ public class PersistentDiskApplication extends Application {
 		Context context = getContext();
 
 		freeMarkerConfiguration = createFreeMarkerConfig(context);
+		
+		// Create a Guard
+		DumpVerifier verifier = new DumpVerifier();
+		ChallengeAuthenticator guard = new ChallengeAuthenticator(getContext(),
+				ChallengeScheme.HTTP_BASIC, "Stratuslab Persistent Disk Storage");
+		guard.setVerifier(verifier);
 
 		Router router = new Router(context);
 
@@ -163,7 +172,9 @@ public class PersistentDiskApplication extends Application {
 		// Unknown root pages get the home page.
 		router.attachDefault(HomeResource.class);
 
-		return router;
+		guard.setNext(router);
+
+		return guard;
 	}
 
 	private static Configuration createFreeMarkerConfig(Context context) {
@@ -180,4 +191,5 @@ public class PersistentDiskApplication extends Application {
 	public Configuration getFreeMarkerConfiguration() {
 		return freeMarkerConfiguration;
 	}
+	
 }

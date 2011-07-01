@@ -56,7 +56,11 @@ public class BaseResource extends ServerResource {
         if (title != null && !"".equals(title)) {
             info.put("title", title);
         }
-
+        
+        // Add user name information
+//        info.put("username", getRequest().getClientInfo().getUser().getName());
+        info.put("username", "UNKNOWN");
+        	
         return info;
     }
 	

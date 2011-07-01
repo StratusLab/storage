@@ -10,7 +10,7 @@
     <Arg>
       <New class="eu.stratuslab.ssl.GridSslSelectChannelConnector">
         <Set name="SslTrustManagerFactoryAlgorithm">GridTM</Set>
-        <Set name="Port">8444</Set>
+        <Set name="Port">8445</Set>
         <Set name="maxIdleTime">30000</Set>
         <Set name="Acceptors">2</Set>
         <Set name="AcceptQueueSize">100</Set>

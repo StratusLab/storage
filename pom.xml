@@ -23,7 +23,7 @@ abstraction.
 
   <properties>
     <jetty.version>7.4.0.v20110414</jetty.version>
-    <stratuslab.authn.version>0.0.15-SNAPSHOT</stratuslab.authn.version>
+    <stratuslab.authn.version>0.0.16-SNAPSHOT</stratuslab.authn.version>
     <nexus.release.repository.name>fedora-14-releases</nexus.release.repository.name>
     <nexus.snapshot.repository.name>fedora-14-snapshots</nexus.snapshot.repository.name>
   </properties>
@@ -158,6 +158,11 @@ abstraction.
       <dependency>
         <groupId>org.restlet.jee</groupId>
         <artifactId>org.restlet.ext.fileupload</artifactId>
+        <version>2.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.restlet.jee</groupId>
+        <artifactId>org.restlet.ext.jaas</artifactId>
         <version>2.0.4</version>
       </dependency>
       <dependency>

@@ -5,6 +5,8 @@
     Seventh Framework Programme (Capacities)<br/>
     Grant Agreement INFSO-RI-261552
   </p>
+  <p>
+    Logged as ${username}
   </footer>
 </body>
 </html>
