@@ -38,8 +38,15 @@ public class DiskResource extends BaseResource {
 	@Get
 	public Representation getDiskProperties() {
 		Map<String, Object> infos = createInfoStructure("Disk info");
-
-		infos.put("properties", loadProperties());
+		Properties diskProperties = loadProperties();
+		
+		
+		if (!hasSuficientRights(diskProperties)) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"Not enought rights to display disk properties");
+		}
+		
+		infos.put("properties", diskProperties);
 		infos.put("url", getCurrentUrl());
 
 		if (hasQueryString("created")) {
@@ -55,17 +62,17 @@ public class DiskResource extends BaseResource {
 
 		if (!zkPathExists(zkPropertiesPath)) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"uuid does not exists");
+					"UUID does not exists");
 		}
 
 		try {
 			properties = loadZkProperties(zkPropertiesPath);
 		} catch (KeeperException e) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"unable to retrieve properties");
+					"Unable to retrieve properties");
 		} catch (InterruptedException e) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"unable to retrieve properties");
+					"Unable to retrieve properties");
 		}
 
 		return properties;

@@ -59,7 +59,7 @@ public class DisksResource extends BaseResource {
 		return createTemplateRepresentation("html/disks.ftl", infos, TEXT_HTML);
 	}
 
-	private static Map<String, Object> listDisks() {
+	private Map<String, Object> listDisks() {
 		Map<String, Object> info = new HashMap<String, Object>();
 		List<Properties> diskInfoList = new LinkedList<Properties>();
 		info.put("disks", diskInfoList);
@@ -69,7 +69,11 @@ public class DisksResource extends BaseResource {
 
 			for (String uuid : disks) {
 				Properties properties = loadZkProperties(buildZkDiskPath(uuid));
-				diskInfoList.add(properties);
+
+				// List only disk of the user
+				if (hasSuficientRights(properties)) {
+					diskInfoList.add(properties);
+				}
 			}
 		} catch (KeeperException e) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -129,9 +133,10 @@ public class DisksResource extends BaseResource {
 		return properties;
 	}
 
-	private static Properties initializeProperties() {
+	private Properties initializeProperties() {
 		Properties properties = new Properties();
 		properties.put(UUID_KEY, generateUUID());
+		properties.put(DISK_OWNER_KEY, getUsername());
 
 		return properties;
 	}

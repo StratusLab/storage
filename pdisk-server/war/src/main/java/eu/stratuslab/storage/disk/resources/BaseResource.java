@@ -48,6 +48,7 @@ import freemarker.template.Configuration;
 public class BaseResource extends ServerResource {
 
 	protected static final String UUID_KEY = "uuid";
+	protected static final String DISK_OWNER_KEY = "owner";
 
 	protected static final Logger LOGGER = Logger.getLogger("org.restlet");
 
@@ -277,6 +278,11 @@ public class BaseResource extends ServerResource {
 		} catch (IOException e) {
 			LOGGER.severe("error restarting server: " + e.getMessage());
 		}
+	}
+	
+	protected Boolean hasSuficientRights(Properties properties) {
+		return properties.get(DISK_OWNER_KEY).toString()
+				.equals(getUsername());
 	}
     
 }
