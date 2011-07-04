@@ -14,6 +14,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooKeeper.States;
+import org.restlet.data.ChallengeResponse;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.freemarker.TemplateRepresentation;
@@ -30,6 +31,8 @@ public class BaseResource extends ServerResource {
 	protected static final Logger LOGGER = Logger.getLogger("org.restlet");
 
 	public static final ZooKeeper ZK = initializeZooKeeper();
+	
+	private String username = "";
 
 	private Configuration getFreeMarkerConfiguration() {
 		return ((PersistentDiskApplication) getApplication())
@@ -58,11 +61,27 @@ public class BaseResource extends ServerResource {
         }
         
         // Add user name information
-//        info.put("username", getRequest().getClientInfo().getUser().getName());
-        info.put("username", "UNKNOWN");
+        info.put("username", getUsername());
         	
         return info;
     }
+	
+	public String getUsername() {
+		if (!username.isEmpty()) {
+			return username;
+		}
+		
+        ChallengeResponse cr = getRequest().getChallengeResponse();
+
+        if (cr == null) {
+        	username = "UNKNOWN";
+        }
+        else {
+        	username = cr.getIdentifier();
+        }
+    	
+        return username;
+	}
 	
 	protected String getApplicationBaseUrl() {
 		return getRequest().getRootRef().toString();

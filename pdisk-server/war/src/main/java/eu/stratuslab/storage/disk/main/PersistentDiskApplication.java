@@ -11,8 +11,6 @@ import org.restlet.Restlet;
 import org.restlet.data.ChallengeScheme;
 import org.restlet.data.LocalReference;
 import org.restlet.ext.freemarker.ContextTemplateLoader;
-import org.restlet.ext.jaas.JaasUtils;
-import org.restlet.ext.jaas.JaasVerifier;
 import org.restlet.resource.Directory;
 import org.restlet.routing.Router;
 import org.restlet.security.ChallengeAuthenticator;
@@ -146,7 +144,8 @@ public class PersistentDiskApplication extends Application {
 
 		freeMarkerConfiguration = createFreeMarkerConfig(context);
 		
-		// Create a Guard
+		// The guard is needed although JAAS which is doing the authentication
+		// just to be able to retrieve client information (challenger).
 		DumpVerifier verifier = new DumpVerifier();
 		ChallengeAuthenticator guard = new ChallengeAuthenticator(getContext(),
 				ChallengeScheme.HTTP_BASIC, "Stratuslab Persistent Disk Storage");
