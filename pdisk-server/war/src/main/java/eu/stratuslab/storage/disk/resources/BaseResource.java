@@ -47,13 +47,18 @@ import freemarker.template.Configuration;
 
 public class BaseResource extends ServerResource {
 
+	public enum DiskVisibility {
+		PRIVATE, PUBLIC, RESTRICTED
+	}
+
 	protected static final String UUID_KEY = "uuid";
 	protected static final String DISK_OWNER_KEY = "owner";
+	protected static final String DISK_VISIBILITY_KEY = "visibility";
 
 	protected static final Logger LOGGER = Logger.getLogger("org.restlet");
 
 	public static final ZooKeeper ZK = initializeZooKeeper();
-	
+
 	private String username = "";
 
 	private Configuration getFreeMarkerConfiguration() {
@@ -69,42 +74,41 @@ public class BaseResource extends ServerResource {
 		return new TemplateRepresentation(tpl, freeMarkerConfig, info,
 				mediaType);
 	}
-	
+
 	protected Map<String, Object> createInfoStructure(String title) {
 
-        Map<String, Object> info = new HashMap<String, Object>();
+		Map<String, Object> info = new HashMap<String, Object>();
 
-        // Add the standard base URL declaration.
-        info.put("baseurl", getApplicationBaseUrl());
+		// Add the standard base URL declaration.
+		info.put("baseurl", getApplicationBaseUrl());
 
-        // Add the title if appropriate.
-        if (title != null && !"".equals(title)) {
-            info.put("title", title);
-        }
-        
-        // Add user name information
-        info.put("username", getUsername());
-        	
-        return info;
-    }
-	
+		// Add the title if appropriate.
+		if (title != null && !"".equals(title)) {
+			info.put("title", title);
+		}
+
+		// Add user name information
+		info.put("username", getUsername());
+
+		return info;
+	}
+
 	public String getUsername() {
 		if (!username.isEmpty()) {
 			return username;
 		}
-		
-        ChallengeResponse cr = getRequest().getChallengeResponse();
 
-        if (cr == null) {
-        	username = "UNKNOWN";
-        }
-        else {
-        	username = cr.getIdentifier();
-        }
-    	
-        return username;
+		ChallengeResponse cr = getRequest().getChallengeResponse();
+
+		if (cr == null) {
+			username = "UNKNOWN";
+		} else {
+			username = cr.getIdentifier();
+		}
+
+		return username;
 	}
-	
+
 	protected String getApplicationBaseUrl() {
 		return getRequest().getRootRef().toString();
 	}
@@ -248,30 +252,30 @@ public class BaseResource extends ServerResource {
 	protected static <T> T last(T[] array) {
 		return array[array.length - 1];
 	}
-	
+
 	/**
 	 * @return Current URL without the query string
 	 */
-    protected String getCurrentUrl() {
-    	return getCurrentUrlQueryString().replaceAll("\\?.*", "");
-    }
-    
-    /**
+	protected String getCurrentUrl() {
+		return getCurrentUrlQueryString().replaceAll("\\?.*", "");
+	}
+
+	/**
 	 * @return Current URL with the query string
 	 */
-    protected String getCurrentUrlQueryString() {
+	protected String getCurrentUrlQueryString() {
 		return getRequest().getResourceRef().toString();
 	}
-    
-    protected String getQueryString() {
-    	return getRequest().getResourceRef().getQuery();
-    }
-    
-    protected Boolean hasQueryString(String key) {
-    	String queryString = getQueryString();
+
+	protected String getQueryString() {
+		return getRequest().getResourceRef().getQuery();
+	}
+
+	protected Boolean hasQueryString(String key) {
+		String queryString = getQueryString();
 		return (queryString != null && queryString.equals(key));
-    }
-    
+	}
+
 	protected void restartServer() {
 		try {
 			DiskUtils.restartServer();
@@ -279,10 +283,47 @@ public class BaseResource extends ServerResource {
 			LOGGER.severe("error restarting server: " + e.getMessage());
 		}
 	}
-	
-	protected Boolean hasSuficientRights(Properties properties) {
-		return properties.get(DISK_OWNER_KEY).toString()
-				.equals(getUsername());
+
+	protected Boolean hasSuficientRightsToView(Properties properties) {
+		// Is disk owner
+		if (properties.get(DISK_OWNER_KEY).toString().equals(getUsername())) {
+			return true;
+		}
+
+		DiskVisibility currentVisibility = fromStringDiskVisibility(properties.get(DISK_VISIBILITY_KEY).toString());
+		// Is disk public
+		if (currentVisibility.equals(DiskVisibility.PUBLIC)) {
+			return true;
+		}
+		// TODO Is disk shared
+		
+		return false;
 	}
-    
+
+	protected Boolean hasSuficientRightsToDelete(Properties properties) {
+		// Need to be the owner to delete the disk
+		return properties.get(DISK_OWNER_KEY).toString().equals(getUsername());
+	}
+
+	protected String toStringDiskVisibility(DiskVisibility visibility) {
+		switch (visibility) {
+		case PUBLIC:
+			return "public";
+		case RESTRICTED:
+			return "restricted";
+		default:
+			return "private";
+		}
+	}
+
+	protected DiskVisibility fromStringDiskVisibility(String visibility) {
+		if ("public".equals(visibility)) {
+			return DiskVisibility.PUBLIC;
+		} else if ("restricted".equals(visibility)) {
+			return DiskVisibility.RESTRICTED;
+		} else {
+			return DiskVisibility.PRIVATE;
+		}
+	}
+
 }

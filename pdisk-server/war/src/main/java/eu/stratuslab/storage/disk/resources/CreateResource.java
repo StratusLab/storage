@@ -2,6 +2,7 @@ package eu.stratuslab.storage.disk.resources;
 
 import static org.restlet.data.MediaType.TEXT_HTML;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 import org.restlet.representation.Representation;
@@ -12,7 +13,16 @@ public class CreateResource extends BaseResource {
     @Get
     public Representation toHtml() {
     	Map<String, Object> infos = createInfoStructure("Create a disk");
-		return createTemplateRepresentation("html/upload.ftl", infos, TEXT_HTML);
+    	
+    	// Add disk possible visibilities
+    	ArrayList<String> visibilities = new ArrayList<String>();
+    	for (DiskVisibility v : DiskVisibility.values()) {
+    		visibilities.add(toStringDiskVisibility(v));
+    	}
+    	
+    	infos.put("visibilities", visibilities);
+    	
+		return createTemplateRepresentation("html/create.ftl", infos, TEXT_HTML);
     }
     
 }

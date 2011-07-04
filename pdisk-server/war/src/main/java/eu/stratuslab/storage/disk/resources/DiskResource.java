@@ -41,7 +41,7 @@ public class DiskResource extends BaseResource {
 		Properties diskProperties = loadProperties();
 		
 		
-		if (!hasSuficientRights(diskProperties)) {
+		if (!hasSuficientRightsToView(diskProperties)) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					"Not enought rights to display disk properties");
 		}
@@ -51,6 +51,10 @@ public class DiskResource extends BaseResource {
 
 		if (hasQueryString("created")) {
 			infos.put("created", true);
+		}
+		
+		if (hasSuficientRightsToDelete(diskProperties)) {
+			infos.put("can_delete", true);
 		}
 
 		return createTemplateRepresentation("html/disk.ftl", infos, TEXT_HTML);

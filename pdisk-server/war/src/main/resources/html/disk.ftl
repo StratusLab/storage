@@ -16,8 +16,10 @@
       </dl>
       </#escape>
 
+    <#if can_delete??>
     <form action="${url}?method=delete" enctype="application/x-www-form-urlencoded" method="POST">
       <p><input type="submit" value="Delete"></p>
     </form>
+    </#if>
 
 <#include "/html/footer.ftl">
