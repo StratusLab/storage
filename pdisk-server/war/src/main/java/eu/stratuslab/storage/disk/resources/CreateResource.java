@@ -9,7 +9,7 @@ import org.restlet.resource.Get;
 
 public class CreateResource extends BaseResource {
 
-    @Get("html")
+    @Get
     public Representation toHtml() {
     	Map<String, Object> infos = createInfoStructure("Create a disk");
 		return createTemplateRepresentation("html/upload.ftl", infos, TEXT_HTML);

@@ -20,115 +20,33 @@
 package eu.stratuslab.storage.disk.resources;
 
 import static org.restlet.data.MediaType.TEXT_HTML;
-import static org.restlet.data.MediaType.TEXT_PLAIN;
-
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
 import org.apache.zookeeper.KeeperException;
-import org.restlet.Request;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
-import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class DiskResource extends BaseResource {
 
-	@Get("html")
-	public Representation toHtml() {
+	@Get
+	public Representation getDiskProperties() {
 		Map<String, Object> infos = createInfoStructure("Disk info");
-		infos.put("properties", loadProperties());
-		infos.put("url", getCurrentUrl().replaceAll("\\?.*", ""));
 
-		String queryString = getRequest().getResourceRef().getQuery();
-		if (queryString != null && queryString.equals("created")) {
+		infos.put("properties", loadProperties());
+		infos.put("url", getCurrentUrl());
+
+		if (hasQueryString("created")) {
 			infos.put("created", true);
 		}
 
 		return createTemplateRepresentation("html/disk.ftl", infos, TEXT_HTML);
-	}
-
-	@Get
-	public Representation toText() {
-		Map<String, Object> infos = new HashMap<String, Object>();
-		infos.put("properties", loadProperties());
-
-		return createTemplateRepresentation("json/disk.ftl", infos, TEXT_PLAIN);
-	}
-	
-	@Delete
-	public void removeDisk() {
-		String uuid = getDiskId();
-		
-		deleteRecursiveZkDiskProperties(getZkDiskPath());
-
-		if (!deleteDisk(uuid)) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"cannot delete disk content: " + uuid);
-		}
-
-		try {
-			DiskUtils.restartServer();
-		} catch (IOException e) {
-			LOGGER.severe("error restarting server: " + e.getMessage());
-		}
-
-		redirectSeeOther(getApplicationBaseUrl() + "/disks/?deleted");
-	}
-
-	private static Boolean deleteDisk(String uuid) {
-		if (PersistentDiskApplication.DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
-			File diskFile = new File(PersistentDiskApplication.DISK_STORE, uuid);
-
-			return diskFile.delete();
-		} else {
-			try {
-				return deleteLVMDisk(uuid);
-			} catch (IOException e) {
-				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-						"an error occured while removing volume " + uuid);
-			}
-		}
-	}
-
-	private static Boolean deleteLVMDisk(String uuid) throws IOException {
-		File lvremoveBin = new File(PersistentDiskApplication.LVREMOVE_DIR,
-				"lvremove");
-		String volumePath = PersistentDiskApplication.LVM_GROUPE_PATH + "/"
-				+ uuid;
-
-		if (lvremoveBin.canExecute()) {
-			ProcessBuilder pb = new ProcessBuilder(
-					lvremoveBin.getAbsolutePath(), "-f", volumePath);
-			Process process = pb.start();
-
-			boolean blocked = true;
-			while (blocked) {
-				try {
-					process.waitFor();
-					blocked = false;
-				} catch (InterruptedException consumed) {
-					// Just continue with the loop.
-				}
-			}
-			int rc = process.exitValue();
-
-			if (rc != 0) {
-				LOGGER.severe("lvcreate command failled: " + rc);
-				return false;
-			} else {
-				return true;
-			}
-		} else {
-			LOGGER.severe("cannot execute lvcreate command");
-			return false;
-		}
 	}
 
 	private Properties loadProperties() {
@@ -153,16 +71,80 @@ public class DiskResource extends BaseResource {
 		return properties;
 	}
 
-	private String getDiskId() {
-
-		Request request = getRequest();
-
-		Map<String, Object> attributes = request.getAttributes();
-
-		return attributes.get("uuid").toString();
-	}
-	
 	private String getZkDiskPath() {
 		return buildZkDiskPath(getDiskId());
 	}
+
+	private String getDiskId() {
+		Map<String, Object> attributes = getRequest().getAttributes();
+
+		return attributes.get("uuid").toString();
+	}
+
+	@Delete
+	public void deleteDisk() {
+		String uuid = getDiskId();
+
+		deleteRecursiveZkDiskProperties(getZkDiskPath());
+		removeDisk(uuid);
+		restartServer();
+
+		redirectSeeOther(getApplicationBaseUrl() + "/disks/?deleted");
+	}
+
+	private static void removeDisk(String uuid) {
+		if (PersistentDiskApplication.DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
+			removeFileDisk(uuid);
+		} else {
+			removeLVMDisk(uuid);
+		}
+	}
+
+	private static void removeFileDisk(String uuid) {
+		File diskFile = new File(PersistentDiskApplication.DISK_STORE, uuid);
+
+		if (diskFile.delete()) {
+			LOGGER.severe("An error occcured while removing disk content "
+					+ uuid);
+		}
+	}
+
+	private static void removeLVMDisk(String uuid) {
+		File lvremoveBin = new File(PersistentDiskApplication.LVREMOVE_DIR,
+				"lvremove");
+		String volumePath = PersistentDiskApplication.LVM_GROUPE_PATH + "/"
+				+ uuid;
+
+		if (!lvremoveBin.canExecute()) {
+			LOGGER.severe("Cannot execute lvcreate command");
+			return;
+		}
+
+		int returnCode = 1;
+		Process process;
+		ProcessBuilder pb = new ProcessBuilder(lvremoveBin.getAbsolutePath(),
+				"-f", volumePath);
+
+		try {
+			process = pb.start();
+
+			boolean blocked = true;
+			while (blocked) {
+				process.waitFor();
+				blocked = false;
+			}
+
+			returnCode = process.exitValue();
+		} catch (IOException e) {
+			LOGGER.severe("An error occured while removing LVM volume " + uuid);
+		} catch (InterruptedException consumed) {
+			// Just continue with the loop.
+		}
+
+		if (returnCode != 0) {
+			LOGGER.severe("lvcreate command failled for disk " + uuid + ": "
+					+ returnCode);
+		}
+	}
+
 }

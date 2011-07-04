@@ -59,7 +59,6 @@ public class ForceTrailingSlashResource extends BaseResource {
     }
 
     private void setRedirectRef() {
-
         Reference redirect = new Reference(getCurrentUrl() + "/");
 
         Response response = getResponse();
