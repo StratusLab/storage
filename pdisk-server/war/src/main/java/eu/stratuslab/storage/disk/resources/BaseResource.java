@@ -20,7 +20,10 @@
 package eu.stratuslab.storage.disk.resources;
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -40,7 +43,6 @@ import org.restlet.data.Status;
 import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
-
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import freemarker.template.Configuration;
@@ -48,12 +50,15 @@ import freemarker.template.Configuration;
 public class BaseResource extends ServerResource {
 
 	public enum DiskVisibility {
-		PRIVATE, PUBLIC, RESTRICTED
+		PRIVATE, 
+//		RESTRICTED,
+		PUBLIC
 	}
 
 	protected static final String UUID_KEY = "uuid";
 	protected static final String DISK_OWNER_KEY = "owner";
 	protected static final String DISK_VISIBILITY_KEY = "visibility";
+	protected static final String DISK_CREATION_DATE_KEY = "created";
 
 	protected static final Logger LOGGER = Logger.getLogger("org.restlet");
 
@@ -253,17 +258,11 @@ public class BaseResource extends ServerResource {
 		return array[array.length - 1];
 	}
 
-	/**
-	 * @return Current URL without the query string
-	 */
 	protected String getCurrentUrl() {
-		return getCurrentUrlQueryString().replaceAll("\\?.*", "");
+		return getCurrentUrlWithQueryString().replaceAll("\\?.*", "");
 	}
 
-	/**
-	 * @return Current URL with the query string
-	 */
-	protected String getCurrentUrlQueryString() {
+	protected String getCurrentUrlWithQueryString() {
 		return getRequest().getResourceRef().toString();
 	}
 
@@ -290,13 +289,14 @@ public class BaseResource extends ServerResource {
 			return true;
 		}
 
-		DiskVisibility currentVisibility = fromStringDiskVisibility(properties.get(DISK_VISIBILITY_KEY).toString());
+		DiskVisibility currentVisibility = fromStringDiskVisibility(properties
+				.get(DISK_VISIBILITY_KEY).toString());
 		// Is disk public
 		if (currentVisibility.equals(DiskVisibility.PUBLIC)) {
 			return true;
 		}
 		// TODO Is disk shared
-		
+
 		return false;
 	}
 
@@ -309,8 +309,8 @@ public class BaseResource extends ServerResource {
 		switch (visibility) {
 		case PUBLIC:
 			return "public";
-		case RESTRICTED:
-			return "restricted";
+//		case RESTRICTED:
+//			return "restricted";
 		default:
 			return "private";
 		}
@@ -319,11 +319,17 @@ public class BaseResource extends ServerResource {
 	protected DiskVisibility fromStringDiskVisibility(String visibility) {
 		if ("public".equals(visibility)) {
 			return DiskVisibility.PUBLIC;
-		} else if ("restricted".equals(visibility)) {
-			return DiskVisibility.RESTRICTED;
+//		} else if ("restricted".equals(visibility)) {
+//			return DiskVisibility.RESTRICTED;
 		} else {
 			return DiskVisibility.PRIVATE;
 		}
+	}
+
+	protected String getDateTime() {
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date date = new Date();
+		return dateFormat.format(date);
 	}
 
 }
