@@ -137,6 +137,7 @@ public class DisksResource extends BaseResource {
 		Properties properties = new Properties();
 		properties.put(UUID_KEY, generateUUID());
 		properties.put(DISK_OWNER_KEY, getUsername());
+		properties.put(DISK_CREATION_DATE_KEY, getDateTime());
 
 		return properties;
 	}
