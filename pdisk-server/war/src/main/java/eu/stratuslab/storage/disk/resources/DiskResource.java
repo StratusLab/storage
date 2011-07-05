@@ -95,6 +95,12 @@ public class DiskResource extends BaseResource {
 	@Delete
 	public void deleteDisk() {
 		String uuid = getDiskId();
+		Properties diskProperties = loadProperties();
+		
+		if (!hasSuficientRightsToDelete(diskProperties)) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"Not enought rights to delete disk");
+		}
 
 		deleteRecursiveZkDiskProperties(getZkDiskPath());
 		removeDisk(uuid);
