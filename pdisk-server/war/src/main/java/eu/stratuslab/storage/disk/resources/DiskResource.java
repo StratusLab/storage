@@ -20,8 +20,11 @@
 package eu.stratuslab.storage.disk.resources;
 
 import static org.restlet.data.MediaType.TEXT_HTML;
+import static org.restlet.data.MediaType.TEXT_PLAIN;
+
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -37,27 +40,37 @@ public class DiskResource extends BaseResource {
 
 	@Get
 	public Representation getDiskProperties() {
+		if (hasQueryString("json")) {
+			return getJsonDiskProperties();
+		}
+		
 		Map<String, Object> infos = createInfoStructure("Disk info");
 		Properties diskProperties = loadProperties();
-		
-		
+
 		if (!hasSuficientRightsToView(diskProperties)) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					"Not enought rights to display disk properties");
 		}
-		
+
 		infos.put("properties", diskProperties);
 		infos.put("url", getCurrentUrl());
 
 		if (hasQueryString("created")) {
 			infos.put("created", true);
 		}
-		
+
 		if (hasSuficientRightsToDelete(diskProperties)) {
 			infos.put("can_delete", true);
 		}
 
 		return createTemplateRepresentation("html/disk.ftl", infos, TEXT_HTML);
+	}
+
+	public Representation getJsonDiskProperties() {
+		Map<String, Object> info = new HashMap<String, Object>();
+		info.put("properties", loadProperties());
+
+		return createTemplateRepresentation("json/disk.ftl", info, TEXT_PLAIN);
 	}
 
 	private Properties loadProperties() {
@@ -96,7 +109,7 @@ public class DiskResource extends BaseResource {
 	public void deleteDisk() {
 		String uuid = getDiskId();
 		Properties diskProperties = loadProperties();
-		
+
 		if (!hasSuficientRightsToDelete(diskProperties)) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					"Not enought rights to delete disk");

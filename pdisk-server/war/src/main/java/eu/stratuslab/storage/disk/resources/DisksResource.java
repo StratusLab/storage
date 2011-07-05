@@ -21,6 +21,7 @@ package eu.stratuslab.storage.disk.resources;
 
 import static org.restlet.data.MediaType.APPLICATION_WWW_FORM;
 import static org.restlet.data.MediaType.TEXT_HTML;
+import static org.restlet.data.MediaType.TEXT_PLAIN;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +49,10 @@ public class DisksResource extends BaseResource {
 
 	@Get
 	public Representation getDisksList() {
+		if (hasQueryString("json")) {
+			return getJsonDiskList();
+		}
+		
 		Map<String, Object> infos = createInfoStructure("Disks list");
 
 		infos.putAll(listDisks());
@@ -57,6 +62,11 @@ public class DisksResource extends BaseResource {
 		}
 
 		return createTemplateRepresentation("html/disks.ftl", infos, TEXT_HTML);
+	}
+	
+	public Representation getJsonDiskList() {
+		Map<String, Object> infos = listDisks();
+		return createTemplateRepresentation("json/disks.ftl", infos, TEXT_PLAIN);
 	}
 
 	private Map<String, Object> listDisks() {
