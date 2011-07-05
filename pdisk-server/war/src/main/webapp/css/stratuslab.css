@@ -45,6 +45,10 @@ header {
         text-decoration: underline;        
         color: #143262;
     }
+    
+    header nav li span.username {
+        color: #555;
+    }
 
 #content {
     margin: 2em 0;

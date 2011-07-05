@@ -38,6 +38,7 @@ import eu.stratuslab.storage.disk.resources.DisksResource;
 import eu.stratuslab.storage.disk.resources.ForceTrailingSlashResource;
 import eu.stratuslab.storage.disk.resources.CreateResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
+import eu.stratuslab.storage.disk.resources.LogoutResource;
 import eu.stratuslab.storage.disk.utils.DumpVerifier;
 import freemarker.template.Configuration;
 
@@ -178,9 +179,11 @@ public class PersistentDiskApplication extends Application {
 		router.attach("/disks/", DisksResource.class);
 		router.attach("/disks", ForceTrailingSlashResource.class);
 
-		// Defines a route for the upload form
 		router.attach("/create/", CreateResource.class);
 		router.attach("/create", ForceTrailingSlashResource.class);
+		
+		router.attach("/logout/", LogoutResource.class);
+		router.attach("/logout", ForceTrailingSlashResource.class);
 
 		Directory cssDir = new Directory(getContext(), "war:///css");
 		cssDir.setNegotiatingContent(false);
