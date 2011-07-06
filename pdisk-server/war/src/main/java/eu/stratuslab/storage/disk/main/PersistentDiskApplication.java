@@ -29,8 +29,10 @@ import org.restlet.Context;
 import org.restlet.Restlet;
 import org.restlet.data.ChallengeScheme;
 import org.restlet.data.LocalReference;
+import org.restlet.data.Status;
 import org.restlet.ext.freemarker.ContextTemplateLoader;
 import org.restlet.resource.Directory;
+import org.restlet.resource.ResourceException;
 import org.restlet.routing.Router;
 import org.restlet.security.ChallengeAuthenticator;
 import eu.stratuslab.storage.disk.resources.DiskResource;
@@ -43,50 +45,32 @@ import eu.stratuslab.storage.disk.utils.DumpVerifier;
 import freemarker.template.Configuration;
 
 public class PersistentDiskApplication extends Application {
+
 	public enum DiskType {
 		LVM, FILE;
 	}
 
 	public static final String CFG_FILENAME = "/etc/stratuslab/pdisk.cfg";
-	public static final String LVCREATE_DIR = "/sbin";
-	public static final String LVREMOVE_DIR = "/sbin";
 
-	// ZooKeeper default configuration
-	public static final String DEFAULT_ZK_ADDRESS = "127.0.0.1";
-	public static final String DEFAULT_ZK_PORT = "2181";
-	public static final String DEFAULT_ZK_ROOT_PATH = "/disks";
+	// TODO: Move configuration stuff into separate class
+	public static final Properties CONFIGURATION = readConfigFile();
 
-	// Disk creation (file and LVM)
-	public static final String DEFAULT_DISK_TYPE = "file"; // Can be
-															// "lvm"|"file"
-	public static final String DEFAULT_DISK_STORE = "/tmp/diskstore";
-	public static final String DEFAULT_LVM_GROUP_NAME = "/dev/vg.02";
+	public static final String ZK_ADDRESS = getConfigValue("disk.store.zookeeper.address");
+	public static final int ZK_PORT = Integer
+			.parseInt(getConfigValue("disk.store.zookeeper.port"));
+	public static final String ZK_ROOT_PATH = getConfigValue("disk.store.zookeeper.root");
 
-	public static final Properties CONFIGURATION;
-	public static final File DISK_STORE;
-	public static final String ZK_ADDRESS;
-	public static final int ZK_PORT;
-	public static final String ZK_ROOT_PATH;
-	public static final DiskType DISK_TYPE;
-	public static final String LVM_GROUPE_PATH;
+	public static final DiskType DISK_TYPE = getDiskType();
+	public static final File DISK_FILE_LOCATION = getFileDiskLocation();
+	public static final String LVM_GROUPE_PATH = getLvmGroup();
+
+	public static final File LVCREATE_CMD = getLvcreateCmd();
+	public static final File LVREMOVE_CMD = getLvremoveCmd();
 
 	private Configuration freeMarkerConfiguration = null;
-
-	static {
-		CONFIGURATION = readConfigFile();
-		DISK_TYPE = getDiskType();
-		DISK_STORE = getDiskStoreDirectory();
-		ZK_ADDRESS = getConfigValue("disk.store.zk_address", DEFAULT_ZK_ADDRESS);
-		ZK_PORT = Integer.parseInt(getConfigValue("disk.store.zk_port",
-				DEFAULT_ZK_PORT));
-		ZK_ROOT_PATH = getConfigValue("disk.store.zk_root_path",
-				DEFAULT_ZK_ROOT_PATH);
-		LVM_GROUPE_PATH = getConfigValue("disk.store.lvm.group.name",
-				DEFAULT_LVM_GROUP_NAME);
-	}
+	
 
 	public PersistentDiskApplication() {
-
 		setName("StratusLab Persistent Disk Server");
 		setDescription("StratusLab server for persistent disk storage.");
 		setOwner("StratusLab");
@@ -95,24 +79,29 @@ public class PersistentDiskApplication extends Application {
 		getTunnelService().setUserAgentTunnel(true);
 	}
 
-	public static Properties readConfigFile() {
+	private static Properties readConfigFile() {
 		File cfgFile = new File(CFG_FILENAME);
 		Properties properties = new Properties();
 
-		if (cfgFile.exists()) {
-			FileReader reader = null;
-			try {
-				reader = new FileReader(cfgFile);
-				properties.load(reader);
-			} catch (IOException consumed) {
-				// TODO: Log this error.
-			} finally {
-				if (reader != null) {
-					try {
-						reader.close();
-					} catch (IOException consumed) {
-						// TODO: Log this error.
-					}
+		if (!cfgFile.exists()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Configuration file does not exists.");
+		}
+
+		FileReader reader = null;
+		try {
+			reader = new FileReader(cfgFile);
+			properties.load(reader);
+		} catch (IOException consumed) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"An error occured while reading configuration file.");
+		} finally {
+			if (reader != null) {
+				try {
+					reader.close();
+				} catch (IOException consumed) {
+					throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+							"An error occured while reading configuration file.");
 				}
 			}
 		}
@@ -120,42 +109,92 @@ public class PersistentDiskApplication extends Application {
 		return properties;
 	}
 
-	public static String getConfigValue(String key, String defaultValue) {
-		String configValue = CONFIGURATION.getProperty(key, defaultValue);
-		return configValue;
+	private static String getConfigValue(String key) {
+		if (!CONFIGURATION.contains(key)) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Unable to retrieve configuration key '" + key + "'.");
+		}
+
+		return CONFIGURATION.getProperty(key);
 	}
 
-	public static File getDiskStoreDirectory() {
-		String diskStoreDir = getConfigValue("disk.store.dir",
-				DEFAULT_DISK_STORE);
+	private static File getFileDiskLocation() {
+		String diskStoreDir = getConfigValue("disk.store.file.location");
 
 		File diskStoreHandler = new File(diskStoreDir);
 
-		// Don't need check if we not use it
-		if (PersistentDiskApplication.DISK_TYPE == DiskType.LVM) {
+		// Don't check if we use LVM
+		if (PersistentDiskApplication.DISK_TYPE.equals(DiskType.LVM)) {
 			return diskStoreHandler;
 		}
 
-		// if (PersistentDiskApplication.DISK_TYPE != DiskType.LVM &&
-		// (!diskStoreHandler.canWrite() || !diskStoreHandler.canRead())) {
-		// throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-		// "disk store have to be readable and writable.");
-		// }
+		if (!diskStoreHandler.isDirectory() || !diskStoreHandler.canWrite()
+				|| !diskStoreHandler.canRead()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Disk store have to be readable and writable.");
+		}
 
 		return diskStoreHandler;
 	}
 
-	public static DiskType getDiskType() {
-
-		String diskType = getConfigValue("disk.store.disk_type",
-				DEFAULT_DISK_TYPE);
+	private static DiskType getDiskType() {
+		String diskType = getConfigValue("disk.store.type");
 
 		if (diskType.equalsIgnoreCase("lvm"))
 			return DiskType.LVM;
 		else if (diskType.equalsIgnoreCase("file"))
 			return DiskType.FILE;
-		else
-			return DiskType.FILE;
+		else {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Invalid disk type configuration.");
+		}
+	}
+
+	private static File getLvcreateCmd() {
+		String lvcreateCmd = getConfigValue("disk.store.lvm.create");
+		File lvcreateHandler = new File(lvcreateCmd);
+
+		if (!lvcreateHandler.isFile() || !lvcreateHandler.canExecute()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"LVCREATE commamd does not exists or not executable.");
+		}
+
+		return lvcreateHandler;
+	}
+
+	private static File getLvremoveCmd() {
+		String lvremoveCmd = getConfigValue("disk.store.lvm.remove");
+		File lvremoveHandler = new File(lvremoveCmd);
+
+		if (!lvremoveHandler.isFile() || !lvremoveHandler.canExecute()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"LVREMOVE commamd does not exists or not executable.");
+		}
+
+		return lvremoveHandler;
+	}
+
+	private static Configuration createFreeMarkerConfig(Context context) {
+
+		Configuration fmCfg = new Configuration();
+		fmCfg.setLocalizedLookup(false);
+
+		LocalReference fmBaseRef = LocalReference.createClapReference("/");
+		fmCfg.setTemplateLoader(new ContextTemplateLoader(context, fmBaseRef));
+
+		return fmCfg;
+	}
+	
+	private static String getLvmGroup() {
+		String lvmGroup = getConfigValue("disk.store.zookeeper.address");
+		File handler = new File(lvmGroup);
+		
+		if (!handler.isDirectory()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"LVM group specified seems to be wrong.");
+		}
+		
+		return lvmGroup;
 	}
 
 	@Override
@@ -163,12 +202,13 @@ public class PersistentDiskApplication extends Application {
 		Context context = getContext();
 
 		freeMarkerConfiguration = createFreeMarkerConfig(context);
-		
+
 		// The guard is needed although JAAS which is doing the authentication
 		// just to be able to retrieve client information (challenger).
 		DumpVerifier verifier = new DumpVerifier();
 		ChallengeAuthenticator guard = new ChallengeAuthenticator(getContext(),
-				ChallengeScheme.HTTP_BASIC, "Stratuslab Persistent Disk Storage");
+				ChallengeScheme.HTTP_BASIC,
+				"Stratuslab Persistent Disk Storage");
 		guard.setVerifier(verifier);
 
 		Router router = new Router(context);
@@ -181,7 +221,7 @@ public class PersistentDiskApplication extends Application {
 
 		router.attach("/create/", CreateResource.class);
 		router.attach("/create", ForceTrailingSlashResource.class);
-		
+
 		router.attach("/logout/", LogoutResource.class);
 		router.attach("/logout", ForceTrailingSlashResource.class);
 
@@ -198,19 +238,8 @@ public class PersistentDiskApplication extends Application {
 		return guard;
 	}
 
-	private static Configuration createFreeMarkerConfig(Context context) {
-
-		Configuration fmCfg = new Configuration();
-		fmCfg.setLocalizedLookup(false);
-
-		LocalReference fmBaseRef = LocalReference.createClapReference("/");
-		fmCfg.setTemplateLoader(new ContextTemplateLoader(context, fmBaseRef));
-
-		return fmCfg;
-	}
-
 	public Configuration getFreeMarkerConfiguration() {
 		return freeMarkerConfiguration;
 	}
-	
+
 }
