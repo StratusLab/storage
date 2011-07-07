@@ -23,18 +23,18 @@ import static org.restlet.data.MediaType.TEXT_HTML;
 import static org.restlet.data.MediaType.TEXT_PLAIN;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.zookeeper.KeeperException;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
 public class DiskResource extends BaseResource {
 
@@ -43,7 +43,7 @@ public class DiskResource extends BaseResource {
 		if (hasQueryString("json")) {
 			return getJsonDiskProperties();
 		}
-		
+
 		Map<String, Object> infos = createInfoStructure("Disk info");
 		Properties diskProperties = loadProperties();
 
@@ -74,35 +74,9 @@ public class DiskResource extends BaseResource {
 	}
 
 	private Properties loadProperties() {
-		Properties properties;
-		String zkPropertiesPath = getZkDiskPath();
+		String propertiesPath = getDiskZkPath();
 
-		if (!zkPathExists(zkPropertiesPath)) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"UUID does not exists");
-		}
-
-		try {
-			properties = loadZkProperties(zkPropertiesPath);
-		} catch (KeeperException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Unable to retrieve properties");
-		} catch (InterruptedException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Unable to retrieve properties");
-		}
-
-		return properties;
-	}
-
-	private String getZkDiskPath() {
-		return buildZkDiskPath(getDiskId());
-	}
-
-	private String getDiskId() {
-		Map<String, Object> attributes = getRequest().getAttributes();
-
-		return attributes.get("uuid").toString();
+		return zk.getDiskProperties(propertiesPath);
 	}
 
 	@Delete
@@ -111,15 +85,23 @@ public class DiskResource extends BaseResource {
 		Properties diskProperties = loadProperties();
 
 		if (!hasSuficientRightsToDelete(diskProperties)) {
+			// TODO: Use queue messaging system here
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					"Not enought rights to delete disk");
 		}
 
-		deleteRecursiveZkDiskProperties(getZkDiskPath());
+		zk.deleteDiskProperties(getDiskZkPath());
+		
 		removeDisk(uuid);
-		restartServer();
+		
+		DiskUtils.updateISCSIConfiguration();
 
-		redirectSeeOther(getApplicationBaseUrl() + "/disks/?deleted");
+		if (hasQueryString("json")) {
+			setStatus(Status.SUCCESS_OK);
+		} else {
+			// TODO: Use queue messaging system here
+			redirectSeeOther(getBaseUrl() + "/disks/?deleted");
+		}
 	}
 
 	private static void removeDisk(String uuid) {
@@ -131,50 +113,32 @@ public class DiskResource extends BaseResource {
 	}
 
 	private static void removeFileDisk(String uuid) {
-		File diskFile = new File(PersistentDiskApplication.DISK_STORE, uuid);
+		File diskFile = new File(PersistentDiskApplication.FILE_DISK_LOCATION,
+				uuid);
 
 		if (diskFile.delete()) {
-			LOGGER.severe("An error occcured while removing disk content "
-					+ uuid);
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"An error occcured while removing disk content " + uuid);
 		}
 	}
 
 	private static void removeLVMDisk(String uuid) {
-		File lvremoveBin = new File(PersistentDiskApplication.LVREMOVE_DIR,
-				"lvremove");
 		String volumePath = PersistentDiskApplication.LVM_GROUPE_PATH + "/"
 				+ uuid;
+		ProcessBuilder pb = new ProcessBuilder(
+				PersistentDiskApplication.LVREMOVE_CMD, "-f", volumePath);
 
-		if (!lvremoveBin.canExecute()) {
-			LOGGER.severe("Cannot execute lvcreate command");
-			return;
-		}
+		ProcessUtils.execute("removeLVMDisk", pb);
+	}
+	
+	private String getDiskZkPath() {
+		return getDiskZkPath(getDiskId());
+	}
+	
+	private String getDiskId() {
+		Map<String, Object> attributes = getRequest().getAttributes();
 
-		int returnCode = 1;
-		Process process;
-		ProcessBuilder pb = new ProcessBuilder(lvremoveBin.getAbsolutePath(),
-				"-f", volumePath);
-
-		try {
-			process = pb.start();
-
-			boolean blocked = true;
-			while (blocked) {
-				process.waitFor();
-				blocked = false;
-			}
-
-			returnCode = process.exitValue();
-		} catch (IOException e) {
-			LOGGER.severe("An error occured while removing LVM volume " + uuid);
-		} catch (InterruptedException consumed) {
-			// Just continue with the loop.
-		}
-
-		if (returnCode != 0) {
-			LOGGER.severe("lvcreate command failled for disk " + uuid + ": "
-					+ returnCode);
-		}
+		return attributes.get("uuid").toString();
 	}
 
 }

@@ -14,6 +14,6 @@ public class LogoutResource extends BaseResource {
 			request.getClientInfo().setAuthenticated(false);
 		}
 		
-		redirectSeeOther(getApplicationBaseUrl());
+		redirectSeeOther(getBaseUrl());
 	}
 }

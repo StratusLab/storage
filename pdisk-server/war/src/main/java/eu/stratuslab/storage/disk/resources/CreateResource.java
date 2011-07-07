@@ -17,7 +17,7 @@ public class CreateResource extends BaseResource {
     	// Add disk possible visibilities
     	ArrayList<String> visibilities = new ArrayList<String>();
     	for (DiskVisibility v : DiskVisibility.values()) {
-    		visibilities.add(toStringDiskVisibility(v));
+    		visibilities.add(diskVisibilityToString(v));
     	}
     	
     	infos.put("visibilities", visibilities);

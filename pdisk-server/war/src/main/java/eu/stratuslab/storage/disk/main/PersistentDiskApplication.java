@@ -42,6 +42,8 @@ import eu.stratuslab.storage.disk.resources.CreateResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
 import eu.stratuslab.storage.disk.resources.LogoutResource;
 import eu.stratuslab.storage.disk.utils.DumpVerifier;
+import eu.stratuslab.storage.disk.utils.FileUtils;
+import eu.stratuslab.storage.disk.utils.ProcessUtils;
 import freemarker.template.Configuration;
 
 public class PersistentDiskApplication extends Application {
@@ -50,24 +52,52 @@ public class PersistentDiskApplication extends Application {
 		LVM, FILE;
 	}
 
+	// Configuration file
 	public static final String CFG_FILENAME = "/etc/stratuslab/pdisk.cfg";
+	public static final String ISCSI_CONFIG_FILENAME = "/etc/stratuslab/iscsi.conf";
+	
+	// Disk size limits (in GiBs)
+	public static final int DISK_SIZE_MIN = 1;
+	public static final int DISK_SIZE_MAX = 1024;
+	
 
 	// TODO: Move configuration stuff into separate class
-	public static final Properties CONFIGURATION = readConfigFile();
+	public static final Properties CONFIGURATION;
 
-	public static final String ZK_ADDRESS = getConfigValue("disk.store.zookeeper.address");
-	public static final int ZK_PORT = Integer
-			.parseInt(getConfigValue("disk.store.zookeeper.port"));
-	public static final String ZK_ROOT_PATH = getConfigValue("disk.store.zookeeper.root");
+	public static final String ZK_ADDRESS;
+	public static final int ZK_PORT;
+	public static final String ZK_ROOT_PATH;
 
-	public static final DiskType DISK_TYPE = getDiskType();
-	public static final File DISK_FILE_LOCATION = getFileDiskLocation();
-	public static final String LVM_GROUPE_PATH = getLvmGroup();
+	public static final DiskType DISK_TYPE;
+	public static final File FILE_DISK_LOCATION;
+	public static final String LVM_GROUPE_PATH;
 
-	public static final File LVCREATE_CMD = getLvcreateCmd();
-	public static final File LVREMOVE_CMD = getLvremoveCmd();
+	public static final String LVCREATE_CMD;
+	public static final String LVREMOVE_CMD;
+
+	public static final File ISCSI_CONFIG;
+	public static final String ISCSI_ADMIN;
 
 	private Configuration freeMarkerConfiguration = null;
+	
+	static {
+		CONFIGURATION = readConfigFile();
+		
+		ZK_ADDRESS = getConfigValue("disk.store.zookeeper.address");
+		ZK_PORT = Integer
+				.parseInt(getConfigValue("disk.store.zookeeper.port"));
+		ZK_ROOT_PATH = getConfigValue("disk.store.zookeeper.root");
+
+		DISK_TYPE = getDiskType();
+		FILE_DISK_LOCATION = getFileDiskLocation();
+		LVM_GROUPE_PATH = getLVMGroup();
+
+		LVCREATE_CMD = getCommand("disk.store.lvm.create");
+		LVREMOVE_CMD = getCommand("disk.store.lvm.remove");
+
+		ISCSI_CONFIG = getISCSIConfig();
+		ISCSI_ADMIN = getCommand("disk.store.iscsi.admin");
+	}
 	
 
 	public PersistentDiskApplication() {
@@ -94,14 +124,14 @@ public class PersistentDiskApplication extends Application {
 			properties.load(reader);
 		} catch (IOException consumed) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"An error occured while reading configuration file.");
+					"An error occured while reading configuration file");
 		} finally {
 			if (reader != null) {
 				try {
 					reader.close();
 				} catch (IOException consumed) {
 					throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-							"An error occured while reading configuration file.");
+							"An error occured while reading configuration file");
 				}
 			}
 		}
@@ -109,10 +139,29 @@ public class PersistentDiskApplication extends Application {
 		return properties;
 	}
 
-	private static String getConfigValue(String key) {
-		if (!CONFIGURATION.contains(key)) {
+	private static File getISCSIConfig() {
+		String iscsiConf = getConfigValue("disk.store.iscsi.conf");
+		File confHandler = new File(iscsiConf);
+		File stratusConf = new File(ISCSI_CONFIG_FILENAME);
+		String includeConfig = "\ninclude " + stratusConf.getAbsolutePath() + "\n";
+
+		if (!confHandler.isFile()) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Unable to retrieve configuration key '" + key + "'.");
+					"Unable to find ISCSI configuration file.");
+		}
+
+		// Add include instruction in conf file in not
+		if (!FileUtils.fileHasLine(confHandler, includeConfig)) {
+			FileUtils.appendToFile(confHandler, includeConfig);
+		}
+
+		return stratusConf;
+	}
+
+	private static String getConfigValue(String key) {
+		if (!CONFIGURATION.containsKey(key)) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Unable to retrieve configuration key: " + key);
 		}
 
 		return CONFIGURATION.getProperty(key);
@@ -131,7 +180,7 @@ public class PersistentDiskApplication extends Application {
 		if (!diskStoreHandler.isDirectory() || !diskStoreHandler.canWrite()
 				|| !diskStoreHandler.canRead()) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Disk store have to be readable and writable.");
+					"Disk store have to be readable and writable");
 		}
 
 		return diskStoreHandler;
@@ -146,34 +195,22 @@ public class PersistentDiskApplication extends Application {
 			return DiskType.FILE;
 		else {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Invalid disk type configuration.");
+					"Invalid disk type configuration");
 		}
 	}
+	
+	private static String getCommand(String configName) {
+		String configValue = getConfigValue(configName);
+		File exec = new File(configValue);
 
-	private static File getLvcreateCmd() {
-		String lvcreateCmd = getConfigValue("disk.store.lvm.create");
-		File lvcreateHandler = new File(lvcreateCmd);
-
-		if (!lvcreateHandler.isFile() || !lvcreateHandler.canExecute()) {
+		if (!ProcessUtils.isExecutable(exec)) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"LVCREATE commamd does not exists or not executable.");
+					"LVREMOVE commamd does not exists or not executable");
 		}
-
-		return lvcreateHandler;
+		
+		return configValue;
 	}
-
-	private static File getLvremoveCmd() {
-		String lvremoveCmd = getConfigValue("disk.store.lvm.remove");
-		File lvremoveHandler = new File(lvremoveCmd);
-
-		if (!lvremoveHandler.isFile() || !lvremoveHandler.canExecute()) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"LVREMOVE commamd does not exists or not executable.");
-		}
-
-		return lvremoveHandler;
-	}
-
+	
 	private static Configuration createFreeMarkerConfig(Context context) {
 
 		Configuration fmCfg = new Configuration();
@@ -184,16 +221,16 @@ public class PersistentDiskApplication extends Application {
 
 		return fmCfg;
 	}
-	
-	private static String getLvmGroup() {
-		String lvmGroup = getConfigValue("disk.store.zookeeper.address");
+
+	private static String getLVMGroup() {
+		String lvmGroup = getConfigValue("disk.store.lvm.device");
 		File handler = new File(lvmGroup);
-		
+
 		if (!handler.isDirectory()) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"LVM group specified seems to be wrong.");
 		}
-		
+
 		return lvmGroup;
 	}
 
@@ -242,4 +279,8 @@ public class PersistentDiskApplication extends Application {
 		return freeMarkerConfiguration;
 	}
 
+	public static <T> T last(T[] array) {
+		return array[array.length - 1];
+	}
+	
 }

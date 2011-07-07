@@ -24,7 +24,6 @@ import static org.restlet.data.MediaType.TEXT_HTML;
 import static org.restlet.data.MediaType.TEXT_PLAIN;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -33,7 +32,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
-import org.apache.zookeeper.KeeperException;
 import org.restlet.data.Form;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
@@ -43,7 +41,10 @@ import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.disk.utils.FileUtils;
+import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
 public class DisksResource extends BaseResource {
 
@@ -52,18 +53,19 @@ public class DisksResource extends BaseResource {
 		if (hasQueryString("json")) {
 			return getJsonDiskList();
 		}
-		
+
 		Map<String, Object> infos = createInfoStructure("Disks list");
 
 		infos.putAll(listDisks());
 
 		if (hasQueryString("deleted")) {
+			// TODO: Use queue messaging system here
 			infos.put("deleted", true);
 		}
 
 		return createTemplateRepresentation("html/disks.ftl", infos, TEXT_HTML);
 	}
-	
+
 	public Representation getJsonDiskList() {
 		Map<String, Object> infos = listDisks();
 		return createTemplateRepresentation("json/disks.ftl", infos, TEXT_PLAIN);
@@ -72,25 +74,17 @@ public class DisksResource extends BaseResource {
 	private Map<String, Object> listDisks() {
 		Map<String, Object> info = new HashMap<String, Object>();
 		List<Properties> diskInfoList = new LinkedList<Properties>();
+		List<String> disks = zk.getDisks();
+
 		info.put("disks", diskInfoList);
 
-		try {
-			List<String> disks = getDisks();
+		for (String uuid : disks) {
+			Properties properties = zk.getDiskProperties(getDiskZkPath(uuid));
 
-			for (String uuid : disks) {
-				Properties properties = loadZkProperties(buildZkDiskPath(uuid));
-
-				// List only disk of the user
-				if (hasSuficientRightsToView(properties)) {
-					diskInfoList.add(properties);
-				}
+			// List only disk of the user
+			if (hasSuficientRightsToView(properties)) {
+				diskInfoList.add(properties);
 			}
-		} catch (KeeperException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"unable to retrieve disks properties: " + e.getMessage());
-		} catch (InterruptedException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"unable to retrieve disks properties: " + e.getMessage());
 		}
 
 		return info;
@@ -102,15 +96,18 @@ public class DisksResource extends BaseResource {
 		checkMediaType(entity.getMediaType());
 
 		Properties diskProperties = processWebForm();
-		String uuid = diskProperties.getProperty(UUID_KEY);
+		String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
 
 		validateDiskProperties(diskProperties);
 		initializeDisk(diskProperties);
-		restartServer();
+		DiskUtils.updateISCSIConfiguration();
 
-		setStatus(Status.SUCCESS_CREATED);
-		redirectSeeOther(getApplicationBaseUrl() + "/disks/" + uuid
-				+ "/?created");
+		if (hasQueryString("json")) {
+			setStatus(Status.SUCCESS_CREATED);
+		} else {
+			// TODO: Use queue messaging system here
+			redirectSeeOther(getBaseUrl() + "/disks/" + uuid + "/?created");
+		}
 	}
 
 	private void checkEntity(Representation entity) {
@@ -145,9 +142,9 @@ public class DisksResource extends BaseResource {
 
 	private Properties initializeProperties() {
 		Properties properties = new Properties();
-		properties.put(UUID_KEY, generateUUID());
-		properties.put(DISK_OWNER_KEY, getUsername());
-		properties.put(DISK_CREATION_DATE_KEY, getDateTime());
+		properties.put(DiskProperties.UUID_KEY, generateUUID());
+		properties.put(DiskProperties.DISK_OWNER_KEY, getUsername());
+		properties.put(DiskProperties.DISK_CREATION_DATE_KEY, getDateTime());
 
 		return properties;
 	}
@@ -156,34 +153,38 @@ public class DisksResource extends BaseResource {
 		return UUID.randomUUID().toString();
 	}
 
-	private static void validateDiskProperties(Properties diskProperties) {
-		if (!diskProperties.containsKey(UUID_KEY)) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"missing UUID for disk");
-		}
-
-		if (!diskProperties.containsKey("size")) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"size must be specified");
-		}
-
+	private void validateDiskProperties(Properties diskProperties) {
+		// TODO: Use queue messaging system here
 		try {
-			String size = diskProperties.getProperty("size");
+			diskVisibilityFromString(diskProperties.getProperty("visibility",
+					"None"));
+		} catch (RuntimeException e) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"Invalid disk visibility");
+		}
+
+		// TODO: Use queue messaging system here
+		try {
+			String size = diskProperties.getProperty("size", "None");
 			int gigabytes = Integer.parseInt(size);
 
-			if (gigabytes <= 0) {
+			if (gigabytes < PersistentDiskApplication.DISK_SIZE_MIN
+					|| gigabytes > PersistentDiskApplication.DISK_SIZE_MAX) {
 				throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-						"size must be a positive integer");
+						"Size must be an integer between "
+								+ PersistentDiskApplication.DISK_SIZE_MIN
+								+ " and "
+								+ PersistentDiskApplication.DISK_SIZE_MAX);
 			}
 		} catch (NumberFormatException e) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"size must be a valid long value");
+					"Size must be a valid positive integer.");
 		}
 
 	}
 
 	private static void initializeDisk(Properties properties) {
-		String uuid = properties.getProperty(UUID_KEY).toString();
+		String uuid = properties.getProperty(DiskProperties.UUID_KEY).toString();
 		int size = Integer.parseInt(properties.getProperty("size").toString());
 
 		if (PersistentDiskApplication.DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
@@ -196,103 +197,48 @@ public class DisksResource extends BaseResource {
 	}
 
 	private static void initializeFileDisk(String uuid, int size) {
-		File diskFile = new File(PersistentDiskApplication.DISK_STORE, uuid);
+		File diskFile = new File(PersistentDiskApplication.FILE_DISK_LOCATION,
+				uuid);
 
 		if (diskFile.exists()) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"disk already exists: " + uuid);
+					"A disk with the same name already exists.");
 		}
 
-		initializeFileDiskContents(diskFile, size);
+		FileUtils.createZeroFile(diskFile, size);
 	}
 
 	private static void initializeLVMDisk(String uuid, int size) {
-		File lvcreateBin = new File(PersistentDiskApplication.LVCREATE_DIR,
-				"lvcreate");
-
-		if (!lvcreateBin.canExecute()) {
-			LOGGER.severe("cannot execute lvcreate command");
-			return;
-		}
-
-		int returnCode = 1;
-		String lvSize = size + "G";
-		Process process;
-		ProcessBuilder pb = new ProcessBuilder(lvcreateBin.getAbsolutePath(),
-				"-L", lvSize, PersistentDiskApplication.LVM_GROUPE_PATH, "-n",
+		File diskFile = new File(PersistentDiskApplication.LVM_GROUPE_PATH,
 				uuid);
 
-		try {
-			process = pb.start();
-
-			boolean blocked = true;
-			while (blocked) {
-				process.waitFor();
-				blocked = false;
-			}
-
-			returnCode = process.exitValue();
-		} catch (IOException e) {
-			LOGGER.severe("an error occured while creating LVM volume " + uuid);
-		} catch (InterruptedException consumed) {
-			// Just continue with the loop.
+		if (diskFile.exists()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"A disk with the same name already exists.");
 		}
 
-		if (returnCode != 0) {
-			LOGGER.severe("lvcreate command failled for disk " + uuid + ": "
-					+ returnCode);
-		}
+		String lvmSize = size + "G";
+		ProcessBuilder pb = new ProcessBuilder(
+				PersistentDiskApplication.LVCREATE_CMD, "-L", lvmSize,
+				PersistentDiskApplication.LVM_GROUPE_PATH, "-n", uuid);
+
+		ProcessUtils.execute("createLvmDisk", pb);
 	}
 
 	private static void saveDiskProperties(Properties properties) {
-		String diskRoot = buildZkDiskPath(properties.get(UUID_KEY).toString());
+		String diskRoot = getDiskZkPath(properties.get(DiskProperties.UUID_KEY).toString());
 		Enumeration<?> propertiesEnum = properties.propertyNames();
 
-		// Check if the UUID already exists
-		if (zkPathExists(diskRoot)) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"disk with same uuid already exists");
-		}
-
-		createZkNode(diskRoot, properties.get(UUID_KEY).toString());
+		zk.createNode(diskRoot, properties.get(DiskProperties.UUID_KEY).toString());
 
 		while (propertiesEnum.hasMoreElements()) {
 			String key = (String) propertiesEnum.nextElement();
 			String content = properties.getProperty(key);
 
-			if (key == UUID_KEY)
+			if (key == DiskProperties.UUID_KEY)
 				continue;
 
-			createZkNode(diskRoot + "/" + key, content);
-		}
-	}
-
-	private static void initializeFileDiskContents(File location, int size) {
-		try {
-			if (!location.createNewFile()) {
-				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-						"contents file already exists: " + location);
-			}
-
-			zeroFile(location, size);
-		} catch (IOException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"cannot create contents file: " + location);
-		}
-	}
-
-	private static void zeroFile(File file, int sizeInGB) {
-		try {
-			DiskUtils.zeroFile(file, sizeInGB);
-		} catch (IOException e) {
-
-			if (!file.delete()) {
-				throw new ResourceException(
-						Status.SERVER_ERROR_INSUFFICIENT_STORAGE,
-						e.getMessage() + "; cannot delete resource");
-			}
-			throw new ResourceException(
-					Status.SERVER_ERROR_INSUFFICIENT_STORAGE, e.getMessage());
+			zk.createNode(diskRoot + "/" + key, content);
 		}
 	}
 
