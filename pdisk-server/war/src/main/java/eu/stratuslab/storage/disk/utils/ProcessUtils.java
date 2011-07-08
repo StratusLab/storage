@@ -41,6 +41,7 @@ public class ProcessUtils {
 		if (returnCode != 0) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"An error occured while executing " + id);
+//					"An error occured while executing " + pb.command().toString());
 		}
 	}
 	

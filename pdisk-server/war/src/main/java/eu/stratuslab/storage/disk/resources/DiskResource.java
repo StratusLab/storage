@@ -91,10 +91,8 @@ public class DiskResource extends BaseResource {
 		}
 
 		zk.deleteDiskProperties(getDiskZkPath());
-		
-		removeDisk(uuid);
-		
 		DiskUtils.updateISCSIConfiguration();
+		removeDisk(uuid);
 
 		if (hasQueryString("json")) {
 			setStatus(Status.SUCCESS_OK);
