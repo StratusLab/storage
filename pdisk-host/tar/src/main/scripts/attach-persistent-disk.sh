@@ -19,12 +19,12 @@ DISK="$DISK_PREFIX:$DISK_UUID"
 DISK_PATH="/dev/disk/by-path/ip-$PORTAL-iscsi-$DISK-lun-1"
 
 # Must contact the server to discover what disks are available.
-DISCOVER_CMD="$ISCSIADM --mode discovery --type sendtargets --portal $PORTAL"
+DISCOVER_CMD="sudo $ISCSIADM --mode discovery --type sendtargets --portal $PORTAL"
 echo $DISCOVER_CMD
 $DISCOVER_CMD
 
 # Attach the iSCSI disk on the host.
-ATTACH_CMD="$ISCSIADM --mode node --portal $PORTAL --targetname $DISK --login"
+ATTACH_CMD="sudo $ISCSIADM --mode node --portal $PORTAL --targetname $DISK --login"
 echo $ATTACH_CMD
 $ATTACH_CMD
 
@@ -33,7 +33,7 @@ sleep 2
 
 # Get the real device name behind the alias and link to it.
 REAL_DEV=`readlink -e -n $DISK_PATH`
-LINK_CMD="ln -s $REAL_DEV $DEVICE_LINK"
+LINK_CMD="ln -fs $REAL_DEV $DEVICE_LINK"
 echo $LINK_CMD
 $LINK_CMD
 
