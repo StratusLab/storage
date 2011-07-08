@@ -2,6 +2,7 @@ package eu.stratuslab.storage.disk.utils;
 
 import java.util.List;
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.resources.BaseResource;
 
 public final class DiskUtils {
 
@@ -42,7 +43,7 @@ public final class DiskUtils {
 	}
 
 	public static List<String> getAllDisks() {
-		DiskProperties zk = new DiskProperties();
+		DiskProperties zk = BaseResource.getZooKeeper();
 
 		return zk.getDisks();
 	}
