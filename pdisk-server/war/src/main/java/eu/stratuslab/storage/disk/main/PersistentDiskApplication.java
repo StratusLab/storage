@@ -151,7 +151,7 @@ public class PersistentDiskApplication extends Application {
 		}
 
 		// Add include instruction in conf file in not
-		if (!FileUtils.fileHasLine(confHandler, includeConfig)) {
+		if (!FileUtils.fileHasLine(confHandler, includeConfig.replace("\n", ""))) {
 			FileUtils.appendToFile(confHandler, includeConfig);
 		}
 
