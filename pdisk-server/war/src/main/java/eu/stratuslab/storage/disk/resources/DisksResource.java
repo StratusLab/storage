@@ -36,6 +36,7 @@ import org.restlet.data.Form;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
+import org.restlet.representation.StringRepresentation;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
@@ -91,7 +92,9 @@ public class DisksResource extends BaseResource {
 	}
 
 	@Post
-	public void createDisk(Representation entity) {
+	public Representation createDisk(Representation entity) {
+		Representation rep = null;
+		
 		checkEntity(entity);
 		checkMediaType(entity.getMediaType());
 
@@ -104,10 +107,13 @@ public class DisksResource extends BaseResource {
 
 		if (hasQueryString("json")) {
 			setStatus(Status.SUCCESS_CREATED);
+			rep = new StringRepresentation(uuid, TEXT_PLAIN);
 		} else {
 			// TODO: Use queue messaging system here
 			redirectSeeOther(getBaseUrl() + "/disks/" + uuid + "/?created");
 		}
+		
+		return rep;
 	}
 
 	private void checkEntity(Representation entity) {
