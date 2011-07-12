@@ -29,6 +29,7 @@ import java.util.Properties;
 
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
+import org.restlet.representation.StringRepresentation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
@@ -80,7 +81,8 @@ public class DiskResource extends BaseResource {
 	}
 
 	@Delete
-	public void deleteDisk() {
+	public Representation deleteDisk() {
+		Representation rep = null;
 		String uuid = getDiskId();
 		Properties diskProperties = loadProperties();
 
@@ -96,10 +98,13 @@ public class DiskResource extends BaseResource {
 
 		if (hasQueryString("json")) {
 			setStatus(Status.SUCCESS_OK);
+			rep = new StringRepresentation(uuid, TEXT_PLAIN);
 		} else {
 			// TODO: Use queue messaging system here
 			redirectSeeOther(getBaseUrl() + "/disks/?deleted");
 		}
+		
+		return rep;
 	}
 
 	private static void removeDisk(String uuid) {
