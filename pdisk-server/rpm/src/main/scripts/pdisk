@@ -156,6 +156,8 @@ JETTY_INSTALL_TRACE_FILE="etc/jetty.xml"
 ##################################################
 # ZooKeeper server location
 ##################################################
+# (boolean) Apply same action on ZooKeeper as on Jetty
+AUTORUN_ZOOKEEPER=1 
 ZOOKEEPER_SERVER_CMD=/opt/stratuslab/storage/pdisk/zookeeper/bin/zkServer.sh
 
 ##################################################
@@ -559,14 +561,20 @@ esac
 sleep 1
 
 ## ZooKeeper management
-echo -n "Trying to $ACTION ZooKeeper service... "
-/bin/sh $ZOOKEEPER_SERVER_CMD $ACTION &>> /var/log/zookeeper.log
-[ $? -gt 0 ] && echo "FAILED" || echo "OK"
+if [ $AUTORUN_ZOOKEEPER -eq 1 ]
+then
+    if [ "x$ACTION" != "xrestart" ]
+    then
+        echo -n "Trying to $ACTION ZooKeeper service... "
+        /bin/sh $ZOOKEEPER_SERVER_CMD $ACTION &>> /var/log/zookeeper.log
+        [ $? -gt 0 ] && echo "FAILED" || echo "OK"
+    fi
+fi
 
 ## Start tgtd if not
 if [ "x$ACTION" = "xstart" ]
 then
-    TGT_SERV="/sbin/service tgtd"
+    TGT_SERV="/etc/init.d/tgtd"
 
     $TGT_SERV status &>/dev/null
 
@@ -574,3 +582,4 @@ then
 fi
 
 exit 0
+
