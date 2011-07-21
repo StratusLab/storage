@@ -27,11 +27,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.restlet.data.Form;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.representation.StringRepresentation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
+import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
@@ -39,13 +41,12 @@ import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
 public class DiskResource extends BaseResource {
 
+	private final static String RESPONSE_TRUE = "1";
+	private final static String RESPONSE_FALSE = "0";
+	
 	@Get
 	public Representation getDiskProperties() {
-		if (hasQueryString("hold")) {
-			return holdDisk();
-		} else if (hasQueryString("release")) {
-			return releaseDisk();
-		} else if (hasQueryString("json")) {
+		if (hasQueryString("json")) {
 			return getJsonDiskProperties();
 		}
 
@@ -84,12 +85,55 @@ public class DiskResource extends BaseResource {
 		return zk.getDiskProperties(propertiesPath);
 	}
 	
-	private Representation holdDisk() {
-		return null;
+	@Post
+	public Representation manageDiskUser(Representation entity) {
+		PersistentDiskApplication.checkEntity(entity);
+		PersistentDiskApplication.checkMediaType(entity.getMediaType());
+		
+		Form form = new Form(entity);
+
+		for (String query : form.getNames()) {
+			
+			if (query.equalsIgnoreCase("available")) {
+				return diskAvailable();
+			} else if (query.equalsIgnoreCase("attach") ) {
+				return attachDisk();
+			} else if (query.equalsIgnoreCase("detach")) {
+				return detachDisk();
+			}
+		}
+		
+		return new StringRepresentation(RESPONSE_FALSE);
 	}
 	
-	private Representation releaseDisk() {
-		return null;
+	private Boolean isDiskAvailable() {
+		return zk.isDiskAvailable(getDiskZkPath());
+	}
+	
+	private Representation diskAvailable() {
+		if (isDiskAvailable()) {
+			return new StringRepresentation(RESPONSE_TRUE);
+		} else {
+			return new StringRepresentation(RESPONSE_FALSE);
+		}
+	}
+	
+	private Representation attachDisk() {
+		if (isDiskAvailable()) {
+			zk.addDiskUser(getDiskZkPath());
+			return new StringRepresentation(RESPONSE_TRUE);
+		}
+
+		return new StringRepresentation(RESPONSE_FALSE);
+	}
+	
+	private Representation detachDisk() {
+		if (zk.getDiskUsers(getDiskZkPath()) > 0) {
+			zk.removeDiskUser(getDiskZkPath());
+			return new StringRepresentation(RESPONSE_TRUE);
+		}
+
+		return new StringRepresentation(RESPONSE_FALSE);
 	}
 	
 	@Delete

@@ -42,9 +42,11 @@ public class DiskProperties {
 	public static final String UUID_KEY = "uuid";
 	public static final String DISK_OWNER_KEY = "owner";
 	public static final String DISK_VISIBILITY_KEY = "visibility";
-	public static final String DISK_CREATION_DATE_KEY = "created";
-
+	public static final String DISK_CREATION_DATE_KEY = "created";	
+	public static final String DISK_USERS_KEY = "users";
+	
 	public DiskProperties() {
+		// ZooKeeper connection
 		try {
 			zk = new ZooKeeper(PersistentDiskApplication.ZK_ADDRESS,
 					PersistentDiskApplication.ZK_PORT, null);
@@ -146,6 +148,18 @@ public class DiskProperties {
 
 		return node;
 	}
+	
+	private void setNode(String root, String value) {
+		try {
+			zk.setData(root, value.getBytes(), -1);
+		} catch (KeeperException e) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"ZooKeeper error: " + e.getMessage());
+		} catch (InterruptedException e) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					e.getMessage());
+		}
+	}
 
 	private List<String> listSubTree(String pathRoot) {
 		Deque<String> queue = new LinkedList<String>();
@@ -212,6 +226,35 @@ public class DiskProperties {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					e.getMessage());
 		}
+	}
+	
+	public int getDiskUsers(String path) {
+		Properties diskProp = getDiskProperties(path);
+		int users = 0;
+		
+		try {
+			users = Integer.parseInt(diskProp.get(DiskProperties.DISK_USERS_KEY).toString());
+		} catch (NumberFormatException e) {
+			// Assume there's not user
+		}
+
+		return users;
+	}
+	
+	public void addDiskUser(String path) {
+		int currentUser = getDiskUsers(path);
+		
+		setNode(path + "/" + DISK_USERS_KEY, String.valueOf(currentUser+1));
+	}
+	
+	public void removeDiskUser(String path) {
+		int currentUser = getDiskUsers(path);
+		
+		setNode(path + "/" + DISK_USERS_KEY, String.valueOf(currentUser-1));
+	}
+	
+	public Boolean isDiskAvailable(String path) {
+		return getDiskUsers(path) < PersistentDiskApplication.USERS_PER_DISK;
 	}
 
 	public ZooKeeper getZooKeeper() {

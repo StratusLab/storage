@@ -19,7 +19,6 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
-import static org.restlet.data.MediaType.APPLICATION_WWW_FORM;
 import static org.restlet.data.MediaType.TEXT_HTML;
 import static org.restlet.data.MediaType.TEXT_PLAIN;
 
@@ -33,7 +32,6 @@ import java.util.Properties;
 import java.util.UUID;
 
 import org.restlet.data.Form;
-import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.representation.StringRepresentation;
@@ -95,8 +93,8 @@ public class DisksResource extends BaseResource {
 	public Representation createDisk(Representation entity) {
 		Representation rep = null;
 		
-		checkEntity(entity);
-		checkMediaType(entity.getMediaType());
+		PersistentDiskApplication.checkEntity(entity);
+		PersistentDiskApplication.checkMediaType(entity.getMediaType());
 
 		Properties diskProperties = processWebForm();
 		String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
@@ -114,21 +112,6 @@ public class DisksResource extends BaseResource {
 		}
 		
 		return rep;
-	}
-
-	private void checkEntity(Representation entity) {
-		if (entity == null) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"post with null entity");
-		}
-	}
-
-	private void checkMediaType(MediaType mediaType) {
-		if (!APPLICATION_WWW_FORM.equals(mediaType, true)) {
-			throw new ResourceException(
-					Status.CLIENT_ERROR_UNSUPPORTED_MEDIA_TYPE,
-					mediaType.getName());
-		}
 	}
 
 	private Properties processWebForm() {
@@ -151,7 +134,8 @@ public class DisksResource extends BaseResource {
 		properties.put(DiskProperties.UUID_KEY, generateUUID());
 		properties.put(DiskProperties.DISK_OWNER_KEY, getUsername());
 		properties.put(DiskProperties.DISK_CREATION_DATE_KEY, getDateTime());
-
+		properties.put(DiskProperties.DISK_USERS_KEY, "0");
+		
 		return properties;
 	}
 

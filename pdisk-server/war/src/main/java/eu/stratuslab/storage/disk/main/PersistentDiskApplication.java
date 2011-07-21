@@ -19,6 +19,8 @@
  */
 package eu.stratuslab.storage.disk.main;
 
+import static org.restlet.data.MediaType.APPLICATION_WWW_FORM;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -29,8 +31,10 @@ import org.restlet.Context;
 import org.restlet.Restlet;
 import org.restlet.data.ChallengeScheme;
 import org.restlet.data.LocalReference;
+import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.freemarker.ContextTemplateLoader;
+import org.restlet.representation.Representation;
 import org.restlet.resource.Directory;
 import org.restlet.resource.ResourceException;
 import org.restlet.routing.Router;
@@ -78,6 +82,8 @@ public class PersistentDiskApplication extends Application {
 
 	public static final File ISCSI_CONFIG;
 	public static final String ISCSI_ADMIN;
+	
+	public static final int USERS_PER_DISK;
 
 	private Configuration freeMarkerConfiguration = null;
 	
@@ -100,6 +106,8 @@ public class PersistentDiskApplication extends Application {
 		
 		ISCSI_CONFIG = getISCSIConfig();
 		ISCSI_ADMIN = getCommand("disk.store.iscsi.admin");
+		
+		USERS_PER_DISK = getUsersPerDisks();
 	}
 	
 
@@ -233,12 +241,41 @@ public class PersistentDiskApplication extends Application {
 		return lvmGroup;
 	}
 	
+	private static int getUsersPerDisks() {
+		String users = getConfigValue("disk.store.user_per_disk");
+		int userNo = 0;
+		
+		try {
+			userNo = Integer.parseInt(users);
+		} catch (NumberFormatException e) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Unable to get user per disk value");
+		}
+
+		return userNo;
+	}
+	
 	private static void checkLVMGroupExists(String lvmGroup) {
 		ProcessBuilder pb = new ProcessBuilder(
 				PersistentDiskApplication.VGDISPLAY_CMD, lvmGroup);
 
 		ProcessUtils.execute("checkLVMGroupExists", pb,
 			"LVM Group does not exists. Please create it and restart pdisk service");
+	}
+	
+	public static void checkEntity(Representation entity) {
+		if (entity == null) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"post with null entity");
+		}
+	}
+
+	public static void checkMediaType(MediaType mediaType) {
+		if (!APPLICATION_WWW_FORM.equals(mediaType, true)) {
+			throw new ResourceException(
+					Status.CLIENT_ERROR_UNSUPPORTED_MEDIA_TYPE,
+					mediaType.getName());
+		}
 	}
 
 	@Override
