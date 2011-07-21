@@ -1,20 +1,31 @@
 #!/bin/bash
 
+if [ "x$1" = "x" ]
+then
+    echo "usage: $0 VM_ID"
+    exit 1
+fi
+
 ISCSIADM=/sbin/iscsiadm
+DEVICES_MARKER="/tmp/stratuslab-pdisk-iscsi.prop"
+INFO_SEPARATOR="#"
 
-DIR=$1
-IMAGE_DIR=$DIR/images
+VM_ID=$1
 
-# Hardcoded (for now) portal information. 
-PORTAL_IP=134.158.75.2
-PORTAL_PORT=3260
-PORTAL="$PORTAL_IP:$PORTAL_PORT"
+PDISK_PROP=`grep -m 1 ^$VM_ID $DEVICES_MARKER`
 
-# Loop over all of the *.iscsi.uuid disks to detach them.
-shopt -s nullglob
-echo $IMAGE_DIR >> /tmp/detach.log
-for i in $IMAGE_DIR/*.iscsi.uuid; do
-  DISK=`cat $i`
-  DETACH_CMD="$ISCSIADM --mode node --portal $PORTAL --targetname $DISK --logout"
-  $DETACH_CMD
-done
+# Nothing to do is no pdisk attached
+[ "x$PDISK_PROP" = "x" ] && exit 0
+
+# Retrieve disk informations
+DISK=`echo $PDISK_PROP | cut -d $INFO_SEPARATOR -f 2`
+PORTAL=`echo $PDISK_PROP | cut -d $INFO_SEPARATOR -f 3`
+
+# Detach disk
+DETACH_CMD="$ISCSIADM --mode node --portal $PORTAL --targetname $DISK --logout"
+$DETACH_CMD
+echo $DETACH_CMD
+
+# Remove disk entry
+sed -i "s/^${VM_ID}.*//;/^$/d;" $DEVICES_MARKER
+
