@@ -41,7 +41,11 @@ public class DiskResource extends BaseResource {
 
 	@Get
 	public Representation getDiskProperties() {
-		if (hasQueryString("json")) {
+		if (hasQueryString("hold")) {
+			return holdDisk();
+		} else if (hasQueryString("release")) {
+			return releaseDisk();
+		} else if (hasQueryString("json")) {
 			return getJsonDiskProperties();
 		}
 
@@ -79,7 +83,15 @@ public class DiskResource extends BaseResource {
 
 		return zk.getDiskProperties(propertiesPath);
 	}
-
+	
+	private Representation holdDisk() {
+		return null;
+	}
+	
+	private Representation releaseDisk() {
+		return null;
+	}
+	
 	@Delete
 	public Representation deleteDisk() {
 		Representation rep = null;
@@ -131,7 +143,8 @@ public class DiskResource extends BaseResource {
 		ProcessBuilder pb = new ProcessBuilder(
 				PersistentDiskApplication.LVREMOVE_CMD, "-f", volumePath);
 
-		ProcessUtils.execute("removeLVMDisk", pb);
+		ProcessUtils.execute("removeLVMDisk", pb,
+			"It's possible that the disk " + uuid + " is still logged on a node.");
 	}
 	
 	private String getDiskZkPath() {

@@ -17,7 +17,7 @@ public class ProcessUtils {
 		return exec.isFile() && exec.canExecute();
 	}
 	
-	public static void execute(String id, ProcessBuilder pb) {
+	public static void execute(String id, ProcessBuilder pb, String errorMsg) {
 		int returnCode = 1;
 		Process process;
 
@@ -33,15 +33,14 @@ public class ProcessUtils {
 			returnCode = process.exitValue();
 		} catch (IOException e) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"An error occured while executing " + id + e.getMessage());
+				"An error occured while executing " + id + ".\n" + errorMsg);
 		} catch (InterruptedException consumed) {
 			// Just continue with the loop.
 		}
 
 		if (returnCode != 0) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"An error occured while executing " + id);
-//					"An error occured while executing " + pb.command().toString());
+				"An error occured while executing " + id + ".\n" + errorMsg);
 		}
 	}
 	

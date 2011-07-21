@@ -72,6 +72,7 @@ public class PersistentDiskApplication extends Application {
 	public static final File FILE_DISK_LOCATION;
 	public static final String LVM_GROUPE_PATH;
 
+	public static final String VGDISPLAY_CMD;
 	public static final String LVCREATE_CMD;
 	public static final String LVREMOVE_CMD;
 
@@ -90,11 +91,13 @@ public class PersistentDiskApplication extends Application {
 
 		DISK_TYPE = getDiskType();
 		FILE_DISK_LOCATION = getFileDiskLocation();
-		LVM_GROUPE_PATH = getLVMGroup();
-
+		
+		VGDISPLAY_CMD = getCommand("disk.store.lvm.vgdisplay");
 		LVCREATE_CMD = getCommand("disk.store.lvm.create");
 		LVREMOVE_CMD = getCommand("disk.store.lvm.remove");
 
+		LVM_GROUPE_PATH = getLVMGroup();
+		
 		ISCSI_CONFIG = getISCSIConfig();
 		ISCSI_ADMIN = getCommand("disk.store.iscsi.admin");
 	}
@@ -205,7 +208,7 @@ public class PersistentDiskApplication extends Application {
 
 		if (!ProcessUtils.isExecutable(exec)) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"LVREMOVE commamd does not exists or not executable");
+					configValue + " commamd does not exists or not executable");
 		}
 		
 		return configValue;
@@ -224,14 +227,18 @@ public class PersistentDiskApplication extends Application {
 
 	private static String getLVMGroup() {
 		String lvmGroup = getConfigValue("disk.store.lvm.device");
-		File handler = new File(lvmGroup);
-
-		if (!handler.isDirectory()) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"LVM group specified seems to be wrong.");
-		}
+		
+		checkLVMGroupExists(lvmGroup);
 
 		return lvmGroup;
+	}
+	
+	private static void checkLVMGroupExists(String lvmGroup) {
+		ProcessBuilder pb = new ProcessBuilder(
+				PersistentDiskApplication.VGDISPLAY_CMD, lvmGroup);
+
+		ProcessUtils.execute("checkLVMGroupExists", pb,
+			"LVM Group does not exists. Please create it and restart pdisk service");
 	}
 
 	@Override

@@ -228,7 +228,8 @@ public class DisksResource extends BaseResource {
 				PersistentDiskApplication.LVCREATE_CMD, "-L", lvmSize,
 				PersistentDiskApplication.LVM_GROUPE_PATH, "-n", uuid);
 
-		ProcessUtils.execute("createLvmDisk", pb);
+		ProcessUtils.execute("createLvmDisk", pb,
+			"Unable to recreate the LVM volume.");
 	}
 
 	private static void saveDiskProperties(Properties properties) {

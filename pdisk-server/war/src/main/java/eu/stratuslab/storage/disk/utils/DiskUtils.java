@@ -39,7 +39,10 @@ public final class DiskUtils {
 		ProcessBuilder pb = new ProcessBuilder(
 				PersistentDiskApplication.ISCSI_ADMIN, "--update", "ALL");
 
-		ProcessUtils.execute("updateISCSIServer", pb);
+		ProcessUtils.execute("updateISCSIServer", pb,
+				"Perhaps there is a syntax error in " + 
+				PersistentDiskApplication.ISCSI_CONFIG.getAbsolutePath() +
+				" or in " + PersistentDiskApplication.ISCSI_CONFIG_FILENAME);
 	}
 
 	public static List<String> getAllDisks() {
