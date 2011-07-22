@@ -40,9 +40,6 @@ import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
 public class DiskResource extends BaseResource {
-
-	private final static String RESPONSE_TRUE = "1";
-	private final static String RESPONSE_FALSE = "0";
 	
 	@Get
 	public Representation getDiskProperties() {
@@ -95,45 +92,32 @@ public class DiskResource extends BaseResource {
 		for (String query : form.getNames()) {
 			
 			if (query.equalsIgnoreCase("available")) {
-				return diskAvailable();
+				return diskAvailability();
 			} else if (query.equalsIgnoreCase("attach") ) {
-				return attachDisk();
-			} else if (query.equalsIgnoreCase("detach")) {
-				return detachDisk();
+				return attachDisk(form.getFirstValue(query));
 			}
 		}
 		
-		return new StringRepresentation(RESPONSE_FALSE);
+		return new StringRepresentation(PersistentDiskApplication.RESPONSE_FAILLED);
 	}
 	
 	private Boolean isDiskAvailable() {
-		return zk.isDiskAvailable(getDiskZkPath());
+		return zk.canAttachDisk(getDiskZkPath());
 	}
 	
-	private Representation diskAvailable() {
-		if (isDiskAvailable()) {
-			return new StringRepresentation(RESPONSE_TRUE);
-		} else {
-			return new StringRepresentation(RESPONSE_FALSE);
-		}
+	private Representation diskAvailability() {
+		return new StringRepresentation(
+				String.valueOf(zk.remainingFreeUser(getDiskZkPath()))
+			);
 	}
 	
-	private Representation attachDisk() {
+	private Representation attachDisk(String userId) {
 		if (isDiskAvailable()) {
-			zk.addDiskUser(getDiskZkPath());
-			return new StringRepresentation(RESPONSE_TRUE);
+			zk.addDiskUser(getDiskId(), userId);
+			return new StringRepresentation(PersistentDiskApplication.RESPONSE_SUCCESS);
 		}
 
-		return new StringRepresentation(RESPONSE_FALSE);
-	}
-	
-	private Representation detachDisk() {
-		if (zk.getDiskUsers(getDiskZkPath()) > 0) {
-			zk.removeDiskUser(getDiskZkPath());
-			return new StringRepresentation(RESPONSE_TRUE);
-		}
-
-		return new StringRepresentation(RESPONSE_FALSE);
+		return new StringRepresentation(PersistentDiskApplication.RESPONSE_FAILLED);
 	}
 	
 	@Delete

@@ -64,13 +64,17 @@ public class PersistentDiskApplication extends Application {
 	public static final int DISK_SIZE_MIN = 1;
 	public static final int DISK_SIZE_MAX = 1024;
 	
+	public final static String RESPONSE_SUCCESS = "1";
+	public final static String RESPONSE_FAILLED = "0";
+	
 
 	// TODO: Move configuration stuff into separate class
 	public static final Properties CONFIGURATION;
 
 	public static final String ZK_ADDRESS;
 	public static final int ZK_PORT;
-	public static final String ZK_ROOT_PATH;
+	public static final String ZK_DISKS_PATH;
+	public static final String ZK_USERS_PATH;
 
 	public static final DiskType DISK_TYPE;
 	public static final File FILE_DISK_LOCATION;
@@ -93,7 +97,8 @@ public class PersistentDiskApplication extends Application {
 		ZK_ADDRESS = getConfigValue("disk.store.zookeeper.address");
 		ZK_PORT = Integer
 				.parseInt(getConfigValue("disk.store.zookeeper.port"));
-		ZK_ROOT_PATH = getConfigValue("disk.store.zookeeper.root");
+		ZK_DISKS_PATH = getConfigValue("disk.store.zookeeper.disks");
+		ZK_USERS_PATH = getConfigValue("disk.store.zookeeper.users");
 
 		DISK_TYPE = getDiskType();
 		FILE_DISK_LOCATION = getFileDiskLocation();

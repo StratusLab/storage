@@ -70,9 +70,14 @@ public class DiskProperties {
 		}
 
 		try {
-			if (zk.exists(PersistentDiskApplication.ZK_ROOT_PATH, false) == null) {
-				zk.create(PersistentDiskApplication.ZK_ROOT_PATH,
-						"pdisk".getBytes(), Ids.OPEN_ACL_UNSAFE,
+			if (zk.exists(PersistentDiskApplication.ZK_DISKS_PATH, false) == null) {
+				zk.create(PersistentDiskApplication.ZK_DISKS_PATH,
+						"pdiskDisks".getBytes(), Ids.OPEN_ACL_UNSAFE,
+						CreateMode.PERSISTENT);
+			}
+			if (zk.exists(PersistentDiskApplication.ZK_USERS_PATH, false) == null) {
+				zk.create(PersistentDiskApplication.ZK_USERS_PATH,
+						"pdiskUsers".getBytes(), Ids.OPEN_ACL_UNSAFE,
 						CreateMode.PERSISTENT);
 			}
 		} catch (KeeperException e) {
@@ -87,7 +92,7 @@ public class DiskProperties {
 	public List<String> getDisks() {
 		List<String> disks = null;
 		try {
-			disks = zk.getChildren(PersistentDiskApplication.ZK_ROOT_PATH,
+			disks = zk.getChildren(PersistentDiskApplication.ZK_DISKS_PATH,
 					false);
 		} catch (KeeperException e) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -101,11 +106,6 @@ public class DiskProperties {
 	}
 
 	public void createNode(String path, String content) {
-		if (diskExists(path)) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"Disk with same uuid already exists");
-		}
-		
 		try {
 			zk.create(path, content.getBytes(), Ids.OPEN_ACL_UNSAFE,
 					CreateMode.PERSISTENT);
@@ -152,6 +152,18 @@ public class DiskProperties {
 	private void setNode(String root, String value) {
 		try {
 			zk.setData(root, value.getBytes(), -1);
+		} catch (KeeperException e) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"ZooKeeper error: " + e.getMessage());
+		} catch (InterruptedException e) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					e.getMessage());
+		}
+	}
+	
+	private void deleteNode(String root) {
+		try {
+			zk.delete(root, -1);
 		} catch (KeeperException e) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"ZooKeeper error: " + e.getMessage());
@@ -228,7 +240,7 @@ public class DiskProperties {
 		}
 	}
 	
-	public int getDiskUsers(String path) {
+	public int getDiskUsersNo(String path) {
 		Properties diskProp = getDiskProperties(path);
 		int users = 0;
 		
@@ -241,20 +253,56 @@ public class DiskProperties {
 		return users;
 	}
 	
-	public void addDiskUser(String path) {
-		int currentUser = getDiskUsers(path);
-		
-		setNode(path + "/" + DISK_USERS_KEY, String.valueOf(currentUser+1));
+	private String getDiskUserPath(String userId) {
+		return PersistentDiskApplication.ZK_USERS_PATH + "/" + userId;
 	}
 	
-	public void removeDiskUser(String path) {
-		int currentUser = getDiskUsers(path);
+	private String getDiskPath(String uuid) {
+		return PersistentDiskApplication.ZK_DISKS_PATH + "/" + uuid;
+	}
+	
+	public void addDiskUser(String uuid, String userId) {
+		String path = getDiskPath(uuid);
+		int currentUsers = getDiskUsersNo(path);
 		
+		createNode(getDiskUserPath(userId), uuid);
+		setNode(path + "/" + DISK_USERS_KEY, String.valueOf(currentUsers+1));
+	}
+	
+	private String getUsedDisk(String userId) {
+		return getNode(getDiskUserPath(userId));
+	}
+	
+	public String removeDiskUser(String userId) {
+		String uuid = getUsedDisk(userId);
+		String path = getDiskPath(uuid);
+		int currentUser = getDiskUsersNo(path);
+		
+		deleteNode(getDiskUserPath(userId));
 		setNode(path + "/" + DISK_USERS_KEY, String.valueOf(currentUser-1));
+		
+		return uuid;
 	}
 	
-	public Boolean isDiskAvailable(String path) {
-		return getDiskUsers(path) < PersistentDiskApplication.USERS_PER_DISK;
+	public int remainingFreeUser(String path) {
+		return PersistentDiskApplication.USERS_PER_DISK - getDiskUsersNo(path);
+	}
+	
+	public Boolean isUser(String userId) {
+		Boolean user = false;
+		
+		try {
+			zk.getData(getDiskUserPath(userId), false, null);
+			user = true;
+		} catch (KeeperException e) {
+		} catch (InterruptedException e) {
+		}
+		
+		return user;
+	}
+	
+	public Boolean canAttachDisk(String path) {
+		return getDiskUsersNo(path) < PersistentDiskApplication.USERS_PER_DISK;
 	}
 
 	public ZooKeeper getZooKeeper() {

@@ -35,6 +35,7 @@ import org.restlet.data.Form;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.representation.StringRepresentation;
+import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
@@ -231,6 +232,25 @@ public class DisksResource extends BaseResource {
 
 			zk.createNode(diskRoot + "/" + key, content);
 		}
+	}
+	
+	@Delete
+	public Representation detachDisk(Representation entity) {
+		PersistentDiskApplication.checkEntity(entity);
+		PersistentDiskApplication.checkMediaType(entity.getMediaType());
+		
+		Form form = new Form(entity);
+		String userId = form.getFirstValue("detach", "");
+		
+		if (userId == "") {
+			return new StringRepresentation(PersistentDiskApplication.RESPONSE_FAILLED);
+		}
+		
+		if (!zk.isUser(userId)) {
+			return new StringRepresentation(PersistentDiskApplication.RESPONSE_FAILLED);
+		}
+		
+		return new StringRepresentation(zk.removeDiskUser(userId));
 	}
 
 }

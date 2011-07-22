@@ -116,7 +116,7 @@ public class BaseResource extends ServerResource {
 	}
 
 	protected static String getDiskZkPath(String uuid) {
-		return PersistentDiskApplication.ZK_ROOT_PATH + "/" + uuid;
+		return PersistentDiskApplication.ZK_DISKS_PATH + "/" + uuid;
 	}
 
 	protected Boolean hasSuficientRightsToView(Properties properties) {
