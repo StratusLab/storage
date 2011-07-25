@@ -160,6 +160,32 @@ JETTY_INSTALL_TRACE_FILE="etc/jetty.xml"
 AUTORUN_ZOOKEEPER=1 
 ZOOKEEPER_SERVER_CMD=/opt/stratuslab/storage/pdisk/zookeeper/bin/zkServer.sh
 
+
+##################################################
+# ZooKeeper management
+##################################################
+zookeeper_action() {
+    local ACT=$1
+    if [ $AUTORUN_ZOOKEEPER -eq 1 ]
+    then
+        if [ "x$ACT" != "xrestart" ]
+        then
+            echo -n "Trying to $ACT ZooKeeper service... "
+            /bin/sh $ZOOKEEPER_SERVER_CMD $ACT &>> /var/log/zookeeper.log
+            [ $? -gt 0 ] && echo "FAILED" || echo "OK"
+        fi
+    fi
+}
+
+##################################################
+# Start tgtd
+##################################################
+start_tgtd() {
+    TGT_SERV="/etc/init.d/tgtd"
+    $TGT_SERV status &>/dev/null
+    [ $? -gt 0 ] && $TGT_SERV start 
+}
+
 ##################################################
 # Try to determine JETTY_HOME if not set
 ##################################################
@@ -439,12 +465,15 @@ case "$ACTION" in
           disown \$!
           echo \$! > '$JETTY_PID'"
       else
-        "${RUN_CMD[@]}" &
+        nohup "${RUN_CMD[@]}" &>/dev/null &
         disown $!
         echo $! > "$JETTY_PID"
+        sleep 3
       fi
 
       echo "STARTED Jetty `date`" 
+      zookeeper_action start
+      start_tgtd
     fi
 
     ;;
@@ -480,6 +509,7 @@ case "$ACTION" in
 
       rm -f "$JETTY_PID"
       echo OK
+      zookeeper_action stop
     fi
 
     ;;
@@ -557,29 +587,6 @@ case "$ACTION" in
 
     ;;
 esac
-    
-sleep 1
-
-## ZooKeeper management
-if [ $AUTORUN_ZOOKEEPER -eq 1 ]
-then
-    if [ "x$ACTION" != "xrestart" ]
-    then
-        echo -n "Trying to $ACTION ZooKeeper service... "
-        /bin/sh $ZOOKEEPER_SERVER_CMD $ACTION &>> /var/log/zookeeper.log
-        [ $? -gt 0 ] && echo "FAILED" || echo "OK"
-    fi
-fi
-
-## Start tgtd if not
-if [ "x$ACTION" = "xstart" ]
-then
-    TGT_SERV="/etc/init.d/tgtd"
-
-    $TGT_SERV status &>/dev/null
-
-    [ $? -gt 0 ] && $TGT_SERV start 
-fi
 
 exit 0
 
