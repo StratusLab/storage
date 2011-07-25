@@ -132,6 +132,12 @@ public class DiskResource extends BaseResource {
 					"Not enought rights to delete disk");
 		}
 
+		if (zk.getDiskUsersNo(getDiskZkPath()) > 0) {
+			// TODO: Use queue messaging system here
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"Can't remove the disk as it is in use");
+		}
+		
 		zk.deleteDiskProperties(getDiskZkPath());
 		DiskUtils.updateISCSIConfiguration();
 		removeDisk(uuid);
