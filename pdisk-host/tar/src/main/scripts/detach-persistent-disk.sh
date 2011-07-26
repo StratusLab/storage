@@ -2,30 +2,35 @@
 
 if [ "x$1" = "x" ]
 then
-    echo "usage: $0 VM_ID"
+    echo "usage: $0 DISK_UUID PORTAL_ADDR"
     exit 1
 fi
 
 ISCSIADM=/sbin/iscsiadm
-DEVICES_MARKER="/tmp/stratuslab-pdisk-iscsi.prop"
-INFO_SEPARATOR="#"
+DISK_UUID=$1
+PORTAL_ADDR=$2
 
-VM_ID=$1
+# Must contact the server to discover what disks are available.
+DISCOVER_CMD="sudo $ISCSIADM --mode discovery --type sendtargets --portal $PORTAL_ADDR"
+echo $DISCOVER_CMD
+DISCOVER_OUT=`$DISCOVER_CMD | grep -m 1 $DISK_UUID`
 
-PDISK_PROP=`grep -m 1 ^$VM_ID $DEVICES_MARKER`
+if [ "x$DISCOVER_OUT" = "x" ]
+then
+    echo "Unable to find disk $DISK_UUID at $PORTAL_ADDR"
+    exit 1
+fi
 
-# Nothing to do is no pdisk attached
-[ "x$PDISK_PROP" = "x" ] && exit 0
+# Portal informations
+PORTAL_IP=`echo $DISCOVER_OUT | cut -d ':' -f 1`
+PORTAL_PORT=`echo $DISCOVER_OUT | cut -d ':' -f 2 | cut -d ',' -f 1`
+PORTAL=${PORTAL_IP}:${PORTAL_PORT}
 
-# Retrieve disk informations
-DISK=`echo $PDISK_PROP | cut -d $INFO_SEPARATOR -f 2`
-PORTAL=`echo $PDISK_PROP | cut -d $INFO_SEPARATOR -f 3`
+# Disk information
+DISK=`echo $DISCOVER_OUT | cut -d ' ' -f 2`
 
 # Detach disk
 DETACH_CMD="$ISCSIADM --mode node --portal $PORTAL --targetname $DISK --logout"
 $DETACH_CMD
 echo $DETACH_CMD
-
-# Remove disk entry
-sed -i "s/^${VM_ID}.*//;/^$/d;" $DEVICES_MARKER
 

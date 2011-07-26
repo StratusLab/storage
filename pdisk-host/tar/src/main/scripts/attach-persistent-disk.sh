@@ -3,19 +3,14 @@
 if [ "x$2" = "x" ]
 then
     echo "usage: $0 UUID_URL DEVICE_PATH"
-    echo "UUID_URL have to be pdisk:portal_address:disk_uuid"
+    echo "UUID_URL have to be pdisk:<portal_address>:<disk_uuid>"
     exit 1
 fi
 
 ISCSIADM=/sbin/iscsiadm
-DEVICES_MARKER="/tmp/stratuslab-pdisk-iscsi.prop"
-INFO_SEPARATOR="#"
 
 UUID_URL=$1
 DEVICE_LINK=$2
-
-VM_DIR=`dirname $DEVICE_LINK`
-VM_ID=`basename $VM_DIR`
 
 PORTAL=`echo $UUID_URL | cut -d ':' -f 2`
 DISK_UUID=`echo $UUID_URL | cut -d ':' -f 3`
@@ -54,7 +49,4 @@ sleep 2
 REAL_DEV=`readlink -e -n $DISK_PATH`
 LINK_CMD="ln -fs $REAL_DEV $DEVICE_LINK"
 $LINK_CMD
-
-# Save information to logout disk
-echo "${VM_ID}${INFO_SEPARATOR}${DISK}${INFO_SEPARATOR}${PORTAL}" >> $DEVICES_MARKER
 
