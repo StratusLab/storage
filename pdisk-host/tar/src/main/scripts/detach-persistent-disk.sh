@@ -30,7 +30,7 @@ PORTAL=${PORTAL_IP}:${PORTAL_PORT}
 DISK=`echo $DISCOVER_OUT | cut -d ' ' -f 2`
 
 # Detach disk
-DETACH_CMD="$ISCSIADM --mode node --portal $PORTAL --targetname $DISK --logout"
+DETACH_CMD="sudo $ISCSIADM --mode node --portal $PORTAL --targetname $DISK --logout"
 $DETACH_CMD
 echo $DETACH_CMD
 
