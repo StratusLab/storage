@@ -24,11 +24,18 @@ import static org.restlet.data.MediaType.TEXT_HTML;
 import java.util.Map;
 
 import org.restlet.representation.Representation;
+import org.restlet.representation.StringRepresentation;
 import org.restlet.resource.Get;
+
+import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 
 public class HomeResource extends BaseResource {
 	@Get
 	public Representation getHomePage() {
+		if (hasQueryString("json")) {
+			return new StringRepresentation(PersistentDiskApplication.RESPONSE_SUCCESS);
+		}
+		
 		Map<String, Object> infos = createInfoStructure("Home");
 		return createTemplateRepresentation("html/home.ftl", infos, TEXT_HTML);
 	}
