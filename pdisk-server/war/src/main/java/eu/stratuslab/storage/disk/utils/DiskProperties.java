@@ -48,8 +48,7 @@ public class DiskProperties {
 	public DiskProperties() {
 		// ZooKeeper connection
 		try {
-			zk = new ZooKeeper(PersistentDiskApplication.ZK_ADDRESS,
-					PersistentDiskApplication.ZK_PORT, null);
+			zk = new ZooKeeper(PersistentDiskApplication.ZK_ADDRESSES, 3000, null);
 		} catch (Exception e) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"Unable to connect to ZooKeeper: " + e.getMessage());

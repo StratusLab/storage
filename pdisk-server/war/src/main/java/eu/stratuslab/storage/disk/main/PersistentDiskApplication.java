@@ -71,8 +71,7 @@ public class PersistentDiskApplication extends Application {
 	// TODO: Move configuration stuff into separate class
 	public static final Properties CONFIGURATION;
 
-	public static final String ZK_ADDRESS;
-	public static final int ZK_PORT;
+	public static final String ZK_ADDRESSES;
 	public static final String ZK_DISKS_PATH;
 	public static final String ZK_USERS_PATH;
 
@@ -94,9 +93,8 @@ public class PersistentDiskApplication extends Application {
 	static {
 		CONFIGURATION = readConfigFile();
 		
-		ZK_ADDRESS = getConfigValue("disk.store.zookeeper.address");
-		ZK_PORT = Integer
-				.parseInt(getConfigValue("disk.store.zookeeper.port"));
+		ZK_ADDRESSES = getConfigValue("disk.store.zookeeper.address");
+
 		ZK_DISKS_PATH = getConfigValue("disk.store.zookeeper.disks");
 		ZK_USERS_PATH = getConfigValue("disk.store.zookeeper.users");
 
