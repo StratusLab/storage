@@ -165,7 +165,7 @@ public class DiskResource extends BaseResource {
 		File diskFile = new File(PersistentDiskApplication.FILE_DISK_LOCATION,
 				uuid);
 
-		if (diskFile.delete()) {
+		if (!diskFile.delete()) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"An error occcured while removing disk content " + uuid);
 		}
