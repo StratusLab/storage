@@ -71,6 +71,8 @@ echo "Using config: $ZOOCFG"
 
 ZOOPIDFILE=$(grep dataDir "$ZOOCFG" | sed -e 's/.*=//')/zookeeper_server.pid
 
+mkdir -p $(dirname $ZOOPIDFILE)
+touch $ZOOPIDFILE
 
 case $1 in
 start)
