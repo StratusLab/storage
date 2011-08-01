@@ -55,6 +55,10 @@ public class PersistentDiskApplication extends Application {
 	public enum DiskType {
 		LVM, FILE;
 	}
+	
+	public enum ShareType {
+		ISCSI, NFS;
+	}
 
 	// Configuration file
 	public static final String CFG_FILENAME = "/etc/stratuslab/pdisk.cfg";
@@ -71,20 +75,22 @@ public class PersistentDiskApplication extends Application {
 	// TODO: Move configuration stuff into separate class
 	public static final Properties CONFIGURATION;
 
+	public static final ShareType SHARE_TYPE;
+	
 	public static final String ZK_ADDRESSES;
 	public static final String ZK_DISKS_PATH;
 	public static final String ZK_USERS_PATH;
 
-	public static final DiskType DISK_TYPE;
-	public static final File FILE_DISK_LOCATION;
+	public static final DiskType ISCSI_DISK_TYPE;
+	public static final File ISCSI_CONFIG;
+	public static final String ISCSI_ADMIN;
+	
 	public static final String LVM_GROUPE_PATH;
-
 	public static final String VGDISPLAY_CMD;
 	public static final String LVCREATE_CMD;
 	public static final String LVREMOVE_CMD;
-
-	public static final File ISCSI_CONFIG;
-	public static final String ISCSI_ADMIN;
+	
+	public static final File STORAGE_LOCATION;
 	
 	public static final int USERS_PER_DISK;
 
@@ -93,22 +99,22 @@ public class PersistentDiskApplication extends Application {
 	static {
 		CONFIGURATION = readConfigFile();
 		
+		SHARE_TYPE = getShareType();
+		
 		ZK_ADDRESSES = getConfigValue("disk.store.zookeeper.address");
-
 		ZK_DISKS_PATH = getConfigValue("disk.store.zookeeper.disks");
 		ZK_USERS_PATH = getConfigValue("disk.store.zookeeper.users");
-
-		DISK_TYPE = getDiskType();
-		FILE_DISK_LOCATION = getFileDiskLocation();
 		
 		VGDISPLAY_CMD = getCommand("disk.store.lvm.vgdisplay");
 		LVCREATE_CMD = getCommand("disk.store.lvm.create");
 		LVREMOVE_CMD = getCommand("disk.store.lvm.remove");
-
 		LVM_GROUPE_PATH = getLVMGroup();
 		
+		ISCSI_DISK_TYPE = getDiskType();
 		ISCSI_CONFIG = getISCSIConfig();
 		ISCSI_ADMIN = getCommand("disk.store.iscsi.admin");
+		
+		STORAGE_LOCATION = getDiskLocation();
 		
 		USERS_PER_DISK = getUsersPerDisks();
 	}
@@ -152,6 +158,19 @@ public class PersistentDiskApplication extends Application {
 
 		return properties;
 	}
+	
+	private static ShareType getShareType() {
+		String type = getConfigValue("disk.store.share");
+		
+		if (type.equalsIgnoreCase("nfs")) {
+			return ShareType.NFS;
+		} else if (type.equalsIgnoreCase("iscsi")) {
+			return ShareType.ISCSI;
+		} else {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Share type not recognised, has " + type);
+		}
+	}
 
 	private static File getISCSIConfig() {
 		String iscsiConf = getConfigValue("disk.store.iscsi.conf");
@@ -181,13 +200,19 @@ public class PersistentDiskApplication extends Application {
 		return CONFIGURATION.getProperty(key);
 	}
 
-	private static File getFileDiskLocation() {
-		String diskStoreDir = getConfigValue("disk.store.file.location");
+	private static File getDiskLocation() {
+		String diskStoreDir;
+		if (PersistentDiskApplication.SHARE_TYPE == ShareType.ISCSI) {
+			diskStoreDir = getConfigValue("disk.store.iscsi.file.location");
+		} else {
+			diskStoreDir = getConfigValue("disk.store.nfs.location");
+		}
 
 		File diskStoreHandler = new File(diskStoreDir);
 
 		// Don't check if we use LVM
-		if (PersistentDiskApplication.DISK_TYPE.equals(DiskType.LVM)) {
+		if (PersistentDiskApplication.SHARE_TYPE == ShareType.ISCSI 
+				&& PersistentDiskApplication.ISCSI_DISK_TYPE == DiskType.LVM) {
 			return diskStoreHandler;
 		}
 
@@ -201,7 +226,7 @@ public class PersistentDiskApplication extends Application {
 	}
 
 	private static DiskType getDiskType() {
-		String diskType = getConfigValue("disk.store.type");
+		String diskType = getConfigValue("disk.store.iscsi.type");
 
 		if (diskType.equalsIgnoreCase("lvm"))
 			return DiskType.LVM;

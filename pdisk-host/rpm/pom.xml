@@ -93,6 +93,19 @@
             </mapping>
 
 	    <mapping>
+              <directory>/etc/stratuslab/</directory>
+              <filemode>755</filemode>
+              <username>root</username>
+              <groupname>root</groupname>
+              <directoryIncluded>false</directoryIncluded>
+              <sources>
+                <source>
+                  <location>target/dependency/tar/etc</location>
+                </source>
+              </sources>
+            </mapping>
+
+	    <mapping>
 	      <directory>/usr/share/stratuslab</directory>
 	      <filemode>644</filemode>
 	      <username>root</username>

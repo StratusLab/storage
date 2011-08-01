@@ -52,8 +52,8 @@ public final class DiskUtils {
 	}
 
 	private static String getDisksLocation() {
-		if (PersistentDiskApplication.DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
-			return PersistentDiskApplication.FILE_DISK_LOCATION.getAbsolutePath();
+		if (PersistentDiskApplication.ISCSI_DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
+			return PersistentDiskApplication.STORAGE_LOCATION.getAbsolutePath();
 		} else {
 			return PersistentDiskApplication.LVM_GROUPE_PATH;
 		}

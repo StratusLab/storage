@@ -10,6 +10,11 @@ ISCSIADM=/sbin/iscsiadm
 DISK_UUID=$1
 PORTAL_ADDR=$2
 
+. /etc/stratuslab/pdisk-host.cfg
+
+# Nothing to do for NFS sharing
+[ "x$SHARE_TYPE" = "xnfs" ] && exit 0
+
 # Must contact the server to discover what disks are available.
 DISCOVER_CMD="sudo $ISCSIADM --mode discovery --type sendtargets --portal $PORTAL_ADDR"
 echo $DISCOVER_CMD
@@ -33,4 +38,6 @@ DISK=`echo $DISCOVER_OUT | cut -d ' ' -f 2`
 DETACH_CMD="sudo $ISCSIADM --mode node --portal $PORTAL --targetname $DISK --logout"
 $DETACH_CMD
 echo $DETACH_CMD
+
+exit 0
 

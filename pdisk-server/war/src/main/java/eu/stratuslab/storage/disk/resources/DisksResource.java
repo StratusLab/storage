@@ -41,6 +41,7 @@ import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.main.PersistentDiskApplication.ShareType;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.FileUtils;
@@ -102,7 +103,7 @@ public class DisksResource extends BaseResource {
 
 		validateDiskProperties(diskProperties);
 		initializeDisk(diskProperties);
-		DiskUtils.updateISCSIConfiguration();
+		postDiskCreationAction();
 
 		if (hasQueryString("json")) {
 			setStatus(Status.SUCCESS_CREATED);
@@ -178,7 +179,8 @@ public class DisksResource extends BaseResource {
 		String uuid = properties.getProperty(DiskProperties.UUID_KEY).toString();
 		int size = Integer.parseInt(properties.getProperty("size").toString());
 
-		if (PersistentDiskApplication.DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
+		if (PersistentDiskApplication.SHARE_TYPE == ShareType.NFS
+				|| PersistentDiskApplication.ISCSI_DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
 			initializeFileDisk(uuid, size);
 		} else {
 			initializeLVMDisk(uuid, size);
@@ -188,7 +190,7 @@ public class DisksResource extends BaseResource {
 	}
 
 	private static void initializeFileDisk(String uuid, int size) {
-		File diskFile = new File(PersistentDiskApplication.FILE_DISK_LOCATION,
+		File diskFile = new File(PersistentDiskApplication.STORAGE_LOCATION,
 				uuid);
 
 		if (diskFile.exists()) {
@@ -231,6 +233,12 @@ public class DisksResource extends BaseResource {
 				continue;
 
 			zk.createNode(diskRoot + "/" + key, content);
+		}
+	}
+	
+	private static void postDiskCreationAction() {
+		if (PersistentDiskApplication.SHARE_TYPE == ShareType.ISCSI) {
+			DiskUtils.updateISCSIConfiguration();
 		}
 	}
 	

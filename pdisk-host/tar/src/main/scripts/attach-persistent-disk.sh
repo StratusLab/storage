@@ -2,10 +2,12 @@
 
 if [ "x$2" = "x" ]
 then
-    echo "usage: $0 UUID_URL DEVICE_PATH"
+    echo "usage: $0 UUID_URL DEVICE_LINK"
     echo "UUID_URL have to be pdisk:<portal_address>:<disk_uuid>"
     exit 1
 fi
+
+. /etc/stratuslab/pdisk-host.cfg
 
 ISCSIADM=/sbin/iscsiadm
 
@@ -14,6 +16,25 @@ DEVICE_LINK=$2
 
 PORTAL=`echo $UUID_URL | cut -d ':' -f 2`
 DISK_UUID=`echo $UUID_URL | cut -d ':' -f 3`
+
+#### NFS sharing ####
+
+if [ "x$SHARE_TYPE" = "xnfs" ]
+then
+    if [ -b "${NFS_LOCATION}/${DISK_UUID}" ]
+    then
+        echo "Disk $DISK_UUID does not exist on NFS share"
+        exit 1
+    fi
+
+    ATTACH_CMD="ln -fs ${NFS_LOCATION}/${DISK_UUID} $DEVICE_LINK"
+    echo $ATTACH_CMD
+    $ATTACH_CMD
+
+    exit 0
+fi 
+
+#### iSCSI sharing ####
 
 # Must contact the server to discover what disks are available.
 DISCOVER_CMD="sudo $ISCSIADM --mode discovery --type sendtargets --portal $PORTAL"
@@ -49,4 +70,6 @@ sleep 2
 REAL_DEV=`readlink -e -n $DISK_PATH`
 LINK_CMD="ln -fs $REAL_DEV $DEVICE_LINK"
 $LINK_CMD
+
+exit 0
 

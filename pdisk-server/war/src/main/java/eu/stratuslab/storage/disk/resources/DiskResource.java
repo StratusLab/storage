@@ -36,11 +36,12 @@ import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.main.PersistentDiskApplication.ShareType;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
 public class DiskResource extends BaseResource {
-	
+
 	@Get
 	public Representation getDiskProperties() {
 		if (hasQueryString("json")) {
@@ -81,45 +82,47 @@ public class DiskResource extends BaseResource {
 
 		return zk.getDiskProperties(propertiesPath);
 	}
-	
+
 	@Post
 	public Representation manageDiskUser(Representation entity) {
 		PersistentDiskApplication.checkEntity(entity);
 		PersistentDiskApplication.checkMediaType(entity.getMediaType());
-		
+
 		Form form = new Form(entity);
 
 		for (String query : form.getNames()) {
-			
+
 			if (query.equalsIgnoreCase("available")) {
 				return diskAvailability();
-			} else if (query.equalsIgnoreCase("attach") ) {
+			} else if (query.equalsIgnoreCase("attach")) {
 				return attachDisk(form.getFirstValue(query));
 			}
 		}
-		
-		return new StringRepresentation(PersistentDiskApplication.RESPONSE_FAILLED);
+
+		return new StringRepresentation(
+				PersistentDiskApplication.RESPONSE_FAILLED);
 	}
-	
+
 	private Boolean isDiskAvailable() {
 		return zk.canAttachDisk(getDiskZkPath());
 	}
-	
+
 	private Representation diskAvailability() {
-		return new StringRepresentation(
-				String.valueOf(zk.remainingFreeUser(getDiskZkPath()))
-			);
+		return new StringRepresentation(String.valueOf(zk
+				.remainingFreeUser(getDiskZkPath())));
 	}
-	
+
 	private Representation attachDisk(String userId) {
 		if (isDiskAvailable()) {
 			zk.addDiskUser(getDiskId(), userId);
-			return new StringRepresentation(PersistentDiskApplication.RESPONSE_SUCCESS);
+			return new StringRepresentation(
+					PersistentDiskApplication.RESPONSE_SUCCESS);
 		}
 
-		return new StringRepresentation(PersistentDiskApplication.RESPONSE_FAILLED);
+		return new StringRepresentation(
+				PersistentDiskApplication.RESPONSE_FAILLED);
 	}
-	
+
 	@Delete
 	public Representation deleteDisk() {
 		Representation rep = null;
@@ -137,9 +140,9 @@ public class DiskResource extends BaseResource {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					"Can't remove the disk as it is in use");
 		}
-		
+
 		zk.deleteDiskProperties(getDiskZkPath());
-		DiskUtils.updateISCSIConfiguration();
+		postDiskRemovalAction();
 		removeDisk(uuid);
 
 		if (hasQueryString("json")) {
@@ -149,12 +152,13 @@ public class DiskResource extends BaseResource {
 			// TODO: Use queue messaging system here
 			redirectSeeOther(getBaseUrl() + "/disks/?deleted");
 		}
-		
+
 		return rep;
 	}
 
 	private static void removeDisk(String uuid) {
-		if (PersistentDiskApplication.DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
+		if (PersistentDiskApplication.SHARE_TYPE == ShareType.NFS
+				|| PersistentDiskApplication.ISCSI_DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
 			removeFileDisk(uuid);
 		} else {
 			removeLVMDisk(uuid);
@@ -162,7 +166,7 @@ public class DiskResource extends BaseResource {
 	}
 
 	private static void removeFileDisk(String uuid) {
-		File diskFile = new File(PersistentDiskApplication.FILE_DISK_LOCATION,
+		File diskFile = new File(PersistentDiskApplication.STORAGE_LOCATION,
 				uuid);
 
 		if (!diskFile.delete()) {
@@ -178,13 +182,20 @@ public class DiskResource extends BaseResource {
 				PersistentDiskApplication.LVREMOVE_CMD, "-f", volumePath);
 
 		ProcessUtils.execute("removeLVMDisk", pb,
-			"It's possible that the disk " + uuid + " is still logged on a node.");
+				"It's possible that the disk " + uuid
+						+ " is still logged on a node.");
 	}
-	
+
+	private static void postDiskRemovalAction() {
+		if (PersistentDiskApplication.SHARE_TYPE == ShareType.ISCSI) {
+			DiskUtils.updateISCSIConfiguration();
+		}
+	}
+
 	private String getDiskZkPath() {
 		return getDiskZkPath(getDiskId());
 	}
-	
+
 	private String getDiskId() {
 		Map<String, Object> attributes = getRequest().getAttributes();
 

@@ -21,6 +21,12 @@
       <directory>src/main/share</directory>
     </fileSet>
 
+    <fileSet>
+      <outputDirectory>etc</outputDirectory>
+      <fileMode>644</fileMode>
+      <directory>src/main/etc</directory>
+    </fileSet>
+
   </fileSets>
   
 </assembly>
