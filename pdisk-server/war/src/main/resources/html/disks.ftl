@@ -8,12 +8,6 @@
 
 <#include "/html/header.ftl">
 
-    <#if deleted??>
-        <p class="success">
-            Your disk have been deleted successfully.
-        </p>
-    </#if>
-
     <p class="right"><a href="${baseurl}/create/">New disk</a></p>
 
     <#if disks?has_content>
@@ -30,7 +24,7 @@
           <tbody>
             <#list disks as disk>
             <tr class="${zebra(disk_index)}">
-              <td>${disk.tag!}</td>
+              <td><#if disk.tag == ""><em>No tag</em></#if>${disk.tag!}</td>
               <td class="center">${disk.size} GB</td>
               <td class="center">${disk.owner}</td>
               <td><a href="${baseurl}/disks/${disk.uuid}/">${disk.uuid}</a></td>

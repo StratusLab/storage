@@ -109,6 +109,8 @@ header {
 .success a {color:#264409;}
 .info a {color:#205791;}
 
+.error li { margin-left: 1em }
+
 /* get rid of those system borders being generated for A tags */
 a:active {
   outline:none;

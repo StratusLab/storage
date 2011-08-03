@@ -1,11 +1,5 @@
 <#include "/html/header.ftl">
 
-    <#if created??>
-        <p class="success">
-            Your disk have been created successfully.
-        </p>
-    </#if>
-
       <#escape x as x?html>
       <#assign keys=properties?keys>
       <dl>
@@ -16,7 +10,7 @@
       </dl>
       </#escape>
 
-    <#if can_delete??>
+    <#if can_delete == true>
     <form action="${url}?method=delete" enctype="application/x-www-form-urlencoded" method="POST">
       <p><input type="submit" value="Delete"></p>
     </form>

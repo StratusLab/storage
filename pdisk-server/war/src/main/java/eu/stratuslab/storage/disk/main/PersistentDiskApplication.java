@@ -39,12 +39,14 @@ import org.restlet.resource.Directory;
 import org.restlet.resource.ResourceException;
 import org.restlet.routing.Router;
 import org.restlet.security.ChallengeAuthenticator;
+
+import eu.stratuslab.storage.disk.resources.ActionResource;
 import eu.stratuslab.storage.disk.resources.DiskResource;
 import eu.stratuslab.storage.disk.resources.DisksResource;
 import eu.stratuslab.storage.disk.resources.ForceTrailingSlashResource;
 import eu.stratuslab.storage.disk.resources.CreateResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
-import eu.stratuslab.storage.disk.resources.LogoutResource;
+import eu.stratuslab.storage.disk.resources.NotFoundResource;
 import eu.stratuslab.storage.disk.utils.DumpVerifier;
 import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.disk.utils.ProcessUtils;
@@ -79,7 +81,7 @@ public class PersistentDiskApplication extends Application {
 	
 	public static final String ZK_ADDRESSES;
 	public static final String ZK_DISKS_PATH;
-	public static final String ZK_USERS_PATH;
+	public static final String ZK_USAGE_PATH;
 
 	public static final DiskType ISCSI_DISK_TYPE;
 	public static final File ISCSI_CONFIG;
@@ -103,7 +105,7 @@ public class PersistentDiskApplication extends Application {
 		
 		ZK_ADDRESSES = getConfigValue("disk.store.zookeeper.address");
 		ZK_DISKS_PATH = getConfigValue("disk.store.zookeeper.disks");
-		ZK_USERS_PATH = getConfigValue("disk.store.zookeeper.users");
+		ZK_USAGE_PATH = getConfigValue("disk.store.zookeeper.usage");
 		
 		VGDISPLAY_CMD = getCommand("disk.store.lvm.vgdisplay");
 		LVCREATE_CMD = getCommand("disk.store.lvm.create");
@@ -322,25 +324,33 @@ public class PersistentDiskApplication extends Application {
 
 		Router router = new Router(context);
 
+		router.attach("/api/disks/{uuid}", DiskResource.class);
 		router.attach("/disks/{uuid}/", DiskResource.class);
 		router.attach("/disks/{uuid}", ForceTrailingSlashResource.class);
 
+		router.attach("/api/disks", DisksResource.class);
 		router.attach("/disks/", DisksResource.class);
 		router.attach("/disks", ForceTrailingSlashResource.class);
 
+		router.attach("/api/create", CreateResource.class);
 		router.attach("/create/", CreateResource.class);
 		router.attach("/create", ForceTrailingSlashResource.class);
+		
+		router.attach("/api/{action}/{uuid}", ActionResource.class);
+		router.attach("/api/{action}", ActionResource.class);
+		
+//		router.attach("/logout/", LogoutResource.class);
+//		router.attach("/logout", ForceTrailingSlashResource.class);
 
-		router.attach("/logout/", LogoutResource.class);
-		router.attach("/logout", ForceTrailingSlashResource.class);
-
+		router.attach("/", HomeResource.class);
+		
 		Directory cssDir = new Directory(getContext(), "war:///css");
 		cssDir.setNegotiatingContent(false);
 		cssDir.setIndexName("index.html");
 		router.attach("/css/", cssDir);
 
 		// Unknown root pages get the home page.
-		router.attachDefault(HomeResource.class);
+		router.attachDefault(NotFoundResource.class);
 
 		guard.setNext(router);
 

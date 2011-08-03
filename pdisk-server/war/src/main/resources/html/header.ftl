@@ -33,3 +33,9 @@
     <#if title??>
     <h1>${title}</h1>
     </#if>
+    
+    <#if success??>
+    <p class="success">
+        ${success}.
+    </p>
+    </#if>

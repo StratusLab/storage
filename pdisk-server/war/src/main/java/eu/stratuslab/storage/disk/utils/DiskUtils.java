@@ -1,19 +1,124 @@
 package eu.stratuslab.storage.disk.utils;
 
+import java.io.File;
 import java.util.List;
+import java.util.Properties;
+
+import org.restlet.data.Status;
+import org.restlet.resource.ResourceException;
+
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.main.PersistentDiskApplication.ShareType;
 import eu.stratuslab.storage.disk.resources.BaseResource;
 
 public final class DiskUtils {
 
 	// Template for an iSCSI target entry.
-	// Fields passed to the formatter should be the path for the disk store and
-	// the uuid.
 	private static final String TARGET_TEMPLATE = "<target iqn.2011-01.eu.stratuslab:%s>\n"
 			+ "backing-store %s/%s\n" + "</target>\n";
+	
+	private static void preDiskCreationActions() {
+		
+	}
+	
+	private static void postDiskCreationActions() {
+		if (PersistentDiskApplication.SHARE_TYPE == ShareType.ISCSI) {
+			updateISCSIConfiguration();
+		}
+	}
+	
+	public static void createDisk(Properties properties) {
+		String uuid = properties.getProperty(DiskProperties.UUID_KEY).toString();
+		int size = Integer.parseInt(properties.getProperty("size").toString());
+		
+		preDiskCreationActions();
 
-	public static Boolean updateISCSIConfiguration() {
-		String configuration = createTargetConfiguration();
+		if (PersistentDiskApplication.SHARE_TYPE == ShareType.NFS
+				|| PersistentDiskApplication.ISCSI_DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
+			createFileDisk(uuid, size);
+		} else {
+			createLVMDisk(uuid, size);
+		}
+
+		postDiskCreationActions();
+	}
+	
+	private static void createFileDisk(String uuid, int size) {
+		File diskFile = new File(PersistentDiskApplication.STORAGE_LOCATION,
+				uuid);
+
+		if (diskFile.exists()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"A disk with the same name already exists.");
+		}
+
+		FileUtils.createZeroFile(diskFile, size);
+	}
+
+	private static void createLVMDisk(String uuid, int size) {
+		File diskFile = new File(PersistentDiskApplication.LVM_GROUPE_PATH,
+				uuid);
+
+		if (diskFile.exists()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"A disk with the same name already exists.");
+		}
+
+		String lvmSize = size + "G";
+		ProcessBuilder pb = new ProcessBuilder(
+				PersistentDiskApplication.LVCREATE_CMD, "-L", lvmSize,
+				PersistentDiskApplication.LVM_GROUPE_PATH, "-n", uuid);
+
+		ProcessUtils.execute("createLvmDisk", pb,
+			"Unable to recreate the LVM volume.");
+	}
+	
+	public static void preDiskRemovalActions() {
+		if (PersistentDiskApplication.SHARE_TYPE == ShareType.ISCSI) {
+			updateISCSIConfiguration();
+		}
+	}
+	
+	public static void postDiskRemovalActions() {
+		
+	}
+	
+	public static void removeDisk(String uuid) {
+		preDiskRemovalActions();
+		
+		if (PersistentDiskApplication.SHARE_TYPE == ShareType.NFS
+				|| PersistentDiskApplication.ISCSI_DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
+			removeFileDisk(uuid);
+		} else {
+			removeLVMDisk(uuid);
+		}
+		
+		postDiskRemovalActions();
+	}
+
+	private static void removeFileDisk(String uuid) {
+		File diskFile = new File(PersistentDiskApplication.STORAGE_LOCATION,
+				uuid);
+
+		if (!diskFile.delete()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"An error occcured while removing disk content " + uuid);
+		}
+	}
+
+	private static void removeLVMDisk(String uuid) {
+		String volumePath = PersistentDiskApplication.LVM_GROUPE_PATH + "/"
+				+ uuid;
+		ProcessBuilder pb = new ProcessBuilder(
+				PersistentDiskApplication.LVREMOVE_CMD, "-f", volumePath);
+
+		ProcessUtils.execute("removeLVMDisk", pb,
+				"It's possible that the disk " + uuid
+						+ " is still logged on a node.");
+	}
+	
+	private static Boolean updateISCSIConfiguration() {
+		String configuration = createISCSITargetConfiguration();
 
 		FileUtils.writeToFile(PersistentDiskApplication.ISCSI_CONFIG,
 				configuration);
@@ -22,8 +127,8 @@ public final class DiskUtils {
 
 		return true;
 	}
-
-	private static String createTargetConfiguration() {
+	
+	private static String createISCSITargetConfiguration() {
 		StringBuilder sb = new StringBuilder();
 		List<String> disks = getAllDisks();
 		String disksLocation = getDisksLocation();
@@ -45,7 +150,7 @@ public final class DiskUtils {
 				" or in " + PersistentDiskApplication.ISCSI_CONFIG_FILENAME);
 	}
 
-	public static List<String> getAllDisks() {
+	private static List<String> getAllDisks() {
 		DiskProperties zk = BaseResource.getZooKeeper();
 
 		return zk.getDisks();

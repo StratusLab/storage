@@ -19,40 +19,25 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import org.restlet.data.Status;
 import org.restlet.representation.Representation;
+import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
+import org.restlet.resource.Post;
 
-public class DisksResource extends BaseResource {
-
+public class NotFoundResource extends BaseResource {
 	@Get
-	public Representation getDisksList() {
-		Map<String, Object> infos = createInfoStructure("Disks list");
-		infos.putAll(listDisks());
-
-		return directTemplateRepresentation("disks.ftl", infos);
+	public Representation getNotFound() {
+		return respondError(Status.CLIENT_ERROR_NOT_FOUND, "Unable to find requested resource.");
 	}
-
-	private Map<String, Object> listDisks() {
-		Map<String, Object> info = new HashMap<String, Object>();
-		List<Properties> diskInfoList = new LinkedList<Properties>();
-		List<String> disks = zk.getDisks();
-
-		info.put("disks", diskInfoList);
-
-		for (String uuid : disks) {
-			Properties properties = zk.getDiskProperties(getDiskZkPath(uuid));
-
-			// List only disk of the user
-			if (hasSuficientRightsToView(properties)) {
-				diskInfoList.add(properties);
-			}
-		}
-
-		return info;
+	
+	@Post
+	public Representation postNotFound() {
+		return respondError(Status.CLIENT_ERROR_NOT_FOUND, "Unable to find requested resource.");
+	}
+	
+	@Delete
+	public Representation deleteNotFound() {
+		return respondError(Status.CLIENT_ERROR_NOT_FOUND, "Unable to find requested resource.");
 	}
 }

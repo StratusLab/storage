@@ -17,17 +17,26 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
-package eu.stratuslab.storage.disk.resources;
+package eu.stratuslab.storage.disk.utils;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.restlet.representation.Representation;
-import org.restlet.resource.Get;
-
-public class HomeResource extends BaseResource {
-	@Get
-	public Representation getHomePage() {
-		Map<String, Object> infos = createInfoStructure("Home");
-		return directTemplateRepresentation("home.ftl", infos);
+public class Messages {
+	private List<String> success = new ArrayList<String>();
+	
+	public void push(String message) {
+		success.add(message);
 	}
+	
+	public String pop() {
+		if (success.size() == 0)
+			return null;
+		
+		String msg = success.get(0);
+		success.remove(0);
+		
+		return msg;
+	}
+
 }

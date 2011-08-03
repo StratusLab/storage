@@ -19,27 +19,36 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
+import static org.restlet.data.MediaType.TEXT_HTML;
+import static org.restlet.data.MediaType.APPLICATION_JSON;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.log4j.Logger;
 import org.restlet.data.ChallengeResponse;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.freemarker.TemplateRepresentation;
+import org.restlet.representation.Representation;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
+import eu.stratuslab.storage.disk.utils.Messages;
 import freemarker.template.Configuration;
 
 public class BaseResource extends ServerResource {
 
 	protected static final DiskProperties zk = new DiskProperties();
-	private String username = "";
+	protected static final Logger LOGGER = Logger.getLogger("org.restlet");
+	protected static final Messages MESSAGES = new Messages();
+	private String username = "";	
 
 	public enum DiskVisibility {
 		PRIVATE,
@@ -60,6 +69,10 @@ public class BaseResource extends ServerResource {
 		return new TemplateRepresentation(tpl, freeMarkerConfig, info,
 				mediaType);
 	}
+	
+	protected TemplateRepresentation directTemplateRepresentation(String tpl, Map<String, Object> info) {
+		return createTemplateRepresentation(getTemplateType() + "/" + tpl, info, getReturnedMediaType());
+	}
 
 	protected Map<String, Object> createInfoStructure(String title) {
 		Map<String, Object> info = new HashMap<String, Object>();
@@ -74,6 +87,9 @@ public class BaseResource extends ServerResource {
 
 		// Add user name information
 		info.put("username", getUsername());
+		
+		// Display message if available
+		info.put("success", MESSAGES.pop());
 
 		return info;
 	}
@@ -117,6 +133,10 @@ public class BaseResource extends ServerResource {
 
 	protected static String getDiskZkPath(String uuid) {
 		return PersistentDiskApplication.ZK_DISKS_PATH + "/" + uuid;
+	}
+	
+	protected Boolean diskExists(String uuid) {
+		return zk.pathExists(getDiskZkPath(uuid));
 	}
 
 	protected Boolean hasSuficientRightsToView(Properties properties) {
@@ -175,6 +195,54 @@ public class BaseResource extends ServerResource {
 		Date date = new Date();
 
 		return dateFormat.format(date);
+	}
+
+	protected Boolean useAPI() {
+		return getRequest().getResourceRef().getPath().startsWith("/api/");
+	}
+	
+	protected String getTemplateType() {
+		if (useAPI()) {
+			return "json";
+		} else {
+			return "html";
+		}
+	}
+	
+	protected MediaType getReturnedMediaType() {
+		if (useAPI()) {
+			return APPLICATION_JSON;
+		} else {
+			return TEXT_HTML;
+		}
+	}
+	
+	protected Representation respondError(Status errorCode, String errorMsg) {
+		setStatus(errorCode);
+		Map<String, Object> error = createInfoStructure("An error occured");
+		
+		if (useAPI()) {
+			errorMsg = "\"" + errorMsg + "\"";
+		}
+		
+		error.put("errorMsg", errorMsg);
+		
+		return directTemplateRepresentation("error.ftl", error);
+	}
+	
+	protected static String join(List<String> list, String conjunction)
+	{
+	   StringBuilder sb = new StringBuilder();
+	   boolean first = true;
+	   for (String item : list)
+	   {
+	      if (first)
+	         first = false;
+	      else
+	         sb.append(conjunction);
+	      sb.append(item);
+	   }
+	   return sb.toString();
 	}
 
 	public static DiskProperties getZooKeeper() {
