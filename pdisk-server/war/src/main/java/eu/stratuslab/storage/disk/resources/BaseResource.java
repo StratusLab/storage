@@ -36,6 +36,9 @@ import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.representation.Representation;
+import org.restlet.resource.Delete;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
@@ -55,7 +58,22 @@ public class BaseResource extends ServerResource {
 		// RESTRICTED,
 		PUBLIC,
 	}
+	
+	@Get
+	public Representation getNotAllowed() {
+		return respondError(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED, "Method not allowed");
+	}
 
+	@Post
+	public Representation postNotAllowed() {
+		return respondError(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED, "Method not allowed");
+	}
+
+	@Delete
+	public Representation deleteNotAllowed() {
+		return respondError(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED, "Method not allowed");
+	}
+	
 	private Configuration getFreeMarkerConfiguration() {
 		return ((PersistentDiskApplication) getApplication())
 				.getFreeMarkerConfiguration();
