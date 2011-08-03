@@ -6,11 +6,16 @@ DEVICE_LINK=$2
 . /etc/stratuslab/pdisk-host.cfg
 
 PORTAL=`echo $UUID_URL | cut -d ':' -f 2`
-DISK_UUID=`echo $UUID_URL | cut -d ':' -f 3`
+PORTAL_PORT=`echo $UUID_URL | cut -d ':' -f 3`
+DISK_UUID=`echo $UUID_URL | cut -d ':' -f 4`
+VM_ID=`basename $(dirname $(dirname $DEVICE_LINK))`
 
 register_disk() {
-    # We assume here that the disk can be mounted by the user (permission and free place)
-    $CURL -
+    local NODE=`hostname`
+    # We assume here that the disk can be mounted by the user (permission and remaning places)
+    REGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/api/attach/${DISK_UUID}" \
+                 " -d \"node=${NODE}&vm_id=${VM_ID}\""
+    $REGISTER_CMD
 }
 
 attach_nfs() {
@@ -60,11 +65,12 @@ attach_iscsi() {
 
 if [ "x$DEVICE_LINK" = "x" ]
 then
-    echo "usage: $0 UUID_URL DEVICE_LINK"
-    echo "UUID_URL have to be pdisk:<portal_address>:<disk_uuid>"
+    echo "usage: $0 UUID_URL VM_ID DEVICE_LINK"
+    echo "UUID_URL have to be pdisk:<portal_address>:<portal_port>:<disk_uuid>"
     exit 1
 fi
 
 attach_${SHARE_TYPE}
+register_disk
 
 exit 0
