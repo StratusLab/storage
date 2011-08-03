@@ -80,6 +80,11 @@ public class DiskResource extends BaseResource {
 
 	@Delete
 	public Representation deleteDiskRequest() {
+		if (!diskExists(getDiskId())) {
+			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
+					"Disk does not exists");
+		}
+		
 		Representation response = null;
 		Properties diskProperties = getDiskProperties();
 
