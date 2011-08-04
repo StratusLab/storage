@@ -24,6 +24,9 @@ import static org.restlet.data.MediaType.APPLICATION_WWW_FORM;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Properties;
 
 import org.restlet.Application;
@@ -306,6 +309,13 @@ public class PersistentDiskApplication extends Application {
 					Status.CLIENT_ERROR_UNSUPPORTED_MEDIA_TYPE,
 					mediaType.getName());
 		}
+	}
+	
+	public static String getDateTime() {
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date date = new Date();
+
+		return dateFormat.format(date);
 	}
 
 	@Override

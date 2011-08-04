@@ -1,6 +1,7 @@
 package eu.stratuslab.storage.disk.resources;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.restlet.data.Form;
@@ -20,7 +21,7 @@ public class ActionResource extends BaseResource {
 		MISSING, UNKNOW, OK;
 	}
 
-	private String diskUuid;
+	private List<String> diskUuids;
 	private String node;
 	private String vmId;
 
@@ -49,38 +50,37 @@ public class ActionResource extends BaseResource {
 	}
 
 	private Representation attachDisk() {
-		diskUuid = getDiskId();
+		String diskUuid = getDiskId();
 		
 		if (!diskExists(diskUuid)) {
 			return respondError(Status.CLIENT_ERROR_NOT_FOUND, "Bad disk UUID");
 		}
 		
 		zk.addDiskUser(node, vmId, diskUuid);
+		diskUuids = zk.getAttachedDisk(node, vmId);
+		
 		return actionResponse();
 	}
 
 	private Representation detachDisk() {
-		diskUuid = zk.getAttachedDisk(node, vmId);
-
+		diskUuids = zk.getAttachedDisk(node, vmId);
+		
 		if (zk.removeDiskUser(node, vmId)) {
 			return actionResponse();
 		} else {
 			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
-					"Disk is not attach to the VM");
+					"VM don't have disk attached");
 		}
 	}
 
 	private Representation actionResponse() {
-		Map<String, Object> dict = new HashMap<String, Object>();
 		Map<String, Object> info = new HashMap<String, Object>();
+		
+		info.put("uuids", diskUuids);
+		info.put("node", node);
+		info.put("vm_id", vmId);
 
-		info.put("dict", dict);
-
-		dict.put("uuid", diskUuid);
-		dict.put("node", node);
-		dict.put("vm_id", vmId);
-
-		return directTemplateRepresentation("dict.ftl", info);
+		return directTemplateRepresentation("action.ftl", info);
 	}
 
 	private QueryProcessStatus processRequest(Representation entity) {

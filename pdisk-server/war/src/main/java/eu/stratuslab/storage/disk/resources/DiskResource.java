@@ -114,7 +114,7 @@ public class DiskResource extends BaseResource {
 	}
 
 	private void deleteDisk() {
-		zk.deleteDiskProperties(getDiskZkPath());
+		zk.deleteRecursively(getDiskZkPath());
 		DiskUtils.removeDisk(getDiskId());
 	}
 

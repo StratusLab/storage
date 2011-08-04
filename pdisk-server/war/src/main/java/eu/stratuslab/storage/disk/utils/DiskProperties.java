@@ -153,20 +153,15 @@ public class DiskProperties {
 		}
 	}
 	
-	public List<String> getDisks() {
-		List<String> disks = null;
-		try {
-			disks = zk.getChildren(PersistentDiskApplication.ZK_DISKS_PATH,
-					false);
-		} catch (KeeperException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"ZooKeeper error: " + e.getMessage());
-		} catch (InterruptedException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					e.getMessage());
+	public void deleteRecursively(String root) {
+		List<String> tree = listSubTree(root);
+		for (int i = tree.size()-1; i >= 0; --i) {
+			deleteNode(tree.get(i));
 		}
-
-		return disks;
+	}
+	
+	public List<String> getDisks() {
+		return getChildren(PersistentDiskApplication.ZK_DISKS_PATH);
 	}
 	
 	public void saveDiskProperties(String diskRoot, Properties properties) {
@@ -201,21 +196,6 @@ public class DiskProperties {
 		}
 		return properties;
 	}
-	
-	public void deleteDiskProperties(String root) {
-		try {
-			List<String> tree = listSubTree(root);
-			for (int i = tree.size() - 1; i >= 0; --i) {
-				zk.delete(tree.get(i), -1);
-			}
-		} catch (KeeperException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"ZooKeeper error: " + e.getMessage());
-		} catch (InterruptedException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					e.getMessage());
-		}
-	}
 
 	public Boolean pathExists(String path) {
 		try {
@@ -242,12 +222,16 @@ public class DiskProperties {
 		return users;
 	}
 	
-	public String getVmUsagePath(String node, String vmId) {
+	private String getNodeUsagePath(String node) {
+		return PersistentDiskApplication.ZK_USAGE_PATH + "/" + node;
+	}
+	
+	private String getVmUsagePath(String node, String vmId) {
 		return getNodeUsagePath(node) + "/" + vmId;
 	}
 	
-	private String getNodeUsagePath(String node) {
-		return PersistentDiskApplication.ZK_USAGE_PATH + "/" + node;
+	private String getDiskUsagePath(String node, String vmId, String diskUuid) {
+		return getVmUsagePath(node, vmId) + "/" + diskUuid;
 	}
 	
 	private String getDiskPath(String uuid) {
@@ -256,16 +240,18 @@ public class DiskProperties {
 	
 	public void addDiskUser(String node, String vmId, String diskUuid) {
 		if (!pathExists(getNodeUsagePath(node))) {
-			createNode(getNodeUsagePath(node), "CloudPdiskUsage");
+			createNode(getNodeUsagePath(node), PersistentDiskApplication.getDateTime());
 		}
 		
-		String usagePath = getVmUsagePath(node, vmId);
-		if (pathExists(usagePath)) {
-			// Normally this should not append, but we avoid error if duplicate 
-			// VM ID caused by a partial cloud re-installation
-			setNode(usagePath, diskUuid);
+		if (!pathExists(getVmUsagePath(node, vmId))) {
+			createNode(getVmUsagePath(node, vmId), PersistentDiskApplication.getDateTime());
+		}
+		
+		// This should normally not happen
+		if (pathExists(getDiskUsagePath(node, vmId, diskUuid))) {
+			setNode(getDiskUsagePath(node, vmId, diskUuid), PersistentDiskApplication.getDateTime());
 		} else {
-			createNode(usagePath, diskUuid);
+			createNode(getDiskUsagePath(node, vmId, diskUuid), PersistentDiskApplication.getDateTime());
 			setDiskUserCounter(diskUuid, +1);
 		}
 	}
@@ -278,16 +264,18 @@ public class DiskProperties {
 			return false;
 		}
 		
-		String diskUuid = getNode(vmUsagePath);
+		List<String> diskUuids = getAttachedDisk(node, vmId);
 		
-		deleteNode(vmUsagePath);
+		deleteRecursively(vmUsagePath);
 		
-		setDiskUserCounter(diskUuid, -1);
+		for (String disk: diskUuids) {
+			setDiskUserCounter(disk, -1);
+		}
 		
 		return true;
 	}
 	
-	public String getAttachedDisk(String node, String vmId) {
+	public List<String> getAttachedDisk(String node, String vmId) {
 		String vmUsagePath = getVmUsagePath(node, vmId);
 		
 		if (!pathExists(getNodeUsagePath(node)) || 
@@ -295,7 +283,7 @@ public class DiskProperties {
 			return null;
 		}
 		
-		return getNode(vmUsagePath);
+		return getChildren(vmUsagePath);
 	}
 	
 	private void setDiskUserCounter(String diskUuid, int operation) {
@@ -312,7 +300,6 @@ public class DiskProperties {
 	private List<String> listSubTree(String pathRoot) {
 		Deque<String> queue = new LinkedList<String>();
 		List<String> tree = new ArrayList<String>();
-		List<String> children;
 
 		queue.add(pathRoot);
 		tree.add(pathRoot);
@@ -323,23 +310,29 @@ public class DiskProperties {
 				break;
 			}
 
-			try {
-				children = zk.getChildren(node, false);
-			} catch (KeeperException e) {
-				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-						"ZooKeeper error: " + e.getMessage());
-			} catch (InterruptedException e) {
-				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-						e.getMessage());
-			}
-
-			for (String child : children) {
+			for (String child : getChildren(node)) {
 				String childPath = node + "/" + child;
 				queue.add(childPath);
 				tree.add(childPath);
 			}
 		}
 		return tree;
+	}
+	
+	private List<String> getChildren(String path) {
+		List<String> children = null;
+		
+		try {
+			children = zk.getChildren(path, false);
+		} catch (KeeperException e) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"ZooKeeper error: " + e.getMessage());
+		} catch (InterruptedException e) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					e.getMessage());
+		}
+		
+		return children;
 	}
 
 	public ZooKeeper getZooKeeper() {
