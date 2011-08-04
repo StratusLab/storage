@@ -1,22 +1,21 @@
 #!/bin/bash
 
-VM_IMG_DIR="$1"
+VM_DIR="$1"
 
 . /etc/stratuslab/pdisk-host.cfg
 
-VM_DIR=`dirname $VM_IMG_DIR`
 VM_ID=`basename $VM_DIR`
 REGISTER_FILE="$VM_DIR/$REGISTER_FILENAME"
 
 deregister_disk() {
     local NODE=`hostname`
-    local DEREGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/api/detach" \
-                 " -d \"node=${NODE}&vm_id=${VM_ID}\""
+    local DEREGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/api/detach -d node=${NODE}&vm_id=${VM_ID}"
     $DEREGISTER_CMD
 }
 
 detatch_nfs() {
     # Nothing to do for NFS sharing
+    return
 }
 
 detatch_iscsi() {
@@ -37,30 +36,35 @@ detatch_iscsi() {
     fi
 
     # Portal informations
-    local PORTAL_IP=`echo $DISCOVER_OUT | cut -d ', ' -f 1`
+    local PORTAL_IP=`echo $DISCOVER_OUT | cut -d ',' -f 1`
 
-    # Disk name
-    local DISK=`echo $DISCOVER_OUT | cut -d ' ' -f 2`
+    # Disk informations
+    local DISK=`echo $DISCOVER_OUT | cut -d ' ' -f 2` 
+    local LUN=`echo $DISCOVER_OUT | cut -d ',' -f 2 | cut -d ' ' -f 1`
+    local DISK_PATH="/dev/disk/by-path/ip-$PORTAL_IP-iscsi-$DISK-lun-$LUN"
 
     # Detach the disk only if no one else is using it
-    if [ `lsof /dev/disk/by-path/$DISK | wc -l` -eq 2 ]
+    if [ `sudo /usr/sbin/lsof $DISK_PATH | wc -l` -eq 0 ]
     then
         local DETACH_CMD="sudo $ISCSIADM --mode node --portal $PORTAL_IP --targetname $DISK --logout"
         $DETACH_CMD
     fi
 }
 
-if [ "x$VM_IMG_DIR" = "x" ]
+if [ "x$VM_DIR" = "x" ]
 then
-    echo "usage: $0 VM_IMG_DIR"
+    echo "usage: $0 VM_DIR"
     exit 1
 fi
+
+# if no pdisk attached, nothing to do
+[ -f $REGISTER_FILE ] || exit 0
 
 ATTACHED_DISK="`cat $REGISTER_FILE`"
 
 for DISK_INFO in ${ATTACHED_DISK[*]}
 do
-    detach_${SHARE_TYPE} $DISK_INFO
+    detatch_${SHARE_TYPE} $DISK_INFO
     deregister_disk
 done
 

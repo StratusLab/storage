@@ -15,8 +15,7 @@ REGISTER_FILE="$VM_DIR/$REGISTER_FILENAME"
 register_disk() {
     # We assume here that the disk can be mounted by the user (permission and remaning places)
     local NODE=`hostname`
-    local REGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/api/attach/${DISK_UUID}" \
-                 " -d \"node=${NODE}&vm_id=${VM_ID}\""
+    local REGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/api/attach/${DISK_UUID} -d node=${NODE}&vm_id=${VM_ID}"
     $REGISTER_CMD
 }
 
@@ -43,17 +42,15 @@ attach_iscsi() {
     fi
 
     # Portal informations
-    local PORTAL_IP=`echo $DISCOVER_OUT | cut -d ':' -f 1`
-    local PORTAL_PORT=`echo $DISCOVER_OUT | cut -d ':' -f 2 | cut -d ',' -f 1`
-    local PORTAL=${PORTAL_IP}:${PORTAL_PORT}
+    local PORTAL_IP=`echo $DISCOVER_OUT | cut -d ',' -f 1`
 
     # Disk informations
     local DISK=`echo $DISCOVER_OUT | cut -d ' ' -f 2` 
     local LUN=`echo $DISCOVER_OUT | cut -d ',' -f 2 | cut -d ' ' -f 1`
-    local DISK_PATH="/dev/disk/by-path/ip-$PORTAL-iscsi-$DISK-lun-$LUN"
+    local DISK_PATH="/dev/disk/by-path/ip-$PORTAL_IP-iscsi-$DISK-lun-$LUN"
 
     # Attach the iSCSI disk on the host.
-    local ATTACH_CMD="sudo $ISCSIADM --mode node --portal $PORTAL --targetname $DISK --login"
+    local ATTACH_CMD="sudo $ISCSIADM --mode node --portal $PORTAL_IP --targetname $DISK --login"
     $ATTACH_CMD
 
     # Ensure that the disk device aliases are setup. 
