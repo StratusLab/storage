@@ -170,7 +170,7 @@ public class CreateResource extends BaseResource {
 	private void createDisk(Properties properties) {		
 		String diskRoot = getDiskZkPath(properties.get(DiskProperties.UUID_KEY).toString());
 		
-		DiskUtils.createDisk(properties);
 		zk.saveDiskProperties(diskRoot, properties);
+		DiskUtils.createDisk(properties);
 	}
 }
