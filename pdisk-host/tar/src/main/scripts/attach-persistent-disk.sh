@@ -8,12 +8,14 @@ DEVICE_LINK=$2
 PORTAL=`echo $UUID_URL | cut -d ':' -f 2`
 PORTAL_PORT=`echo $UUID_URL | cut -d ':' -f 3`
 DISK_UUID=`echo $UUID_URL | cut -d ':' -f 4`
-VM_ID=`basename $(dirname $(dirname $DEVICE_LINK))`
+VM_DIR=$(dirname $(dirname $DEVICE_LINK))
+VM_ID=`basename $VM_DIR`
+REGISTER_FILE="$VM_DIR/$REGISTER_FILENAME"
 
 register_disk() {
-    local NODE=`hostname`
     # We assume here that the disk can be mounted by the user (permission and remaning places)
-    REGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/api/attach/${DISK_UUID}" \
+    local NODE=`hostname`
+    local REGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/api/attach/${DISK_UUID}" \
                  " -d \"node=${NODE}&vm_id=${VM_ID}\""
     $REGISTER_CMD
 }
@@ -69,6 +71,8 @@ then
     echo "UUID_URL have to be pdisk:<portal_address>:<portal_port>:<disk_uuid>"
     exit 1
 fi
+
+echo "$UUID_URL" >> $REGISTER_FILE
 
 attach_${SHARE_TYPE}
 register_disk
