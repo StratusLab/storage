@@ -90,7 +90,7 @@ public class CreateResource extends BaseResource {
 		// Display form again if we have error(s)
 		if (errors.size() > 0) {
 			if (useAPI()) {
-				return respondError(Status.CLIENT_ERROR_UNPROCESSABLE_ENTITY, join(errors, "\", \""));
+				return respondError(Status.CLIENT_ERROR_UNPROCESSABLE_ENTITY, PersistentDiskApplication.join(errors, "\", \""));
 			}
 			
 			return createResourceForm(diskProperties, errors);

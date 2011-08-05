@@ -1,6 +1,7 @@
 package eu.stratuslab.storage.disk.resources;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -10,11 +11,13 @@ import org.restlet.representation.Representation;
 import org.restlet.resource.Post;
 
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.utils.DiskProperties;
+import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class ActionResource extends BaseResource {
 
 	private enum DiskAction {
-		ATTACH, DETACH;
+		ATTACH, DETACH, HOT_ATTACH, HOT_DETACH;
 	}
 
 	private enum QueryProcessStatus {
@@ -39,9 +42,13 @@ public class ActionResource extends BaseResource {
 		}
 
 		if (action == DiskAction.ATTACH) {
-			return attachDisk();
+			return attachDisk(DiskProperties.STATIC_DISK_TARGET);
+		} else if (action == DiskAction.HOT_ATTACH) {
+			return attachDisk(zk.nextHotpluggedDiskTarget(node, vmId));
 		} else if (action == DiskAction.DETACH) {
-			return detachDisk();
+			return detachAllDisks();
+		} else if (action == DiskAction.HOT_DETACH) {
+			return detachHotpluggedDisk();
 		} else {
 			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
 					"Requested action does not exist");
@@ -49,22 +56,29 @@ public class ActionResource extends BaseResource {
 
 	}
 
-	private Representation attachDisk() {
+	private Representation attachDisk(String target) {
 		String diskUuid = getDiskId();
-		
-		if (!diskExists(diskUuid)) {
+
+		if (diskUuid == null) {
+			return respondError(Status.CLIENT_ERROR_NOT_FOUND, "Disk UUID not provided");
+		} else if (!diskExists(diskUuid)) {
 			return respondError(Status.CLIENT_ERROR_NOT_FOUND, "Bad disk UUID");
 		}
-		
-		zk.addDiskUser(node, vmId, diskUuid);
+
+		zk.addDiskUser(node, vmId, diskUuid, target);
 		diskUuids = zk.getAttachedDisk(node, vmId);
-		
+
+		if (!target.equals(DiskProperties.STATIC_DISK_TARGET)) {
+			DiskUtils.attachHotplugDisk(serviceName(), servicePort(), node,
+					vmId, diskUuid, target);
+		}
+
 		return actionResponse();
 	}
 
-	private Representation detachDisk() {
+	private Representation detachAllDisks() {
 		diskUuids = zk.getAttachedDisk(node, vmId);
-		
+
 		if (zk.removeDiskUser(node, vmId)) {
 			return actionResponse();
 		} else {
@@ -73,9 +87,33 @@ public class ActionResource extends BaseResource {
 		}
 	}
 
+	private Representation detachHotpluggedDisk() {
+		String diskUuid = getDiskId();
+		List<String> disks = new LinkedList<String>();
+
+		disks.add(diskUuid);
+		diskUuids = disks;
+
+		if (diskUuid == null || !diskExists(diskUuid)) {
+			return respondError(Status.CLIENT_ERROR_NOT_FOUND, "Bad disk UUID");
+		}
+
+		String diskTarget = zk.diskTarget(node, vmId, diskUuid);
+		if (diskTarget.equals(DiskProperties.STATIC_DISK_TARGET)) {
+			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
+					"Disk have not been hot-plugged");
+		}
+
+		zk.removeDiskUser(node, vmId, diskUuid);
+		DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node, vmId,
+				diskUuid, diskTarget);
+		
+		return actionResponse();
+	}
+
 	private Representation actionResponse() {
 		Map<String, Object> info = new HashMap<String, Object>();
-		
+
 		info.put("uuids", diskUuids);
 		info.put("node", node);
 		info.put("vm_id", vmId);
@@ -109,6 +147,10 @@ public class ActionResource extends BaseResource {
 	private String getDiskId() {
 		Map<String, Object> attributes = getRequest().getAttributes();
 
+		if (!attributes.containsKey("uuid")) {
+			return null;
+		}
+
 		return attributes.get("uuid").toString();
 	}
 
@@ -120,6 +162,10 @@ public class ActionResource extends BaseResource {
 			return DiskAction.ATTACH;
 		} else if (action.equals("detach")) {
 			return DiskAction.DETACH;
+		} else if (action.equals("hotattach")) {
+			return DiskAction.HOT_ATTACH;
+		} else if (action.equals("hotdetach")) {
+			return DiskAction.HOT_DETACH;
 		} else {
 			return null;
 		}

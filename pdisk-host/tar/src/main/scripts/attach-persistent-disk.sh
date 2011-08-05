@@ -2,6 +2,15 @@
 
 UUID_URL=$1
 DEVICE_LINK=$2
+TARGET=$3
+
+if [ "x$DEVICE_LINK" = "x" ]
+then
+    echo "usage: $0 UUID_URL VM_ID DEVICE_LINK [TARGET]"
+    echo "UUID_URL have to be pdisk:<portal_address>:<portal_port>:<disk_uuid>"
+    echo "If TARGET specified, disk will be hot plugged"
+    exit 1
+fi
 
 . /etc/stratuslab/pdisk-host.cfg
 
@@ -38,7 +47,7 @@ attach_iscsi() {
     if [ "x$DISCOVER_OUT" = "x" ]
     then
         echo "Unable to find disk $DISK_UUID at $PORTAL"
-        exit 1
+        return
     fi
 
     # Portal informations
@@ -62,16 +71,14 @@ attach_iscsi() {
     $LINK_CMD
 }
 
-if [ "x$DEVICE_LINK" = "x" ]
-then
-    echo "usage: $0 UUID_URL VM_ID DEVICE_LINK"
-    echo "UUID_URL have to be pdisk:<portal_address>:<portal_port>:<disk_uuid>"
-    exit 1
-fi
+hotplug_disk() {
+    sudo /usr/bin/virsh attach-disk one-$VM_ID $DEVICE_LINK $TARGET
+}
 
-echo "$UUID_URL" >> $REGISTER_FILE
+echo "$UUID_URL" >> $VM_DIR/$REGISTER_FILE
 
 attach_${SHARE_TYPE}
-register_disk
+
+[ "x$TARGET" != "x" ] && hotplug_disk || register_disk
 
 exit 0

@@ -1,6 +1,7 @@
 package eu.stratuslab.storage.disk.utils;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -16,21 +17,22 @@ public final class DiskUtils {
 	// Template for an iSCSI target entry.
 	private static final String TARGET_TEMPLATE = "<target iqn.2011-01.eu.stratuslab:%s>\n"
 			+ "backing-store %s/%s\n" + "</target>\n";
-	
+
 	private static void preDiskCreationActions() {
-		
+
 	}
-	
+
 	private static void postDiskCreationActions() {
 		if (PersistentDiskApplication.SHARE_TYPE == ShareType.ISCSI) {
 			updateISCSIConfiguration();
 		}
 	}
-	
+
 	public static void createDisk(Properties properties) {
-		String uuid = properties.getProperty(DiskProperties.UUID_KEY).toString();
+		String uuid = properties.getProperty(DiskProperties.UUID_KEY)
+				.toString();
 		int size = Integer.parseInt(properties.getProperty("size").toString());
-		
+
 		preDiskCreationActions();
 
 		if (PersistentDiskApplication.SHARE_TYPE == ShareType.NFS
@@ -42,7 +44,7 @@ public final class DiskUtils {
 
 		postDiskCreationActions();
 	}
-	
+
 	private static void createFileDisk(String uuid, int size) {
 		File diskFile = new File(PersistentDiskApplication.STORAGE_LOCATION,
 				uuid);
@@ -69,31 +71,81 @@ public final class DiskUtils {
 				PersistentDiskApplication.LVCREATE_CMD, "-L", lvmSize,
 				PersistentDiskApplication.LVM_GROUPE_PATH, "-n", uuid);
 
-		ProcessUtils.execute("createLvmDisk", pb,
-			"Unable to recreate the LVM volume.");
+		ProcessUtils.execute(pb, "Unable to recreate the LVM volume");
 	}
-	
+
 	public static void preDiskRemovalActions() {
 		if (PersistentDiskApplication.SHARE_TYPE == ShareType.ISCSI) {
 			updateISCSIConfiguration();
 		}
 	}
-	
+
 	public static void postDiskRemovalActions() {
-		
+
 	}
-	
+
 	public static void removeDisk(String uuid) {
 		preDiskRemovalActions();
-		
+
 		if (PersistentDiskApplication.SHARE_TYPE == ShareType.NFS
 				|| PersistentDiskApplication.ISCSI_DISK_TYPE == PersistentDiskApplication.DiskType.FILE) {
 			removeFileDisk(uuid);
 		} else {
 			removeLVMDisk(uuid);
 		}
-		
+
 		postDiskRemovalActions();
+	}
+
+	public static void attachHotplugDisk(String serviceName, int servicePort,
+			String node, String vmId, String diskUuid, String target) {
+		
+		// TODO: get this from the config
+		String attachedDisk = "/var/lib/one/" + vmId+ "/images/pdisk-" + diskUuid;
+
+		List<String> attachCmd = new ArrayList<String>();
+		attachCmd.add("ssh");
+		attachCmd.add("-p");
+		attachCmd.add("22");
+		attachCmd.add("-o");
+		attachCmd.add("ConnectTimeout=5");
+		attachCmd.add("-o");
+		attachCmd.add("StrictHostKeyChecking=no");
+		attachCmd.add("-i");
+		attachCmd.add(PersistentDiskApplication.CLOUD_NODE_SSH_KEY);
+		attachCmd.add(PersistentDiskApplication.CLOUD_NODE_ADMIN + "@" + node);
+		attachCmd.add("/usr/sbin/attach-persistent-disk.sh");
+		attachCmd.add("pdisk:" + serviceName + ":"
+				+ String.valueOf(servicePort) + ":" + diskUuid);
+		attachCmd.add(attachedDisk);
+		attachCmd.add(target);
+
+		ProcessBuilder pb = new ProcessBuilder(attachCmd);
+		ProcessUtils.execute(pb, "Unable to attach persistent disk");
+	}
+	
+	public static void detachHotplugDisk(String serviceName, int servicePort,
+			String node, String vmId, String diskUuid, String target) {
+
+		List<String> detachCmd = new ArrayList<String>();
+		detachCmd.add("ssh");
+		detachCmd.add("-p");
+		detachCmd.add("22");
+		detachCmd.add("-o");
+		detachCmd.add("ConnectTimeout=5");
+		detachCmd.add("-o");
+		detachCmd.add("StrictHostKeyChecking=no");
+		detachCmd.add("-i");
+		detachCmd.add(PersistentDiskApplication.CLOUD_NODE_SSH_KEY);
+		detachCmd.add(PersistentDiskApplication.CLOUD_NODE_ADMIN + "@" + node);
+		detachCmd.add("/usr/sbin/detach-persistent-disk.sh");
+		detachCmd.add("pdisk:" + serviceName + ":"
+				+ String.valueOf(servicePort) + ":" + diskUuid);
+		detachCmd.add(target);
+		detachCmd.add(vmId);
+
+		ProcessBuilder pb = new ProcessBuilder(detachCmd);
+		ProcessUtils.execute(pb, "Unable to detach persistent disk");
 	}
 
 	private static void removeFileDisk(String uuid) {
@@ -112,11 +164,10 @@ public final class DiskUtils {
 		ProcessBuilder pb = new ProcessBuilder(
 				PersistentDiskApplication.LVREMOVE_CMD, "-f", volumePath);
 
-		ProcessUtils.execute("removeLVMDisk", pb,
-				"It's possible that the disk " + uuid
-						+ " is still logged on a node.");
+		ProcessUtils.execute(pb, "It's possible that the disk " + uuid
+				+ " is still logged on a node");
 	}
-	
+
 	private static Boolean updateISCSIConfiguration() {
 		String configuration = createISCSITargetConfiguration();
 
@@ -127,7 +178,7 @@ public final class DiskUtils {
 
 		return true;
 	}
-	
+
 	private static String createISCSITargetConfiguration() {
 		StringBuilder sb = new StringBuilder();
 		List<String> disks = getAllDisks();
@@ -144,10 +195,9 @@ public final class DiskUtils {
 		ProcessBuilder pb = new ProcessBuilder(
 				PersistentDiskApplication.ISCSI_ADMIN, "--update", "ALL");
 
-		ProcessUtils.execute("updateISCSIServer", pb,
-				"Perhaps there is a syntax error in " + 
-				PersistentDiskApplication.ISCSI_CONFIG.getAbsolutePath() +
-				" or in " + PersistentDiskApplication.ISCSI_CONFIG_FILENAME);
+		ProcessUtils.execute(pb, "Perhaps there is a syntax error in "
+				+ PersistentDiskApplication.ISCSI_CONFIG.getAbsolutePath()
+				+ " or in " + PersistentDiskApplication.ISCSI_CONFIG_FILENAME);
 	}
 
 	private static List<String> getAllDisks() {
@@ -163,5 +213,4 @@ public final class DiskUtils {
 			return PersistentDiskApplication.LVM_GROUPE_PATH;
 		}
 	}
-
 }

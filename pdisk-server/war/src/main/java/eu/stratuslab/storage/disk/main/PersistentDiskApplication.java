@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 
 import org.restlet.Application;
@@ -98,6 +99,9 @@ public class PersistentDiskApplication extends Application {
 	public static final File STORAGE_LOCATION;
 	
 	public static final int USERS_PER_DISK;
+	
+	public static final String CLOUD_NODE_SSH_KEY;
+	public static final String CLOUD_NODE_ADMIN;
 
 	private Configuration freeMarkerConfiguration = null;
 	
@@ -122,6 +126,9 @@ public class PersistentDiskApplication extends Application {
 		STORAGE_LOCATION = getDiskLocation();
 		
 		USERS_PER_DISK = getUsersPerDisks();
+		
+		CLOUD_NODE_SSH_KEY = getConfigValue("disk.store.cloud.node.ssh_keyfile");
+		CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
 	}
 	
 
@@ -292,8 +299,9 @@ public class PersistentDiskApplication extends Application {
 		ProcessBuilder pb = new ProcessBuilder(
 				PersistentDiskApplication.VGDISPLAY_CMD, lvmGroup);
 
-		ProcessUtils.execute("checkLVMGroupExists", pb,
-			"LVM Group does not exists. Please create it and restart pdisk service");
+		ProcessUtils
+				.execute(pb,
+						"LVM Group does not exists. Please create it and restart pdisk service");
 	}
 	
 	public static void checkEntity(Representation entity) {
@@ -316,6 +324,21 @@ public class PersistentDiskApplication extends Application {
 		Date date = new Date();
 
 		return dateFormat.format(date);
+	}
+	
+	public static String join(List<String> list, String conjunction)
+	{
+	   StringBuilder sb = new StringBuilder();
+	   boolean first = true;
+	   for (String item : list)
+	   {
+	      if (first)
+	         first = false;
+	      else
+	         sb.append(conjunction);
+	      sb.append(item);
+	   }
+	   return sb.toString();
 	}
 
 	@Override

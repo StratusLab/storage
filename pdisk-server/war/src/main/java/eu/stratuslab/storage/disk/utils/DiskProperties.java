@@ -43,13 +43,15 @@ public class DiskProperties {
 	public static final String UUID_KEY = "uuid";
 	public static final String DISK_OWNER_KEY = "owner";
 	public static final String DISK_VISIBILITY_KEY = "visibility";
-	public static final String DISK_CREATION_DATE_KEY = "created";	
+	public static final String DISK_CREATION_DATE_KEY = "created";
 	public static final String DISK_USERS_KEY = "users";
-	
+
+	public static final String STATIC_DISK_TARGET = "static";
+
 	public DiskProperties() {
 		connect(PersistentDiskApplication.ZK_ADDRESSES, 3000);
 	}
-	
+
 	public void connect(String addresses, int timeout) {
 		if (zk != null) {
 			try {
@@ -57,7 +59,7 @@ public class DiskProperties {
 			} catch (InterruptedException e) {
 			}
 		}
-		
+
 		try {
 			zk = new ZooKeeper(addresses, timeout, null);
 		} catch (Exception e) {
@@ -98,7 +100,7 @@ public class DiskProperties {
 					e.getMessage());
 		}
 	}
-	
+
 	private String getNode(String root) {
 		String node = "";
 
@@ -127,8 +129,7 @@ public class DiskProperties {
 					e.getMessage());
 		}
 	}
-	
-	
+
 	private void setNode(String root, String value) {
 		try {
 			zk.setData(root, value.getBytes(), -1);
@@ -140,7 +141,7 @@ public class DiskProperties {
 					e.getMessage());
 		}
 	}
-	
+
 	private void deleteNode(String root) {
 		try {
 			zk.delete(root, -1);
@@ -152,18 +153,18 @@ public class DiskProperties {
 					e.getMessage());
 		}
 	}
-	
+
 	public void deleteRecursively(String root) {
 		List<String> tree = listSubTree(root);
-		for (int i = tree.size()-1; i >= 0; --i) {
+		for (int i = tree.size() - 1; i >= 0; --i) {
 			deleteNode(tree.get(i));
 		}
 	}
-	
+
 	public List<String> getDisks() {
 		return getChildren(PersistentDiskApplication.ZK_DISKS_PATH);
 	}
-	
+
 	public void saveDiskProperties(String diskRoot, Properties properties) {
 		Enumeration<?> propertiesEnum = properties.propertyNames();
 
@@ -208,95 +209,131 @@ public class DiskProperties {
 					e.getMessage());
 		}
 	}
-	
+
 	public int getDiskUsersNo(String diskPath) {
 		Properties diskProp = getDiskProperties(diskPath);
 		int users = 0;
-		
+
 		try {
-			users = Integer.parseInt(diskProp.get(DiskProperties.DISK_USERS_KEY).toString());
+			users = Integer.parseInt(diskProp
+					.get(DiskProperties.DISK_USERS_KEY).toString());
 		} catch (NumberFormatException e) {
 			// Assume there's not user
 		}
 
 		return users;
 	}
-	
+
 	private String getNodeUsagePath(String node) {
 		return PersistentDiskApplication.ZK_USAGE_PATH + "/" + node;
 	}
-	
+
 	private String getVmUsagePath(String node, String vmId) {
 		return getNodeUsagePath(node) + "/" + vmId;
 	}
-	
+
 	private String getDiskUsagePath(String node, String vmId, String diskUuid) {
 		return getVmUsagePath(node, vmId) + "/" + diskUuid;
 	}
-	
+
 	private String getDiskPath(String uuid) {
 		return PersistentDiskApplication.ZK_DISKS_PATH + "/" + uuid;
 	}
-	
-	public void addDiskUser(String node, String vmId, String diskUuid) {
+
+	public void addDiskUser(String node, String vmId, String diskUuid,
+			String target) {
 		if (!pathExists(getNodeUsagePath(node))) {
-			createNode(getNodeUsagePath(node), PersistentDiskApplication.getDateTime());
+			createNode(getNodeUsagePath(node),
+					PersistentDiskApplication.getDateTime());
 		}
-		
+
 		if (!pathExists(getVmUsagePath(node, vmId))) {
-			createNode(getVmUsagePath(node, vmId), PersistentDiskApplication.getDateTime());
+			createNode(getVmUsagePath(node, vmId),
+					PersistentDiskApplication.getDateTime());
 		}
-		
+
 		// This should normally not happen
 		if (pathExists(getDiskUsagePath(node, vmId, diskUuid))) {
-			setNode(getDiskUsagePath(node, vmId, diskUuid), PersistentDiskApplication.getDateTime());
+			setNode(getDiskUsagePath(node, vmId, diskUuid), target);
 		} else {
-			createNode(getDiskUsagePath(node, vmId, diskUuid), PersistentDiskApplication.getDateTime());
+			createNode(getDiskUsagePath(node, vmId, diskUuid), target);
 			setDiskUserCounter(diskUuid, +1);
 		}
 	}
-	
+
+	public void removeDiskUser(String node, String vmId, String diskUuid) {
+		String diskPath = getDiskUsagePath(node, vmId, diskUuid);
+
+		deleteNode(diskPath);
+		setDiskUserCounter(diskUuid, -1);
+	}
+
 	public Boolean removeDiskUser(String node, String vmId) {
 		String vmUsagePath = getVmUsagePath(node, vmId);
-		
-		if (!pathExists(getNodeUsagePath(node)) || 
-			!pathExists(vmUsagePath)) {
+
+		if (!pathExists(vmUsagePath)) {
 			return false;
 		}
-		
+
 		List<String> diskUuids = getAttachedDisk(node, vmId);
-		
+
 		deleteRecursively(vmUsagePath);
-		
-		for (String disk: diskUuids) {
+
+		for (String disk : diskUuids) {
 			setDiskUserCounter(disk, -1);
 		}
-		
+
 		return true;
 	}
-	
+
 	public List<String> getAttachedDisk(String node, String vmId) {
 		String vmUsagePath = getVmUsagePath(node, vmId);
-		
-		if (!pathExists(getNodeUsagePath(node)) || 
-			!pathExists(vmUsagePath)) {
+
+		if (!pathExists(getNodeUsagePath(node)) || !pathExists(vmUsagePath)) {
 			return null;
 		}
-		
+
 		return getChildren(vmUsagePath);
 	}
-	
+
+	public String diskTarget(String node, String vmId, String diskUuid) {
+		String diskPath = getDiskUsagePath(node, vmId, diskUuid);
+
+		if (!pathExists(diskPath)) {
+			return STATIC_DISK_TARGET;
+		}
+
+		return getNode(diskPath);
+	}
+
+	public String nextHotpluggedDiskTarget(String node, String vmId) {
+		String target = "vd";
+		List<String> disks = getAttachedDisk(node, vmId);
+		char hotplugged = 'a';
+
+		if (disks != null) {
+			for (String disk : disks) {
+				if (!diskTarget(node, vmId, disk).equals(STATIC_DISK_TARGET)) {
+					hotplugged++;
+				}
+			}
+		}
+
+		return target + String.valueOf(hotplugged);
+	}
+
 	private void setDiskUserCounter(String diskUuid, int operation) {
 		String path = getDiskPath(diskUuid);
 		int currentUser = getDiskUsersNo(path);
-		
-		setNode(path + "/" + DISK_USERS_KEY, String.valueOf(currentUser+operation));
+
+		setNode(path + "/" + DISK_USERS_KEY,
+				String.valueOf(currentUser + operation));
 	}
-	
+
 	public int remainingFreeUser(String path) {
 		return PersistentDiskApplication.USERS_PER_DISK - getDiskUsersNo(path);
 	}
-	
+
 	private List<String> listSubTree(String pathRoot) {
 		Deque<String> queue = new LinkedList<String>();
 		List<String> tree = new ArrayList<String>();
@@ -318,10 +355,10 @@ public class DiskProperties {
 		}
 		return tree;
 	}
-	
+
 	private List<String> getChildren(String path) {
 		List<String> children = null;
-		
+
 		try {
 			children = zk.getChildren(path, false);
 		} catch (KeeperException e) {
@@ -331,7 +368,7 @@ public class DiskProperties {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					e.getMessage());
 		}
-		
+
 		return children;
 	}
 

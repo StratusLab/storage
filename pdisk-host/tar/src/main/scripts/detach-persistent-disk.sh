@@ -1,11 +1,26 @@
 #!/bin/bash
 
-VM_DIR="$1"
+VM_DIR=$1
+UUID_URL=$VM_DIR
+TARGET=$2
+VM_ID=$3
 
 . /etc/stratuslab/pdisk-host.cfg
 
-VM_ID=`basename $VM_DIR`
-REGISTER_FILE="$VM_DIR/$REGISTER_FILENAME"
+if [ "x$TARGET" = "x" ]
+then
+    VM_ID=`basename $VM_DIR`
+    REGISTER_FILE="$VM_DIR/$REGISTER_FILENAME"
+fi
+
+if [[ "x$VM_DIR" = "x" || "x$VM_ID" = "x" ]]
+then
+    echo "usage: $0 (VM_DIR|UUID_URL) [TARGET VM_ID]"
+    echo "UUID_URL used to detach hotplugged disk"
+    echo "UUID_URL have to be pdisk:<portal_address>:<portal_port>:<disk_uuid>"
+    echo "TARGET and VM_ID are mandatory for UUID_URL"
+    exit 1
+fi
 
 deregister_disk() {
     local NODE=`hostname`
@@ -32,7 +47,7 @@ detatch_iscsi() {
     if [ "x$DISCOVER_OUT" = "x" ]
     then
         echo "Unable to find disk $DISK_UUID at $PORTAL"
-        exit 1
+        return
     fi
 
     # Portal informations
@@ -51,21 +66,29 @@ detatch_iscsi() {
     fi
 }
 
-if [ "x$VM_DIR" = "x" ]
+detach_all_disks() {
+    ATTACHED_DISK="`cat $VM_DIR/$REGISTER_FILE`"
+
+    for DISK_INFO in ${ATTACHED_DISK[*]}
+    do
+        detatch_${SHARE_TYPE} $DISK_INFO
+    done
+}
+
+detach_hotplug_disk() {
+    sudo /usr/bin/virsh detach-disk one-$VM_ID $TARGET
+    detatch_${SHARE_TYPE} $UUID_URL
+}
+
+if [ "x$TARGET" = "x" ]
 then
-    echo "usage: $0 VM_DIR"
-    exit 1
-fi
+    # if no pdisk attached, nothing to do
+    [ -f $VM_DIR/$REGISTER_FILE ] || exit 0
 
-# if no pdisk attached, nothing to do
-[ -f $REGISTER_FILE ] || exit 0
-
-ATTACHED_DISK="`cat $REGISTER_FILE`"
-
-for DISK_INFO in ${ATTACHED_DISK[*]}
-do
-    detatch_${SHARE_TYPE} $DISK_INFO
     deregister_disk
-done
+    detach_all_disks
+else
+    detach_hotplug_disk
+fi
 
 exit 0

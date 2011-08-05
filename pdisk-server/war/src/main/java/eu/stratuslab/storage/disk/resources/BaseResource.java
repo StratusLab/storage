@@ -22,11 +22,7 @@ package eu.stratuslab.storage.disk.resources;
 import static org.restlet.data.MediaType.TEXT_HTML;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -51,29 +47,32 @@ public class BaseResource extends ServerResource {
 	protected static final DiskProperties zk = new DiskProperties();
 	protected static final Logger LOGGER = Logger.getLogger("org.restlet");
 	protected static final Messages MESSAGES = new Messages();
-	private String username = "";	
+	private String username = "";
 
 	public enum DiskVisibility {
 		PRIVATE,
 		// RESTRICTED,
 		PUBLIC,
 	}
-	
+
 	@Get
 	public Representation getNotAllowed() {
-		return respondError(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED, "Method not allowed");
+		return respondError(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED,
+				"Method not allowed");
 	}
 
 	@Post
 	public Representation postNotAllowed() {
-		return respondError(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED, "Method not allowed");
+		return respondError(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED,
+				"Method not allowed");
 	}
 
 	@Delete
 	public Representation deleteNotAllowed() {
-		return respondError(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED, "Method not allowed");
+		return respondError(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED,
+				"Method not allowed");
 	}
-	
+
 	private Configuration getFreeMarkerConfiguration() {
 		return ((PersistentDiskApplication) getApplication())
 				.getFreeMarkerConfiguration();
@@ -87,9 +86,11 @@ public class BaseResource extends ServerResource {
 		return new TemplateRepresentation(tpl, freeMarkerConfig, info,
 				mediaType);
 	}
-	
-	protected TemplateRepresentation directTemplateRepresentation(String tpl, Map<String, Object> info) {
-		return createTemplateRepresentation(getTemplateType() + "/" + tpl, info, getReturnedMediaType());
+
+	protected TemplateRepresentation directTemplateRepresentation(String tpl,
+			Map<String, Object> info) {
+		return createTemplateRepresentation(getTemplateType() + "/" + tpl,
+				info, getReturnedMediaType());
 	}
 
 	protected Map<String, Object> createInfoStructure(String title) {
@@ -105,7 +106,7 @@ public class BaseResource extends ServerResource {
 
 		// Add user name information
 		info.put("username", getUsername());
-		
+
 		// Display message if available
 		info.put("success", MESSAGES.pop());
 
@@ -152,7 +153,7 @@ public class BaseResource extends ServerResource {
 	protected static String getDiskZkPath(String uuid) {
 		return PersistentDiskApplication.ZK_DISKS_PATH + "/" + uuid;
 	}
-	
+
 	protected Boolean diskExists(String uuid) {
 		return zk.pathExists(getDiskZkPath(uuid));
 	}
@@ -211,7 +212,7 @@ public class BaseResource extends ServerResource {
 	protected Boolean useAPI() {
 		return getRequest().getResourceRef().getPath().startsWith("/api/");
 	}
-	
+
 	protected String getTemplateType() {
 		if (useAPI()) {
 			return "json";
@@ -219,7 +220,7 @@ public class BaseResource extends ServerResource {
 			return "html";
 		}
 	}
-	
+
 	protected MediaType getReturnedMediaType() {
 		if (useAPI()) {
 			return APPLICATION_JSON;
@@ -227,33 +228,26 @@ public class BaseResource extends ServerResource {
 			return TEXT_HTML;
 		}
 	}
-	
+
 	protected Representation respondError(Status errorCode, String errorMsg) {
 		setStatus(errorCode);
 		Map<String, Object> error = createInfoStructure("An error occured");
-		
+
 		if (useAPI()) {
 			errorMsg = "\"" + errorMsg + "\"";
 		}
-		
+
 		error.put("errorMsg", errorMsg);
-		
+
 		return directTemplateRepresentation("error.ftl", error);
 	}
-	
-	protected static String join(List<String> list, String conjunction)
-	{
-	   StringBuilder sb = new StringBuilder();
-	   boolean first = true;
-	   for (String item : list)
-	   {
-	      if (first)
-	         first = false;
-	      else
-	         sb.append(conjunction);
-	      sb.append(item);
-	   }
-	   return sb.toString();
+
+	protected String serviceName() {
+		return getRequest().getHostRef().getHostDomain();
+	}
+
+	protected int servicePort() {
+		return getRequest().getHostRef().getHostPort();
 	}
 
 	public static DiskProperties getZooKeeper() {
