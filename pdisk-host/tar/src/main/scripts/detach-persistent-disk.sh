@@ -22,7 +22,7 @@ then
     exit 1
 fi
 
-deregister_disk() {
+deregister_disks() {
     local NODE=`hostname`
     local DEREGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/api/detach -d node=${NODE}&vm_id=${VM_ID}"
     $DEREGISTER_CMD
@@ -58,7 +58,8 @@ detatch_iscsi() {
     local LUN=`echo $DISCOVER_OUT | cut -d ',' -f 2 | cut -d ' ' -f 1`
     local DISK_PATH="/dev/disk/by-path/ip-$PORTAL_IP-iscsi-$DISK-lun-$LUN"
 
-    # Detach the disk only if no one else is using it
+    # Detach the disk only if it exists and if no one else is using it
+    [ -b $DISK_PATH ] || return
     if [ `sudo /usr/sbin/lsof $DISK_PATH | wc -l` -eq 0 ]
     then
         local DETACH_CMD="sudo $ISCSIADM --mode node --portal $PORTAL_IP --targetname $DISK --logout"
@@ -67,11 +68,15 @@ detatch_iscsi() {
 }
 
 detach_all_disks() {
-    ATTACHED_DISK="`cat $VM_DIR/$REGISTER_FILE`"
+    ATTACHED_DISK="`cat $REGISTER_FILE 2>/dev/null`"
+
+    # if no pdisk attached, nothing to do
+    [ "x$ATTACHED_DISK" = "x" ] && return
 
     for DISK_INFO in ${ATTACHED_DISK[*]}
     do
         detatch_${SHARE_TYPE} $DISK_INFO
+        deregister_disks
     done
 }
 
@@ -81,11 +86,7 @@ detach_hotplug_disk() {
 }
 
 if [ "x$TARGET" = "x" ]
-then
-    # if no pdisk attached, nothing to do
-    [ -f $VM_DIR/$REGISTER_FILE ] || exit 0
-
-    deregister_disk
+then 
     detach_all_disks
 else
     detach_hotplug_disk
