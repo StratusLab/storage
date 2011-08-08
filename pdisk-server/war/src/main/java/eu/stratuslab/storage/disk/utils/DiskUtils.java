@@ -99,9 +99,9 @@ public final class DiskUtils {
 
 	public static void attachHotplugDisk(String serviceName, int servicePort,
 			String node, String vmId, String diskUuid, String target) {
-		
-		// TODO: get this from the config
-		String attachedDisk = "/var/lib/one/" + vmId+ "/images/pdisk-" + diskUuid;
+
+		String attachedDisk = PersistentDiskApplication.CLOUD_NODE_VM_DIR + "/"
+				+ vmId + "/images/pdisk-" + diskUuid;
 
 		List<String> attachCmd = new ArrayList<String>();
 		attachCmd.add("ssh");
@@ -123,7 +123,7 @@ public final class DiskUtils {
 		ProcessBuilder pb = new ProcessBuilder(attachCmd);
 		ProcessUtils.execute(pb, "Unable to attach persistent disk");
 	}
-	
+
 	public static void detachHotplugDisk(String serviceName, int servicePort,
 			String node, String vmId, String diskUuid, String target) {
 

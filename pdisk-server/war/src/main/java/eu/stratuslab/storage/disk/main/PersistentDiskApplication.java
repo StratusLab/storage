@@ -102,6 +102,7 @@ public class PersistentDiskApplication extends Application {
 	
 	public static final String CLOUD_NODE_SSH_KEY;
 	public static final String CLOUD_NODE_ADMIN;
+	public static final String CLOUD_NODE_VM_DIR;
 
 	private Configuration freeMarkerConfiguration = null;
 	
@@ -129,6 +130,7 @@ public class PersistentDiskApplication extends Application {
 		
 		CLOUD_NODE_SSH_KEY = getConfigValue("disk.store.cloud.node.ssh_keyfile");
 		CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
+		CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
 	}
 	
 
