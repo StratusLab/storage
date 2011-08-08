@@ -37,7 +37,7 @@ public class ProcessUtils {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"An error occurred while executing command: "
 							+ PersistentDiskApplication.join(pb.command(), " ")
-							+ "\n" + errorMsg + ".");
+							+ ".\n" + errorMsg + ".");
 		} catch (InterruptedException consumed) {
 			// Just continue with the loop.
 		}
@@ -46,7 +46,7 @@ public class ProcessUtils {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"An error occurred while executing command: "
 							+ PersistentDiskApplication.join(pb.command(), " ")
-							+ "\n" + errorMsg + ".\nReturn code was: "
+							+ ".\n" + errorMsg + ".\nReturn code was: "
 							+ String.valueOf(returnCode));
 		}
 	}
