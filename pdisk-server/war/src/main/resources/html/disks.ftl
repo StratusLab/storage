@@ -17,6 +17,7 @@
             <tr>
               <th>Tag</th>
               <th>Size</th>
+              <th>Users</th>
               <th>Owner</th>
               <th>UUID</th>
             </tr>
@@ -26,6 +27,7 @@
             <tr class="${zebra(disk_index)}">
               <td><#if disk.tag == ""><em>No tag</em></#if>${disk.tag!}</td>
               <td class="center">${disk.size} GB</td>
+              <td class="center">${disk.users}</td>
               <td class="center">${disk.owner}</td>
               <td><a href="${baseurl}/disks/${disk.uuid}/">${disk.uuid}</a></td>
             </tr>
@@ -35,6 +37,7 @@
             <tr>
               <th>Tag</th>
               <th>Size</th>
+              <th>Users</th>
               <th>Owner</th>
               <th>UUID</th>
             </tr>
