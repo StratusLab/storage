@@ -29,8 +29,11 @@ deregister_disks() {
 }
 
 detatch_nfs() {
-    # Nothing to do for NFS sharing
-    return
+    local UUID_URL="$1"
+    
+    PORTAL=`echo $UUID_URL | cut -d ':' -f 2`
+    PORTAL_PORT=`echo $UUID_URL | cut -d ':' -f 3`
+    DISK_UUID=`echo $UUID_URL | cut -d ':' -f 4`
 }
 
 detatch_iscsi() {
