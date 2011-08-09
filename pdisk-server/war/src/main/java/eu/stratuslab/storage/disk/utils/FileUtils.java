@@ -46,14 +46,19 @@ public class FileUtils {
 			writer.write(contents);
 		} catch (IOException e) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"An error occured while writting " + file.getName());
+					"An error occured while writting "
+							+ file.getAbsolutePath()
+							+ ".\n Free space on device: "
+							+ String.valueOf(file.getParentFile()
+									.getFreeSpace() / (1024 * 1024)) + "MB.");
 		} finally {
 			if (writer != null) {
 				try {
 					writer.close();
 				} catch (IOException consumed) {
 					throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-							"An error occured while closing " + file.getName());
+							"An error occured while closing "
+									+ file.getAbsolutePath());
 				}
 			}
 		}
@@ -93,13 +98,13 @@ public class FileUtils {
 		Boolean isPresent = false;
 		DataInputStream in = null;
 		FileInputStream is = null;
-		BufferedReader br = null; 
-		
+		BufferedReader br = null;
+
 		try {
 			is = new FileInputStream(file);
 			in = new DataInputStream(is);
 			br = new BufferedReader(new InputStreamReader(in));
-			
+
 			String currentLine;
 
 			while ((currentLine = br.readLine()) != null) {
