@@ -159,9 +159,11 @@ public class BaseResource extends ServerResource {
 	}
 
 	protected Boolean hasSuficientRightsToView(Properties properties) {
-		// Is disk owner
+		// Is disk owner or service user
 		if (properties.get(DiskProperties.DISK_OWNER_KEY).toString()
-				.equals(getUsername())) {
+				.equals(getUsername())
+				|| PersistentDiskApplication.CLOUD_SERVICE_USER
+						.equals(getUsername())) {
 			return true;
 		}
 
@@ -249,7 +251,7 @@ public class BaseResource extends ServerResource {
 	protected int servicePort() {
 		return getRequest().getHostRef().getHostPort();
 	}
-	
+
 	protected Properties getDiskProperties(String uuid) {
 		return zk.getDiskProperties(getDiskZkPath(uuid));
 	}

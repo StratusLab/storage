@@ -25,9 +25,10 @@ public class ActionResource extends BaseResource {
 		MISSING, UNKNOW, OK;
 	}
 
-	private List<String> diskUuids;
-	private String node;
-	private String vmId;
+	private List<String> diskUuids = null;
+	private String node = null;
+	private String vmId = null;
+	private String diskTarget = null;
 
 	@Post
 	public Representation actionDispatcher(Representation entity) {
@@ -61,11 +62,15 @@ public class ActionResource extends BaseResource {
 		String diskUuid = getDiskId();
 
 		if (diskUuid == null) {
-			return respondError(Status.CLIENT_ERROR_NOT_FOUND, "Disk UUID not provided");
+			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
+					"Disk UUID not provided");
 		} else if (!diskExists(diskUuid)) {
-			return respondError(Status.CLIENT_ERROR_NOT_FOUND, "Bad disk UUID");
+			return respondError(Status.CLIENT_ERROR_BAD_REQUEST, "Bad disk UUID");
+		} else if (target.equals(DiskProperties.DISK_TARGET_LIMIT)) {
+			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
+					"Target limit reached. Restart instance to attach new disk");
 		}
-		
+
 		Properties diskProperties = getDiskProperties(diskUuid);
 		if (!hasSuficientRightsToView(diskProperties)) {
 			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
@@ -78,6 +83,7 @@ public class ActionResource extends BaseResource {
 		if (!target.equals(DiskProperties.STATIC_DISK_TARGET)) {
 			DiskUtils.attachHotplugDisk(serviceName(), servicePort(), node,
 					vmId, diskUuid, target);
+			diskTarget = target;
 		}
 
 		return actionResponse();
@@ -85,13 +91,13 @@ public class ActionResource extends BaseResource {
 
 	private Representation detachAllDisks() {
 		diskUuids = zk.getAttachedDisk(node, vmId);
-		
-		if (diskUuids.size() == 0) {
+
+		if (diskUuids == null) {
 			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
 					"VM don't have disk attached");
 		}
-		
-		for (String uuid: diskUuids) {
+
+		for (String uuid : diskUuids) {
 			Properties diskProperties = getDiskProperties(uuid);
 			if (!hasSuficientRightsToView(diskProperties)) {
 				return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
@@ -111,12 +117,11 @@ public class ActionResource extends BaseResource {
 		String diskUuid = getDiskId();
 		List<String> disks = new LinkedList<String>();
 		Properties diskProperties = getDiskProperties(diskUuid);
-		
+
 		if (!hasSuficientRightsToView(diskProperties)) {
 			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
 					"Not enough rights to detach disk");
 		}
-		
 
 		disks.add(diskUuid);
 		diskUuids = disks;
@@ -125,7 +130,7 @@ public class ActionResource extends BaseResource {
 			return respondError(Status.CLIENT_ERROR_NOT_FOUND, "Bad disk UUID");
 		}
 
-		String diskTarget = zk.diskTarget(node, vmId, diskUuid);
+		diskTarget = zk.diskTarget(node, vmId, diskUuid);
 		if (diskTarget.equals(DiskProperties.STATIC_DISK_TARGET)) {
 			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
 					"Disk have not been hot-plugged");
@@ -134,7 +139,7 @@ public class ActionResource extends BaseResource {
 		zk.removeDiskUser(node, vmId, diskUuid);
 		DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node, vmId,
 				diskUuid, diskTarget);
-		
+
 		return actionResponse();
 	}
 
@@ -144,6 +149,10 @@ public class ActionResource extends BaseResource {
 		info.put("uuids", diskUuids);
 		info.put("node", node);
 		info.put("vm_id", vmId);
+
+		if (diskTarget != null) {
+			info.put("target", diskTarget);
+		}
 
 		return directTemplateRepresentation("action.ftl", info);
 	}

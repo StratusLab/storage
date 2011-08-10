@@ -20,6 +20,7 @@
 package eu.stratuslab.storage.disk.utils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.Enumeration;
 import java.util.LinkedList;
@@ -47,6 +48,7 @@ public class DiskProperties {
 	public static final String DISK_USERS_KEY = "users";
 
 	public static final String STATIC_DISK_TARGET = "static";
+	public static final String DISK_TARGET_LIMIT = "limit";
 
 	public DiskProperties() {
 		connect(PersistentDiskApplication.ZK_ADDRESSES, 3000);
@@ -247,9 +249,10 @@ public class DiskProperties {
 					PersistentDiskApplication.getDateTime());
 		}
 
-		if (!pathExists(getVmUsagePath(node, vmId))) {
-			createNode(getVmUsagePath(node, vmId),
-					PersistentDiskApplication.getDateTime());
+		if (pathExists(getVmUsagePath(node, vmId))) {
+			setNode(getVmUsagePath(node, vmId), target);
+		} else {
+			createNode(getVmUsagePath(node, vmId), target);
 		}
 
 		// This should normally not happen
@@ -308,13 +311,15 @@ public class DiskProperties {
 
 	public String nextHotpluggedDiskTarget(String node, String vmId) {
 		String target = "vd";
-		List<String> disks = getAttachedDisk(node, vmId);
 		char hotplugged = 'a';
-
-		if (disks != null) {
-			for (String disk : disks) {
-				if (!diskTarget(node, vmId, disk).equals(STATIC_DISK_TARGET)) {
-					hotplugged++;
+		
+		if (pathExists(getVmUsagePath(node, vmId))) {
+			if (!getNode(getVmUsagePath(node, vmId)).equals(STATIC_DISK_TARGET)) {
+				char[] currentTarget = getNode(getVmUsagePath(node, vmId)).toCharArray();
+				hotplugged = ++(currentTarget[currentTarget.length-1]);
+				
+				if (hotplugged > 'z') {
+					return DISK_TARGET_LIMIT;
 				}
 			}
 		}
