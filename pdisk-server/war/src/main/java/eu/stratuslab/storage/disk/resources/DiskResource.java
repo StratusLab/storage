@@ -46,7 +46,7 @@ public class DiskResource extends BaseResource {
 
 		if (!hasSuficientRightsToView(diskProperties)) {
 			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
-					"Not enought rights to display disk properties");
+					"Not enough rights to display disk properties");
 		}
 
 		infos.put("properties", diskProperties);
@@ -59,7 +59,7 @@ public class DiskResource extends BaseResource {
 	}
 
 	private Properties getDiskProperties() {
-		return zk.getDiskProperties(getDiskZkPath());
+		return getDiskProperties(getDiskId());
 	}
 
 	private void addDiskUserHeader() {
@@ -90,7 +90,7 @@ public class DiskResource extends BaseResource {
 
 		if (!hasSuficientRightsToDelete(diskProperties)) {
 			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
-					"Not enought rights to delete disk");
+					"Not enough rights to delete disk");
 		}
 
 		if (zk.getDiskUsersNo(getDiskZkPath()) > 0) {

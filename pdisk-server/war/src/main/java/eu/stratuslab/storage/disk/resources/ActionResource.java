@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.restlet.data.Form;
 import org.restlet.data.Status;
@@ -64,6 +65,12 @@ public class ActionResource extends BaseResource {
 		} else if (!diskExists(diskUuid)) {
 			return respondError(Status.CLIENT_ERROR_NOT_FOUND, "Bad disk UUID");
 		}
+		
+		Properties diskProperties = getDiskProperties(diskUuid);
+		if (!hasSuficientRightsToView(diskProperties)) {
+			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
+					"Not enough rights to attach disk");
+		}
 
 		zk.addDiskUser(node, vmId, diskUuid, target);
 		diskUuids = zk.getAttachedDisk(node, vmId);
@@ -78,18 +85,38 @@ public class ActionResource extends BaseResource {
 
 	private Representation detachAllDisks() {
 		diskUuids = zk.getAttachedDisk(node, vmId);
+		
+		if (diskUuids.size() == 0) {
+			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
+					"VM don't have disk attached");
+		}
+		
+		for (String uuid: diskUuids) {
+			Properties diskProperties = getDiskProperties(uuid);
+			if (!hasSuficientRightsToView(diskProperties)) {
+				return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
+						"Not enough rights to detach disks");
+			}
+		}
 
 		if (zk.removeDiskUser(node, vmId)) {
 			return actionResponse();
 		} else {
 			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
-					"VM don't have disk attached");
+					"An error occured while detaching disk");
 		}
 	}
 
 	private Representation detachHotpluggedDisk() {
 		String diskUuid = getDiskId();
 		List<String> disks = new LinkedList<String>();
+		Properties diskProperties = getDiskProperties(diskUuid);
+		
+		if (!hasSuficientRightsToView(diskProperties)) {
+			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
+					"Not enough rights to detach disk");
+		}
+		
 
 		disks.add(diskUuid);
 		diskUuids = disks;

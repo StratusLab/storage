@@ -249,6 +249,10 @@ public class BaseResource extends ServerResource {
 	protected int servicePort() {
 		return getRequest().getHostRef().getHostPort();
 	}
+	
+	protected Properties getDiskProperties(String uuid) {
+		return zk.getDiskProperties(getDiskZkPath(uuid));
+	}
 
 	public static DiskProperties getZooKeeper() {
 		return zk;
