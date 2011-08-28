@@ -44,14 +44,14 @@ public class DiskResource extends BaseResource {
 
 		Properties diskProperties = getDiskProperties();
 
-		if (!hasSuficientRightsToView(diskProperties)) {
+		if (!hasSufficientRightsToView(diskProperties)) {
 			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
 					"Not enough rights to display disk properties");
 		}
 
 		infos.put("properties", diskProperties);
 		infos.put("url", getCurrentUrl());
-		infos.put("can_delete", hasSuficientRightsToDelete(diskProperties));
+		infos.put("can_delete", hasSufficientRightsToDelete(diskProperties));
 
 		addDiskUserHeader();
 
@@ -88,7 +88,7 @@ public class DiskResource extends BaseResource {
 		Representation response = null;
 		Properties diskProperties = getDiskProperties();
 
-		if (!hasSuficientRightsToDelete(diskProperties)) {
+		if (!hasSufficientRightsToDelete(diskProperties)) {
 			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
 					"Not enough rights to delete disk");
 		}

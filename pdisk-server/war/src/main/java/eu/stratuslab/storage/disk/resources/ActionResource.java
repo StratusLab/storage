@@ -72,7 +72,7 @@ public class ActionResource extends BaseResource {
 		}
 
 		Properties diskProperties = getDiskProperties(diskUuid);
-		if (!hasSuficientRightsToView(diskProperties)) {
+		if (!hasSufficientRightsToView(diskProperties)) {
 			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
 					"Not enough rights to attach disk");
 		}
@@ -99,7 +99,7 @@ public class ActionResource extends BaseResource {
 
 		for (String uuid : diskUuids) {
 			Properties diskProperties = getDiskProperties(uuid);
-			if (!hasSuficientRightsToView(diskProperties)) {
+			if (!hasSufficientRightsToView(diskProperties)) {
 				return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
 						"Not enough rights to detach disks");
 			}
@@ -118,7 +118,7 @@ public class ActionResource extends BaseResource {
 		List<String> disks = new LinkedList<String>();
 		Properties diskProperties = getDiskProperties(diskUuid);
 
-		if (!hasSuficientRightsToView(diskProperties)) {
+		if (!hasSufficientRightsToView(diskProperties)) {
 			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
 					"Not enough rights to detach disk");
 		}

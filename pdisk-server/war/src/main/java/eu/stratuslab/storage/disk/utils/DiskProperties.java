@@ -20,7 +20,6 @@
 package eu.stratuslab.storage.disk.utils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Deque;
 import java.util.Enumeration;
 import java.util.LinkedList;
@@ -29,8 +28,8 @@ import java.util.Properties;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooDefs.Ids;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooKeeper.States;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
@@ -38,346 +37,347 @@ import org.restlet.resource.ResourceException;
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 
 public class DiskProperties {
-	private ZooKeeper zk = null;
+    private ZooKeeper zk = null;
 
-	// Property keys
-	public static final String UUID_KEY = "uuid";
-	public static final String DISK_OWNER_KEY = "owner";
-	public static final String DISK_VISIBILITY_KEY = "visibility";
-	public static final String DISK_CREATION_DATE_KEY = "created";
-	public static final String DISK_USERS_KEY = "users";
+    // Property keys
+    public static final String UUID_KEY = "uuid";
+    public static final String DISK_OWNER_KEY = "owner";
+    public static final String DISK_VISIBILITY_KEY = "visibility";
+    public static final String DISK_CREATION_DATE_KEY = "created";
+    public static final String DISK_USERS_KEY = "users";
 
-	public static final String STATIC_DISK_TARGET = "static";
-	public static final String DISK_TARGET_LIMIT = "limit";
+    public static final String STATIC_DISK_TARGET = "static";
+    public static final String DISK_TARGET_LIMIT = "limit";
 
-	public DiskProperties() {
-		connect(PersistentDiskApplication.ZK_ADDRESSES, 3000);
-	}
+    public DiskProperties() {
+        connect(PersistentDiskApplication.ZK_ADDRESSES, 3000);
+    }
 
-	public void connect(String addresses, int timeout) {
-		if (zk != null) {
-			try {
-				zk.close();
-			} catch (InterruptedException e) {
-			}
-		}
+    public void connect(String addresses, int timeout) {
+        if (zk != null) {
+            try {
+                zk.close();
+            } catch (InterruptedException e) {
+            }
+        }
 
-		try {
-			zk = new ZooKeeper(addresses, timeout, null);
-		} catch (Exception e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Unable to connect to ZooKeeper: " + e.getMessage());
-		}
+        try {
+            zk = new ZooKeeper(addresses, timeout, null);
+        } catch (Exception e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "Unable to connect to ZooKeeper: " + e.getMessage());
+        }
 
-		try {
-			while (zk.getState() == States.CONNECTING) {
-				Thread.sleep(20);
-			}
+        try {
+            while (zk.getState() == States.CONNECTING) {
+                Thread.sleep(20);
+            }
 
-			if (zk.getState() != States.CONNECTED) {
-				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-						"Unable to connect to ZooKeeper");
-			}
-		} catch (InterruptedException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Unable to connect to ZooKeeper: " + e.getMessage());
-		}
+            if (zk.getState() != States.CONNECTED) {
+                throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                        "Unable to connect to ZooKeeper");
+            }
+        } catch (InterruptedException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "Unable to connect to ZooKeeper: " + e.getMessage());
+        }
 
-		try {
-			if (zk.exists(PersistentDiskApplication.ZK_DISKS_PATH, false) == null) {
-				zk.create(PersistentDiskApplication.ZK_DISKS_PATH,
-						"pdiskDisks".getBytes(), Ids.OPEN_ACL_UNSAFE,
-						CreateMode.PERSISTENT);
-			}
-			if (zk.exists(PersistentDiskApplication.ZK_USAGE_PATH, false) == null) {
-				zk.create(PersistentDiskApplication.ZK_USAGE_PATH,
-						"pdiskUsers".getBytes(), Ids.OPEN_ACL_UNSAFE,
-						CreateMode.PERSISTENT);
-			}
-		} catch (KeeperException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"ZooKeeper error: " + e.getMessage());
-		} catch (InterruptedException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					e.getMessage());
-		}
-	}
+        try {
+            if (zk.exists(PersistentDiskApplication.ZK_DISKS_PATH, false) == null) {
+                zk.create(PersistentDiskApplication.ZK_DISKS_PATH,
+                        "pdiskDisks".getBytes(), Ids.OPEN_ACL_UNSAFE,
+                        CreateMode.PERSISTENT);
+            }
+            if (zk.exists(PersistentDiskApplication.ZK_USAGE_PATH, false) == null) {
+                zk.create(PersistentDiskApplication.ZK_USAGE_PATH,
+                        "pdiskUsers".getBytes(), Ids.OPEN_ACL_UNSAFE,
+                        CreateMode.PERSISTENT);
+            }
+        } catch (KeeperException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "ZooKeeper error: " + e.getMessage());
+        } catch (InterruptedException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    e.getMessage());
+        }
+    }
 
-	private String getNode(String root) {
-		String node = "";
+    private String getNode(String root) {
+        String node = "";
 
-		try {
-			node = new String(zk.getData(root, false, null));
-		} catch (KeeperException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"ZooKeeper error: " + e.getMessage());
-		} catch (InterruptedException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					e.getMessage());
-		}
+        try {
+            node = new String(zk.getData(root, false, null));
+        } catch (KeeperException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "ZooKeeper error: " + e.getMessage());
+        } catch (InterruptedException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    e.getMessage());
+        }
 
-		return node;
-	}
+        return node;
+    }
 
-	private void createNode(String path, String content) {
-		try {
-			zk.create(path, content.getBytes(), Ids.OPEN_ACL_UNSAFE,
-					CreateMode.PERSISTENT);
-		} catch (KeeperException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"ZooKeeper error: " + e.getMessage());
-		} catch (InterruptedException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					e.getMessage());
-		}
-	}
+    private void createNode(String path, String content) {
+        try {
+            zk.create(path, content.getBytes(), Ids.OPEN_ACL_UNSAFE,
+                    CreateMode.PERSISTENT);
+        } catch (KeeperException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "ZooKeeper error: " + e.getMessage());
+        } catch (InterruptedException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    e.getMessage());
+        }
+    }
 
-	private void setNode(String root, String value) {
-		try {
-			zk.setData(root, value.getBytes(), -1);
-		} catch (KeeperException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"ZooKeeper error: " + e.getMessage());
-		} catch (InterruptedException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					e.getMessage());
-		}
-	}
+    private void setNode(String root, String value) {
+        try {
+            zk.setData(root, value.getBytes(), -1);
+        } catch (KeeperException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "ZooKeeper error: " + e.getMessage());
+        } catch (InterruptedException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    e.getMessage());
+        }
+    }
 
-	private void deleteNode(String root) {
-		try {
-			zk.delete(root, -1);
-		} catch (KeeperException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"ZooKeeper error: " + e.getMessage());
-		} catch (InterruptedException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					e.getMessage());
-		}
-	}
+    private void deleteNode(String root) {
+        try {
+            zk.delete(root, -1);
+        } catch (KeeperException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "ZooKeeper error: " + e.getMessage());
+        } catch (InterruptedException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    e.getMessage());
+        }
+    }
 
-	public void deleteRecursively(String root) {
-		List<String> tree = listSubTree(root);
-		for (int i = tree.size() - 1; i >= 0; --i) {
-			deleteNode(tree.get(i));
-		}
-	}
+    public void deleteRecursively(String root) {
+        List<String> tree = listSubTree(root);
+        for (int i = tree.size() - 1; i >= 0; --i) {
+            deleteNode(tree.get(i));
+        }
+    }
 
-	public List<String> getDisks() {
-		return getChildren(PersistentDiskApplication.ZK_DISKS_PATH);
-	}
+    public List<String> getDisks() {
+        return getChildren(PersistentDiskApplication.ZK_DISKS_PATH);
+    }
 
-	public void saveDiskProperties(String diskRoot, Properties properties) {
-		Enumeration<?> propertiesEnum = properties.propertyNames();
+    public void saveDiskProperties(String diskRoot, Properties properties) {
+        Enumeration<?> propertiesEnum = properties.propertyNames();
 
-		createNode(diskRoot, properties.get(DiskProperties.UUID_KEY).toString());
+        createNode(diskRoot, properties.get(DiskProperties.UUID_KEY).toString());
 
-		while (propertiesEnum.hasMoreElements()) {
-			String key = (String) propertiesEnum.nextElement();
-			String content = properties.getProperty(key);
+        while (propertiesEnum.hasMoreElements()) {
+            String key = (String) propertiesEnum.nextElement();
+            String content = properties.getProperty(key);
 
-			if (key == DiskProperties.UUID_KEY)
-				continue;
+            if (key == DiskProperties.UUID_KEY)
+                continue;
 
-			createNode(diskRoot + "/" + key, content);
-		}
-	}
+            createNode(diskRoot + "/" + key, content);
+        }
+    }
 
-	public Properties getDiskProperties(String root) {
-		Properties properties = new Properties();
-		List<String> tree = listSubTree(root);
+    public Properties getDiskProperties(String root) {
+        Properties properties = new Properties();
+        List<String> tree = listSubTree(root);
 
-		for (int i = tree.size() - 1; i >= 0; --i) {
-			String key = PersistentDiskApplication.last(tree.get(i).split("/"));
-			String content = getNode(tree.get(i));
+        for (int i = tree.size() - 1; i >= 0; --i) {
+            String key = PersistentDiskApplication.last(tree.get(i).split("/"));
+            String content = getNode(tree.get(i));
 
-			if (tree.get(i) == root) {
-				key = UUID_KEY;
-			}
+            if (tree.get(i) == root) {
+                key = UUID_KEY;
+            }
 
-			properties.put(key, content);
-		}
-		return properties;
-	}
+            properties.put(key, content);
+        }
+        return properties;
+    }
 
-	public Boolean pathExists(String path) {
-		try {
-			return zk.exists(path, false) != null;
-		} catch (KeeperException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"ZooKeeper error: " + e.getMessage());
-		} catch (InterruptedException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					e.getMessage());
-		}
-	}
+    public Boolean pathExists(String path) {
+        try {
+            return zk.exists(path, false) != null;
+        } catch (KeeperException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "ZooKeeper error: " + e.getMessage());
+        } catch (InterruptedException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    e.getMessage());
+        }
+    }
 
-	public int getDiskUsersNo(String diskPath) {
-		Properties diskProp = getDiskProperties(diskPath);
-		int users = 0;
+    public int getDiskUsersNo(String diskPath) {
+        Properties diskProp = getDiskProperties(diskPath);
+        int users = 0;
 
-		try {
-			users = Integer.parseInt(diskProp
-					.get(DiskProperties.DISK_USERS_KEY).toString());
-		} catch (NumberFormatException e) {
-			// Assume there's not user
-		}
+        try {
+            users = Integer.parseInt(diskProp
+                    .get(DiskProperties.DISK_USERS_KEY).toString());
+        } catch (NumberFormatException e) {
+            // Assume there's not user
+        }
 
-		return users;
-	}
+        return users;
+    }
 
-	private String getNodeUsagePath(String node) {
-		return PersistentDiskApplication.ZK_USAGE_PATH + "/" + node;
-	}
+    private String getNodeUsagePath(String node) {
+        return PersistentDiskApplication.ZK_USAGE_PATH + "/" + node;
+    }
 
-	private String getVmUsagePath(String node, String vmId) {
-		return getNodeUsagePath(node) + "/" + vmId;
-	}
+    private String getVmUsagePath(String node, String vmId) {
+        return getNodeUsagePath(node) + "/" + vmId;
+    }
 
-	private String getDiskUsagePath(String node, String vmId, String diskUuid) {
-		return getVmUsagePath(node, vmId) + "/" + diskUuid;
-	}
+    private String getDiskUsagePath(String node, String vmId, String diskUuid) {
+        return getVmUsagePath(node, vmId) + "/" + diskUuid;
+    }
 
-	private String getDiskPath(String uuid) {
-		return PersistentDiskApplication.ZK_DISKS_PATH + "/" + uuid;
-	}
+    private String getDiskPath(String uuid) {
+        return PersistentDiskApplication.ZK_DISKS_PATH + "/" + uuid;
+    }
 
-	public void addDiskUser(String node, String vmId, String diskUuid,
-			String target) {
-		if (!pathExists(getNodeUsagePath(node))) {
-			createNode(getNodeUsagePath(node),
-					PersistentDiskApplication.getDateTime());
-		}
+    public void addDiskUser(String node, String vmId, String diskUuid,
+            String target) {
+        if (!pathExists(getNodeUsagePath(node))) {
+            createNode(getNodeUsagePath(node),
+                    PersistentDiskApplication.getDateTime());
+        }
 
-		if (pathExists(getVmUsagePath(node, vmId))) {
-			setNode(getVmUsagePath(node, vmId), target);
-		} else {
-			createNode(getVmUsagePath(node, vmId), target);
-		}
+        if (pathExists(getVmUsagePath(node, vmId))) {
+            setNode(getVmUsagePath(node, vmId), target);
+        } else {
+            createNode(getVmUsagePath(node, vmId), target);
+        }
 
-		// This should normally not happen
-		if (pathExists(getDiskUsagePath(node, vmId, diskUuid))) {
-			setNode(getDiskUsagePath(node, vmId, diskUuid), target);
-		} else {
-			createNode(getDiskUsagePath(node, vmId, diskUuid), target);
-			setDiskUserCounter(diskUuid, +1);
-		}
-	}
+        // This should normally not happen
+        if (pathExists(getDiskUsagePath(node, vmId, diskUuid))) {
+            setNode(getDiskUsagePath(node, vmId, diskUuid), target);
+        } else {
+            createNode(getDiskUsagePath(node, vmId, diskUuid), target);
+            setDiskUserCounter(diskUuid, +1);
+        }
+    }
 
-	public void removeDiskUser(String node, String vmId, String diskUuid) {
-		String diskPath = getDiskUsagePath(node, vmId, diskUuid);
+    public void removeDiskUser(String node, String vmId, String diskUuid) {
+        String diskPath = getDiskUsagePath(node, vmId, diskUuid);
 
-		deleteNode(diskPath);
-		setDiskUserCounter(diskUuid, -1);
-	}
+        deleteNode(diskPath);
+        setDiskUserCounter(diskUuid, -1);
+    }
 
-	public Boolean removeDiskUser(String node, String vmId) {
-		String vmUsagePath = getVmUsagePath(node, vmId);
+    public Boolean removeDiskUser(String node, String vmId) {
+        String vmUsagePath = getVmUsagePath(node, vmId);
 
-		if (!pathExists(vmUsagePath)) {
-			return false;
-		}
+        if (!pathExists(vmUsagePath)) {
+            return false;
+        }
 
-		List<String> diskUuids = getAttachedDisk(node, vmId);
+        List<String> diskUuids = getAttachedDisk(node, vmId);
 
-		deleteRecursively(vmUsagePath);
+        deleteRecursively(vmUsagePath);
 
-		for (String disk : diskUuids) {
-			setDiskUserCounter(disk, -1);
-		}
+        for (String disk : diskUuids) {
+            setDiskUserCounter(disk, -1);
+        }
 
-		return true;
-	}
+        return true;
+    }
 
-	public List<String> getAttachedDisk(String node, String vmId) {
-		String vmUsagePath = getVmUsagePath(node, vmId);
+    public List<String> getAttachedDisk(String node, String vmId) {
+        String vmUsagePath = getVmUsagePath(node, vmId);
 
-		if (!pathExists(getNodeUsagePath(node)) || !pathExists(vmUsagePath)) {
-			return null;
-		}
+        if (!pathExists(getNodeUsagePath(node)) || !pathExists(vmUsagePath)) {
+            return null;
+        }
 
-		return getChildren(vmUsagePath);
-	}
+        return getChildren(vmUsagePath);
+    }
 
-	public String diskTarget(String node, String vmId, String diskUuid) {
-		String diskPath = getDiskUsagePath(node, vmId, diskUuid);
+    public String diskTarget(String node, String vmId, String diskUuid) {
+        String diskPath = getDiskUsagePath(node, vmId, diskUuid);
 
-		if (!pathExists(diskPath)) {
-			return STATIC_DISK_TARGET;
-		}
+        if (!pathExists(diskPath)) {
+            return STATIC_DISK_TARGET;
+        }
 
-		return getNode(diskPath);
-	}
+        return getNode(diskPath);
+    }
 
-	public String nextHotpluggedDiskTarget(String node, String vmId) {
-		String target = "vd";
-		char hotplugged = 'a';
-		
-		if (pathExists(getVmUsagePath(node, vmId))) {
-			if (!getNode(getVmUsagePath(node, vmId)).equals(STATIC_DISK_TARGET)) {
-				char[] currentTarget = getNode(getVmUsagePath(node, vmId)).toCharArray();
-				hotplugged = ++(currentTarget[currentTarget.length-1]);
-				
-				if (hotplugged > 'z') {
-					return DISK_TARGET_LIMIT;
-				}
-			}
-		}
+    public String nextHotpluggedDiskTarget(String node, String vmId) {
+        String target = "vd";
+        char hotplugged = 'a';
 
-		return target + String.valueOf(hotplugged);
-	}
+        if (pathExists(getVmUsagePath(node, vmId))) {
+            if (!getNode(getVmUsagePath(node, vmId)).equals(STATIC_DISK_TARGET)) {
+                char[] currentTarget = getNode(getVmUsagePath(node, vmId))
+                        .toCharArray();
+                hotplugged = ++(currentTarget[currentTarget.length - 1]);
 
-	private void setDiskUserCounter(String diskUuid, int operation) {
-		String path = getDiskPath(diskUuid);
-		int currentUser = getDiskUsersNo(path);
+                if (hotplugged > 'z') {
+                    return DISK_TARGET_LIMIT;
+                }
+            }
+        }
 
-		setNode(path + "/" + DISK_USERS_KEY,
-				String.valueOf(currentUser + operation));
-	}
+        return target + String.valueOf(hotplugged);
+    }
 
-	public int remainingFreeUser(String path) {
-		return PersistentDiskApplication.USERS_PER_DISK - getDiskUsersNo(path);
-	}
+    private void setDiskUserCounter(String diskUuid, int operation) {
+        String path = getDiskPath(diskUuid);
+        int currentUser = getDiskUsersNo(path);
 
-	private List<String> listSubTree(String pathRoot) {
-		Deque<String> queue = new LinkedList<String>();
-		List<String> tree = new ArrayList<String>();
+        setNode(path + "/" + DISK_USERS_KEY,
+                String.valueOf(currentUser + operation));
+    }
 
-		queue.add(pathRoot);
-		tree.add(pathRoot);
+    public int remainingFreeUser(String path) {
+        return PersistentDiskApplication.USERS_PER_DISK - getDiskUsersNo(path);
+    }
 
-		while (true) {
-			String node = queue.pollFirst();
-			if (node == null) {
-				break;
-			}
+    private List<String> listSubTree(String pathRoot) {
+        Deque<String> queue = new LinkedList<String>();
+        List<String> tree = new ArrayList<String>();
 
-			for (String child : getChildren(node)) {
-				String childPath = node + "/" + child;
-				queue.add(childPath);
-				tree.add(childPath);
-			}
-		}
-		return tree;
-	}
+        queue.add(pathRoot);
+        tree.add(pathRoot);
 
-	private List<String> getChildren(String path) {
-		List<String> children = null;
+        while (true) {
+            String node = queue.pollFirst();
+            if (node == null) {
+                break;
+            }
 
-		try {
-			children = zk.getChildren(path, false);
-		} catch (KeeperException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"ZooKeeper error: " + e.getMessage());
-		} catch (InterruptedException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					e.getMessage());
-		}
+            for (String child : getChildren(node)) {
+                String childPath = node + "/" + child;
+                queue.add(childPath);
+                tree.add(childPath);
+            }
+        }
+        return tree;
+    }
 
-		return children;
-	}
+    private List<String> getChildren(String path) {
+        List<String> children = null;
 
-	public ZooKeeper getZooKeeper() {
-		return zk;
-	}
+        try {
+            children = zk.getChildren(path, false);
+        } catch (KeeperException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "ZooKeeper error: " + e.getMessage());
+        } catch (InterruptedException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    e.getMessage());
+        }
+
+        return children;
+    }
+
+    public ZooKeeper getZooKeeper() {
+        return zk;
+    }
 }

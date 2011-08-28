@@ -48,7 +48,7 @@ public class DisksResource extends BaseResource {
 			Properties properties = zk.getDiskProperties(getDiskZkPath(uuid));
 
 			// List only disk of the user
-			if (hasSuficientRightsToView(properties)) {
+			if (hasSufficientRightsToView(properties)) {
 				diskInfoList.add(properties);
 			}
 		}

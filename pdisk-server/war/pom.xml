@@ -1,9 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>eu.stratuslab.storage</groupId>
   <artifactId>storage-pdisk-server-war</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
   <name>Persistent Disk Server WAR</name>
 
   <packaging>war</packaging>
@@ -51,7 +49,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>4.1.1</version>
     </dependency>
     <dependency>
       <groupId>bouncycastle</groupId>
