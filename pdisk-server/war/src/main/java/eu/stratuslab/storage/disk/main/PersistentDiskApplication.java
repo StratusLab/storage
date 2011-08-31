@@ -58,348 +58,344 @@ import freemarker.template.Configuration;
 
 public class PersistentDiskApplication extends Application {
 
-	public enum DiskType {
-		LVM, FILE;
-	}
-	
-	public enum ShareType {
-		ISCSI, NFS;
-	}
+    public enum DiskType {
+        LVM, FILE;
+    }
 
-	// Configuration file
-	public static final String CFG_FILENAME = "/etc/stratuslab/pdisk.cfg";
-	public static final String ISCSI_CONFIG_FILENAME = "/etc/stratuslab/iscsi.conf";
-	
-	// Disk size limits (in GiBs)
-	public static final int DISK_SIZE_MIN = 1;
-	public static final int DISK_SIZE_MAX = 1024;
-	
-	public final static String RESPONSE_SUCCESS = "1";
-	public final static String RESPONSE_FAILLED = "0";
-	
+    public enum ShareType {
+        ISCSI, NFS;
+    }
 
-	// TODO: Move configuration stuff into separate class
-	public static final Properties CONFIGURATION;
+    // Configuration file
+    public static final String CFG_FILENAME = "/etc/stratuslab/pdisk.cfg";
+    public static final String ISCSI_CONFIG_FILENAME = "/etc/stratuslab/iscsi.conf";
 
-	public static final ShareType SHARE_TYPE;
-	
-	public static final String ZK_ADDRESSES;
-	public static final String ZK_DISKS_PATH;
-	public static final String ZK_USAGE_PATH;
+    // Disk size limits (in GiBs)
+    public static final int DISK_SIZE_MIN = 1;
+    public static final int DISK_SIZE_MAX = 1024;
 
-	public static final DiskType ISCSI_DISK_TYPE;
-	public static final File ISCSI_CONFIG;
-	public static final String ISCSI_ADMIN;
-	
-	public static final String LVM_GROUPE_PATH;
-	public static final String VGDISPLAY_CMD;
-	public static final String LVCREATE_CMD;
-	public static final String LVREMOVE_CMD;
-	
-	public static final File STORAGE_LOCATION;
-	
-	public static final int USERS_PER_DISK;
-	
-	public static final String CLOUD_NODE_SSH_KEY;
-	public static final String CLOUD_NODE_ADMIN;
-	public static final String CLOUD_NODE_VM_DIR;
-	public static final String CLOUD_SERVICE_USER;
+    public final static String RESPONSE_SUCCESS = "1";
+    public final static String RESPONSE_FAILLED = "0";
 
-	private Configuration freeMarkerConfiguration = null;
-	
-	static {
-		CONFIGURATION = readConfigFile();
-		
-		SHARE_TYPE = getShareType();
-		
-		ZK_ADDRESSES = getConfigValue("disk.store.zookeeper.address");
-		ZK_DISKS_PATH = getConfigValue("disk.store.zookeeper.disks");
-		ZK_USAGE_PATH = getConfigValue("disk.store.zookeeper.usage");
-		
-		VGDISPLAY_CMD = getCommand("disk.store.lvm.vgdisplay");
-		LVCREATE_CMD = getCommand("disk.store.lvm.create");
-		LVREMOVE_CMD = getCommand("disk.store.lvm.remove");
-		LVM_GROUPE_PATH = getLVMGroup();
-		
-		ISCSI_DISK_TYPE = getDiskType();
-		ISCSI_CONFIG = getISCSIConfig();
-		ISCSI_ADMIN = getCommand("disk.store.iscsi.admin");
-		
-		STORAGE_LOCATION = getDiskLocation();
-		
-		USERS_PER_DISK = getUsersPerDisks();
-		
-		CLOUD_NODE_SSH_KEY = getConfigValue("disk.store.cloud.node.ssh_keyfile");
-		CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
-		CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
-		CLOUD_SERVICE_USER = getConfigValue("disk.store.cloud.service.user");
-	}
-	
+    // TODO: Move configuration stuff into separate class
+    public static final Properties CONFIGURATION;
 
-	public PersistentDiskApplication() {
-		setName("StratusLab Persistent Disk Server");
-		setDescription("StratusLab server for persistent disk storage.");
-		setOwner("StratusLab");
-		setAuthor("Charles Loomis");
+    public static final ShareType SHARE_TYPE;
 
-		getTunnelService().setUserAgentTunnel(true);
-	}
+    public static final String ZK_ADDRESSES;
+    public static final String ZK_DISKS_PATH;
+    public static final String ZK_USAGE_PATH;
 
-	private static Properties readConfigFile() {
-		File cfgFile = new File(CFG_FILENAME);
-		Properties properties = new Properties();
+    public static final DiskType ISCSI_DISK_TYPE;
+    public static final File ISCSI_CONFIG;
+    public static final String ISCSI_ADMIN;
 
-		if (!cfgFile.exists()) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Configuration file does not exists.");
-		}
+    public static final String LVM_GROUPE_PATH;
+    public static final String VGDISPLAY_CMD;
+    public static final String LVCREATE_CMD;
+    public static final String LVREMOVE_CMD;
 
-		FileReader reader = null;
-		try {
-			reader = new FileReader(cfgFile);
-			properties.load(reader);
-		} catch (IOException consumed) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"An error occured while reading configuration file");
-		} finally {
-			if (reader != null) {
-				try {
-					reader.close();
-				} catch (IOException consumed) {
-					throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-							"An error occured while reading configuration file");
-				}
-			}
-		}
+    public static final File STORAGE_LOCATION;
 
-		return properties;
-	}
-	
-	private static ShareType getShareType() {
-		String type = getConfigValue("disk.store.share");
-		
-		if (type.equalsIgnoreCase("nfs")) {
-			return ShareType.NFS;
-		} else if (type.equalsIgnoreCase("iscsi")) {
-			return ShareType.ISCSI;
-		} else {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Share type not recognised, has " + type);
-		}
-	}
+    public static final int USERS_PER_DISK;
 
-	private static File getISCSIConfig() {
-		String iscsiConf = getConfigValue("disk.store.iscsi.conf");
-		File confHandler = new File(iscsiConf);
-		File stratusConf = new File(ISCSI_CONFIG_FILENAME);
-		String includeConfig = "\ninclude " + stratusConf.getAbsolutePath() + "\n";
+    public static final String CLOUD_NODE_SSH_KEY;
+    public static final String CLOUD_NODE_ADMIN;
+    public static final String CLOUD_NODE_VM_DIR;
+    public static final String CLOUD_SERVICE_USER;
 
-		if (!confHandler.isFile()) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Unable to find ISCSI configuration file.");
-		}
+    private Configuration freeMarkerConfiguration = null;
 
-		// Add include instruction in conf file in not
-		if (!FileUtils.fileHasLine(confHandler, includeConfig.replace("\n", ""))) {
-			FileUtils.appendToFile(confHandler, includeConfig);
-		}
+    static {
+        CONFIGURATION = readConfigFile();
 
-		return stratusConf;
-	}
+        SHARE_TYPE = getShareType();
 
-	private static String getConfigValue(String key) {
-		if (!CONFIGURATION.containsKey(key)) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Unable to retrieve configuration key: " + key);
-		}
+        ZK_ADDRESSES = getConfigValue("disk.store.zookeeper.address");
+        ZK_DISKS_PATH = getConfigValue("disk.store.zookeeper.disks");
+        ZK_USAGE_PATH = getConfigValue("disk.store.zookeeper.usage");
 
-		return CONFIGURATION.getProperty(key);
-	}
+        VGDISPLAY_CMD = getCommand("disk.store.lvm.vgdisplay");
+        LVCREATE_CMD = getCommand("disk.store.lvm.create");
+        LVREMOVE_CMD = getCommand("disk.store.lvm.remove");
+        LVM_GROUPE_PATH = getLVMGroup();
 
-	private static File getDiskLocation() {
-		String diskStoreDir;
-		if (PersistentDiskApplication.SHARE_TYPE == ShareType.ISCSI) {
-			diskStoreDir = getConfigValue("disk.store.iscsi.file.location");
-		} else {
-			diskStoreDir = getConfigValue("disk.store.nfs.location");
-		}
+        ISCSI_DISK_TYPE = getDiskType();
+        ISCSI_CONFIG = getISCSIConfig();
+        ISCSI_ADMIN = getCommand("disk.store.iscsi.admin");
 
-		File diskStoreHandler = new File(diskStoreDir);
+        STORAGE_LOCATION = getDiskLocation();
 
-		// Don't check if we use LVM
-		if (PersistentDiskApplication.SHARE_TYPE == ShareType.ISCSI 
-				&& PersistentDiskApplication.ISCSI_DISK_TYPE == DiskType.LVM) {
-			return diskStoreHandler;
-		}
+        USERS_PER_DISK = getUsersPerDisks();
 
-		if (!diskStoreHandler.isDirectory() || !diskStoreHandler.canWrite()
-				|| !diskStoreHandler.canRead()) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Disk store have to be readable and writable");
-		}
+        CLOUD_NODE_SSH_KEY = getConfigValue("disk.store.cloud.node.ssh_keyfile");
+        CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
+        CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
+        CLOUD_SERVICE_USER = getConfigValue("disk.store.cloud.service.user");
+    }
 
-		return diskStoreHandler;
-	}
+    public PersistentDiskApplication() {
+        setName("StratusLab Persistent Disk Server");
+        setDescription("StratusLab server for persistent disk storage.");
+        setOwner("StratusLab");
+        setAuthor("Charles Loomis");
 
-	private static DiskType getDiskType() {
-		String diskType = getConfigValue("disk.store.iscsi.type");
+        getTunnelService().setUserAgentTunnel(true);
+    }
 
-		if (diskType.equalsIgnoreCase("lvm"))
-			return DiskType.LVM;
-		else if (diskType.equalsIgnoreCase("file"))
-			return DiskType.FILE;
-		else {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Invalid disk type configuration");
-		}
-	}
-	
-	private static String getCommand(String configName) {
-		String configValue = getConfigValue(configName);
-		File exec = new File(configValue);
+    private static Properties readConfigFile() {
+        File cfgFile = new File(CFG_FILENAME);
+        Properties properties = new Properties();
 
-		if (!ProcessUtils.isExecutable(exec)) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					configValue + " commamd does not exists or not executable");
-		}
-		
-		return configValue;
-	}
-	
-	private static Configuration createFreeMarkerConfig(Context context) {
+        if (!cfgFile.exists()) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "Configuration file does not exists.");
+        }
 
-		Configuration fmCfg = new Configuration();
-		fmCfg.setLocalizedLookup(false);
+        FileReader reader = null;
+        try {
+            reader = new FileReader(cfgFile);
+            properties.load(reader);
+        } catch (IOException consumed) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "An error occured while reading configuration file");
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException consumed) {
+                    throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                            "An error occured while reading configuration file");
+                }
+            }
+        }
 
-		LocalReference fmBaseRef = LocalReference.createClapReference("/");
-		fmCfg.setTemplateLoader(new ContextTemplateLoader(context, fmBaseRef));
+        return properties;
+    }
 
-		return fmCfg;
-	}
+    private static ShareType getShareType() {
+        String type = getConfigValue("disk.store.share");
 
-	private static String getLVMGroup() {
-		String lvmGroup = getConfigValue("disk.store.lvm.device");
-		
-		checkLVMGroupExists(lvmGroup);
+        if (type.equalsIgnoreCase("nfs")) {
+            return ShareType.NFS;
+        } else if (type.equalsIgnoreCase("iscsi")) {
+            return ShareType.ISCSI;
+        } else {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "Share type not recognised, has " + type);
+        }
+    }
 
-		return lvmGroup;
-	}
-	
-	private static int getUsersPerDisks() {
-		String users = getConfigValue("disk.store.user_per_disk");
-		int userNo = 0;
-		
-		try {
-			userNo = Integer.parseInt(users);
-		} catch (NumberFormatException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Unable to get user per disk value");
-		}
+    private static File getISCSIConfig() {
+        String iscsiConf = getConfigValue("disk.store.iscsi.conf");
+        File confHandler = new File(iscsiConf);
+        File stratusConf = new File(ISCSI_CONFIG_FILENAME);
+        String includeConfig = "\ninclude " + stratusConf.getAbsolutePath()
+                + "\n";
 
-		return userNo;
-	}
-	
-	private static void checkLVMGroupExists(String lvmGroup) {
-		ProcessBuilder pb = new ProcessBuilder(
-				PersistentDiskApplication.VGDISPLAY_CMD, lvmGroup);
+        if (!confHandler.isFile()) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "Unable to find ISCSI configuration file.");
+        }
 
-		ProcessUtils
-				.execute(pb,
-						"LVM Group does not exists. Please create it and restart pdisk service");
-	}
-	
-	public static void checkEntity(Representation entity) {
-		if (entity == null) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"post with null entity");
-		}
-	}
+        // Add include instruction in conf file in not
+        if (!FileUtils
+                .fileHasLine(confHandler, includeConfig.replace("\n", ""))) {
+            FileUtils.appendToFile(confHandler, includeConfig);
+        }
 
-	public static void checkMediaType(MediaType mediaType) {
-		if (!APPLICATION_WWW_FORM.equals(mediaType, true)) {
-			throw new ResourceException(
-					Status.CLIENT_ERROR_UNSUPPORTED_MEDIA_TYPE,
-					mediaType.getName());
-		}
-	}
-	
-	public static String getDateTime() {
-		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		Date date = new Date();
+        return stratusConf;
+    }
 
-		return dateFormat.format(date);
-	}
-	
-	public static String join(List<String> list, String conjunction)
-	{
-	   StringBuilder sb = new StringBuilder();
-	   boolean first = true;
-	   for (String item : list)
-	   {
-	      if (first)
-	         first = false;
-	      else
-	         sb.append(conjunction);
-	      sb.append(item);
-	   }
-	   return sb.toString();
-	}
+    private static String getConfigValue(String key) {
+        if (!CONFIGURATION.containsKey(key)) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "Unable to retrieve configuration key: " + key);
+        }
 
-	@Override
-	public Restlet createInboundRoot() {
-		Context context = getContext();
+        return CONFIGURATION.getProperty(key);
+    }
 
-		freeMarkerConfiguration = createFreeMarkerConfig(context);
+    private static File getDiskLocation() {
+        String diskStoreDir;
+        if (PersistentDiskApplication.SHARE_TYPE == ShareType.ISCSI) {
+            diskStoreDir = getConfigValue("disk.store.iscsi.file.location");
+        } else {
+            diskStoreDir = getConfigValue("disk.store.nfs.location");
+        }
 
-		// The guard is needed although JAAS which is doing the authentication
-		// just to be able to retrieve client information (challenger).
-		DumpVerifier verifier = new DumpVerifier();
-		ChallengeAuthenticator guard = new ChallengeAuthenticator(getContext(),
-				ChallengeScheme.HTTP_BASIC,
-				"Stratuslab Persistent Disk Storage");
-		guard.setVerifier(verifier);
+        File diskStoreHandler = new File(diskStoreDir);
 
-		Router router = new Router(context);
+        // Don't check if we use LVM
+        if (PersistentDiskApplication.SHARE_TYPE == ShareType.ISCSI
+                && PersistentDiskApplication.ISCSI_DISK_TYPE == DiskType.LVM) {
+            return diskStoreHandler;
+        }
 
-		router.attach("/api/disks/{uuid}", DiskResource.class);
-		router.attach("/disks/{uuid}/", DiskResource.class);
-		router.attach("/disks/{uuid}", ForceTrailingSlashResource.class);
+        if (!diskStoreHandler.isDirectory() || !diskStoreHandler.canWrite()
+                || !diskStoreHandler.canRead()) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "Disk store have to be readable and writable");
+        }
 
-		router.attach("/api/disks", DisksResource.class);
-		router.attach("/disks/", DisksResource.class);
-		router.attach("/disks", ForceTrailingSlashResource.class);
+        return diskStoreHandler;
+    }
 
-		router.attach("/api/create", CreateResource.class);
-		router.attach("/create/", CreateResource.class);
-		router.attach("/create", ForceTrailingSlashResource.class);
-		
-		router.attach("/api/{action}/{uuid}", ActionResource.class);
-		router.attach("/api/{action}", ActionResource.class);
-		
-//		router.attach("/logout/", LogoutResource.class);
-//		router.attach("/logout", ForceTrailingSlashResource.class);
+    private static DiskType getDiskType() {
+        String diskType = getConfigValue("disk.store.iscsi.type");
 
-		router.attach("/", HomeResource.class);
-		
-		Directory cssDir = new Directory(getContext(), "war:///css");
-		cssDir.setNegotiatingContent(false);
-		cssDir.setIndexName("index.html");
-		router.attach("/css/", cssDir);
+        if (diskType.equalsIgnoreCase("lvm"))
+            return DiskType.LVM;
+        else if (diskType.equalsIgnoreCase("file"))
+            return DiskType.FILE;
+        else {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "Invalid disk type configuration");
+        }
+    }
 
-		// Unknown root pages get the home page.
-		router.attachDefault(NotFoundResource.class);
+    private static String getCommand(String configName) {
+        String configValue = getConfigValue(configName);
+        File exec = new File(configValue);
 
-		guard.setNext(router);
+        if (!ProcessUtils.isExecutable(exec)) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    configValue + " commamd does not exists or not executable");
+        }
 
-		return guard;
-	}
+        return configValue;
+    }
 
-	public Configuration getFreeMarkerConfiguration() {
-		return freeMarkerConfiguration;
-	}
+    private static Configuration createFreeMarkerConfig(Context context) {
 
-	public static <T> T last(T[] array) {
-		return array[array.length - 1];
-	}
-	
+        Configuration fmCfg = new Configuration();
+        fmCfg.setLocalizedLookup(false);
+
+        LocalReference fmBaseRef = LocalReference.createClapReference("/");
+        fmCfg.setTemplateLoader(new ContextTemplateLoader(context, fmBaseRef));
+
+        return fmCfg;
+    }
+
+    private static String getLVMGroup() {
+        String lvmGroup = getConfigValue("disk.store.lvm.device");
+
+        checkLVMGroupExists(lvmGroup);
+
+        return lvmGroup;
+    }
+
+    private static int getUsersPerDisks() {
+        String users = getConfigValue("disk.store.user_per_disk");
+        int userNo = 0;
+
+        try {
+            userNo = Integer.parseInt(users);
+        } catch (NumberFormatException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "Unable to get user per disk value");
+        }
+
+        return userNo;
+    }
+
+    private static void checkLVMGroupExists(String lvmGroup) {
+        ProcessBuilder pb = new ProcessBuilder(
+                PersistentDiskApplication.VGDISPLAY_CMD, lvmGroup);
+
+        ProcessUtils
+                .execute(pb,
+                        "LVM Group does not exists. Please create it and restart pdisk service");
+    }
+
+    public static void checkEntity(Representation entity) {
+        if (entity == null) {
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "post with null entity");
+        }
+    }
+
+    public static void checkMediaType(MediaType mediaType) {
+        if (!APPLICATION_WWW_FORM.equals(mediaType, true)) {
+            throw new ResourceException(
+                    Status.CLIENT_ERROR_UNSUPPORTED_MEDIA_TYPE,
+                    mediaType.getName());
+        }
+    }
+
+    public static String getDateTime() {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        Date date = new Date();
+
+        return dateFormat.format(date);
+    }
+
+    public static String join(List<String> list, String conjunction) {
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (String item : list) {
+            if (first)
+                first = false;
+            else
+                sb.append(conjunction);
+            sb.append(item);
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public Restlet createInboundRoot() {
+        Context context = getContext();
+
+        freeMarkerConfiguration = createFreeMarkerConfig(context);
+
+        // The guard is needed although JAAS which is doing the authentication
+        // just to be able to retrieve client information (challenger).
+        DumpVerifier verifier = new DumpVerifier();
+        ChallengeAuthenticator guard = new ChallengeAuthenticator(getContext(),
+                ChallengeScheme.HTTP_BASIC,
+                "Stratuslab Persistent Disk Storage");
+        guard.setVerifier(verifier);
+
+        Router router = new Router(context);
+
+        router.attach("/disks/{uuid}/", DiskResource.class);
+        router.attach("/disks/{uuid}", ForceTrailingSlashResource.class);
+
+        router.attach("/disks/", DisksResource.class);
+        router.attach("/disks", ForceTrailingSlashResource.class);
+
+        router.attach("/api/create", CreateResource.class);
+        router.attach("/create/", CreateResource.class);
+        router.attach("/create", ForceTrailingSlashResource.class);
+
+        router.attach("/api/{action}/{uuid}", ActionResource.class);
+        router.attach("/api/{action}", ActionResource.class);
+
+        // router.attach("/logout/", LogoutResource.class);
+        // router.attach("/logout", ForceTrailingSlashResource.class);
+
+        router.attach("/", HomeResource.class);
+
+        Directory cssDir = new Directory(getContext(), "war:///css");
+        cssDir.setNegotiatingContent(false);
+        cssDir.setIndexName("index.html");
+        router.attach("/css/", cssDir);
+
+        // Unknown root pages get the home page.
+        router.attachDefault(NotFoundResource.class);
+
+        guard.setNext(router);
+
+        return guard;
+    }
+
+    public Configuration getFreeMarkerConfiguration() {
+        return freeMarkerConfiguration;
+    }
+
+    public static <T> T last(T[] array) {
+        return array[array.length - 1];
+    }
+
 }
