@@ -19,6 +19,9 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
+import static org.restlet.data.MediaType.APPLICATION_JSON;
+import static org.restlet.data.MediaType.TEXT_HTML;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -28,104 +31,126 @@ import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
+import org.restlet.resource.ResourceException;
+
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class DiskResource extends BaseResource {
 
-	@Get
-	public Representation listDiskProperties() {
-		Map<String, Object> infos = createInfoStructure("Disk info");
+    @Get("html")
+    public Representation getAsHtml() {
 
-		if (!diskExists(getDiskId())) {
-			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
-					"Disk does not exists");
-		}
+        Map<String, Object> info = listDiskProperties();
 
-		Properties diskProperties = getDiskProperties();
+        addDiskUserHeader();
 
-		if (!hasSufficientRightsToView(diskProperties)) {
-			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
-					"Not enough rights to display disk properties");
-		}
+        return createTemplateRepresentation("html/disk.ftl", info, TEXT_HTML);
+    }
 
-		infos.put("properties", diskProperties);
-		infos.put("url", getCurrentUrl());
-		infos.put("can_delete", hasSufficientRightsToDelete(diskProperties));
+    @Get("json")
+    public Representation getAsJson() {
 
-		addDiskUserHeader();
+        Map<String, Object> info = listDiskProperties();
 
-		return directTemplateRepresentation("disk.ftl", infos);
-	}
+        addDiskUserHeader();
 
-	private Properties getDiskProperties() {
-		return getDiskProperties(getDiskId());
-	}
+        return createTemplateRepresentation("json/disk.ftl", info,
+                APPLICATION_JSON);
+    }
 
-	private void addDiskUserHeader() {
-		Form diskUserHeaders = (Form) getResponse().getAttributes().get(
-				"org.restlet.http.headers");
+    public Map<String, Object> listDiskProperties() {
+        Map<String, Object> infos = createInfoStructure("Disk info");
 
-		if (diskUserHeaders == null) {
-			diskUserHeaders = new Form();
-			getResponse().getAttributes().put("org.restlet.http.headers",
-					diskUserHeaders);
-		}
+        if (!diskExists(getDiskId())) {
+            throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
+                    + getDiskId() + ") does not exist");
+        }
 
-		diskUserHeaders.add("X-DiskUser-Limit",
-				String.valueOf(PersistentDiskApplication.USERS_PER_DISK));
-		diskUserHeaders.add("X-DiskUser-Remaining",
-				String.valueOf(zk.remainingFreeUser(getDiskZkPath())));
-	}
+        Properties diskProperties = getDiskProperties();
 
-	@Delete
-	public Representation deleteDiskRequest() {
-		if (!diskExists(getDiskId())) {
-			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
-					"Disk does not exists");
-		}
-		
-		Representation response = null;
-		Properties diskProperties = getDiskProperties();
+        if (!hasSufficientRightsToView(diskProperties)) {
+            throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
+                    "insuffient access rights to view disk (" + getDiskId()
+                            + ")");
+        }
 
-		if (!hasSufficientRightsToDelete(diskProperties)) {
-			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
-					"Not enough rights to delete disk");
-		}
+        infos.put("properties", diskProperties);
+        infos.put("url", getCurrentUrl());
+        infos.put("can_delete", hasSufficientRightsToDelete(diskProperties));
 
-		if (zk.getDiskUsersNo(getDiskZkPath()) > 0) {
-			return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
-					"Can't remove the disk as it is in use");
-		}
+        return infos;
 
-		deleteDisk();
+    }
 
-		if (useAPI()) {
-			Map<String, Object> info = new HashMap<String, Object>();
-			info.put("key", "uuid");
-			info.put("value", getDiskId());
-			response = directTemplateRepresentation("keyvalue.ftl", info);
-		} else {
-			MESSAGES.push("Your disk have been deleted successfully");
-			redirectSeeOther(getBaseUrl() + "/disks/");
-		}
+    private Properties getDiskProperties() {
+        return getDiskProperties(getDiskId());
+    }
 
-		return response;
-	}
+    private void addDiskUserHeader() {
+        Form diskUserHeaders = (Form) getResponse().getAttributes().get(
+                "org.restlet.http.headers");
 
-	private void deleteDisk() {
-		zk.deleteRecursively(getDiskZkPath());
-		DiskUtils.removeDisk(getDiskId());
-	}
+        if (diskUserHeaders == null) {
+            diskUserHeaders = new Form();
+            getResponse().getAttributes().put("org.restlet.http.headers",
+                    diskUserHeaders);
+        }
 
-	private String getDiskZkPath() {
-		return getDiskZkPath(getDiskId());
-	}
+        diskUserHeaders.add("X-DiskUser-Limit",
+                String.valueOf(PersistentDiskApplication.USERS_PER_DISK));
+        diskUserHeaders.add("X-DiskUser-Remaining",
+                String.valueOf(zk.remainingFreeUser(getDiskZkPath())));
+    }
 
-	private String getDiskId() {
-		Map<String, Object> attributes = getRequest().getAttributes();
+    @Delete
+    public Representation deleteDiskRequest() {
+        if (!diskExists(getDiskId())) {
+            return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "Disk does not exists");
+        }
 
-		return attributes.get("uuid").toString();
-	}
+        Representation response = null;
+        Properties diskProperties = getDiskProperties();
+
+        if (!hasSufficientRightsToDelete(diskProperties)) {
+            return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "Not enough rights to delete disk");
+        }
+
+        if (zk.getDiskUsersNo(getDiskZkPath()) > 0) {
+            return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "Can't remove the disk as it is in use");
+        }
+
+        deleteDisk();
+
+        if (useAPI()) {
+            Map<String, Object> info = new HashMap<String, Object>();
+            info.put("key", "uuid");
+            info.put("value", getDiskId());
+            response = directTemplateRepresentation("keyvalue.ftl", info);
+        } else {
+            MESSAGES.push("Your disk have been deleted successfully");
+            redirectSeeOther(getBaseUrl() + "/disks/");
+        }
+
+        return response;
+    }
+
+    private void deleteDisk() {
+        zk.deleteRecursively(getDiskZkPath());
+        DiskUtils.removeDisk(getDiskId());
+    }
+
+    private String getDiskZkPath() {
+        return getDiskZkPath(getDiskId());
+    }
+
+    private String getDiskId() {
+        Map<String, Object> attributes = getRequest().getAttributes();
+
+        return attributes.get("uuid").toString();
+    }
 
 }

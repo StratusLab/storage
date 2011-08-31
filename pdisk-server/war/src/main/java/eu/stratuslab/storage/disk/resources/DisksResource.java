@@ -19,40 +19,52 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
-import java.util.HashMap;
+import static org.restlet.data.MediaType.APPLICATION_JSON;
+import static org.restlet.data.MediaType.TEXT_HTML;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 
 public class DisksResource extends BaseResource {
 
-	@Get
-	public Representation getDisksList() {
-		Map<String, Object> infos = createInfoStructure("Disks list");
-		infos.putAll(listDisks());
+    @Get("html")
+    public Representation getAsHtml() {
+        Map<String, Object> info = listDisks();
 
-		return directTemplateRepresentation("disks.ftl", infos);
-	}
+        return createTemplateRepresentation("html/disks.ftl", info, TEXT_HTML);
+    }
 
-	private Map<String, Object> listDisks() {
-		Map<String, Object> info = new HashMap<String, Object>();
-		List<Properties> diskInfoList = new LinkedList<Properties>();
-		List<String> disks = zk.getDisks();
+    @Get("json")
+    public Representation getAsJson() {
+        Map<String, Object> info = listDisks();
 
-		info.put("disks", diskInfoList);
+        return createTemplateRepresentation("json/disks.ftl", info,
+                APPLICATION_JSON);
 
-		for (String uuid : disks) {
-			Properties properties = zk.getDiskProperties(getDiskZkPath(uuid));
+    }
 
-			// List only disk of the user
-			if (hasSufficientRightsToView(properties)) {
-				diskInfoList.add(properties);
-			}
-		}
+    private Map<String, Object> listDisks() {
+        Map<String, Object> info = createInfoStructure("Disks list");
 
-		return info;
-	}
+        List<Properties> diskInfoList = new LinkedList<Properties>();
+        List<String> disks = zk.getDisks();
+
+        info.put("disks", diskInfoList);
+
+        for (String uuid : disks) {
+            Properties properties = zk.getDiskProperties(getDiskZkPath(uuid));
+
+            // List only disk of the user
+            if (hasSufficientRightsToView(properties)) {
+                diskInfoList.add(properties);
+            }
+        }
+
+        return info;
+    }
 }
