@@ -18,8 +18,12 @@ public class ProcessUtils {
 
             boolean blocked = true;
             while (blocked) {
-                process.waitFor();
-                blocked = false;
+                try {
+                    process.waitFor();
+                    blocked = false;
+                } catch (InterruptedException consumed) {
+                    // just continue to wait
+                }
             }
 
             returnCode = process.exitValue();
@@ -28,8 +32,6 @@ public class ProcessUtils {
                     "An error occurred while executing command: "
                             + PersistentDiskApplication.join(pb.command(), " ")
                             + ".\n" + errorMsg + ".");
-        } catch (InterruptedException consumed) {
-            // Just continue with the loop.
         }
 
         if (returnCode != 0) {
