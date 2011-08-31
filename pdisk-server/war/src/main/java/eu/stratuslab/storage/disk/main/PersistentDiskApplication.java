@@ -48,7 +48,6 @@ import eu.stratuslab.storage.disk.resources.ActionResource;
 import eu.stratuslab.storage.disk.resources.DiskResource;
 import eu.stratuslab.storage.disk.resources.DisksResource;
 import eu.stratuslab.storage.disk.resources.ForceTrailingSlashResource;
-import eu.stratuslab.storage.disk.resources.CreateResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
 import eu.stratuslab.storage.disk.resources.NotFoundResource;
 import eu.stratuslab.storage.disk.utils.DumpVerifier;
@@ -364,9 +363,6 @@ public class PersistentDiskApplication extends Application {
 
         router.attach("/disks/", DisksResource.class);
         router.attach("/disks", ForceTrailingSlashResource.class);
-
-        router.attach("/create/", CreateResource.class);
-        router.attach("/create", ForceTrailingSlashResource.class);
 
         router.attach("/api/{action}/{uuid}", ActionResource.class);
         router.attach("/api/{action}", ActionResource.class);
