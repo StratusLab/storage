@@ -21,7 +21,12 @@ import eu.stratuslab.storage.disk.utils.MiscUtils;
 public class ActionResource extends BaseResource {
 
     private enum DiskAction {
-        ATTACH, DETACH, HOT_ATTACH, HOT_DETACH;
+        ATTACH, DETACH, HOTATTACH, HOTDETACH;
+
+        public static DiskAction valueOfIgnoreCase(String value) {
+            return valueOf(value.toUpperCase());
+        }
+
     }
 
     private List<String> diskUuids = null;
@@ -38,11 +43,11 @@ public class ActionResource extends BaseResource {
         switch (action) {
         case ATTACH:
             return attachDisk(DiskProperties.STATIC_DISK_TARGET);
-        case HOT_ATTACH:
+        case HOTATTACH:
             return attachDisk(zk.nextHotpluggedDiskTarget(node, vmId));
         case DETACH:
             return detachAllDisks();
-        case HOT_DETACH:
+        case HOTDETACH:
             return detachHotpluggedDisk();
         default:
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
@@ -182,28 +187,25 @@ public class ActionResource extends BaseResource {
 
     private String getDiskId() {
         Map<String, Object> attributes = getRequest().getAttributes();
-
-        if (!attributes.containsKey("uuid")) {
-            return null;
-        }
-
-        return attributes.get("uuid").toString();
+        Object diskId = attributes.get("uuid");
+        return (diskId != null) ? diskId.toString() : null;
     }
 
     private DiskAction getAction() {
         Map<String, Object> attributes = getRequest().getAttributes();
-        String action = attributes.get("action").toString();
+        Object action = attributes.get("action");
 
-        if (action.equals("attach")) {
-            return DiskAction.ATTACH;
-        } else if (action.equals("detach")) {
-            return DiskAction.DETACH;
-        } else if (action.equals("hotattach")) {
-            return DiskAction.HOT_ATTACH;
-        } else if (action.equals("hotdetach")) {
-            return DiskAction.HOT_DETACH;
-        } else {
-            return null;
+        if (action == null) {
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "null action is not permitted");
         }
+
+        try {
+            return DiskAction.valueOfIgnoreCase(action.toString());
+        } catch (IllegalArgumentException e) {
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "invalid action: " + action);
+        }
+
     }
 }
