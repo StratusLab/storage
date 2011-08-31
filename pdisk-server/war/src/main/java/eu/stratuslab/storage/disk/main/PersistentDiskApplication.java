@@ -365,7 +365,6 @@ public class PersistentDiskApplication extends Application {
         router.attach("/disks/", DisksResource.class);
         router.attach("/disks", ForceTrailingSlashResource.class);
 
-        router.attach("/api/create", CreateResource.class);
         router.attach("/create/", CreateResource.class);
         router.attach("/create", ForceTrailingSlashResource.class);
 

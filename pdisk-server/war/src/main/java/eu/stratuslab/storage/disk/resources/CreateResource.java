@@ -19,6 +19,8 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
+import static org.restlet.data.MediaType.APPLICATION_JSON;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -32,20 +34,69 @@ import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
+import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class CreateResource extends BaseResource {
-    @Get
+
+    @Get("html")
     public Representation displayCreationForm() {
-        if (useAPI()) {
-            return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "Method not allowed");
+        return createResourceForm(getEmptyFormProperties(), null);
+    }
+
+    @Post("html")
+    public Representation createDiskRequestFromHtml(Representation entity) {
+
+        Properties diskProperties = getDiskProperties(entity);
+
+        createDisk(diskProperties);
+
+        String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
+
+        MESSAGES.push("Your disk has been created successfully.");
+        redirectSeeOther(getBaseUrl() + "/disks/" + uuid + "/");
+
+        return null;
+    }
+
+    @Post("json")
+    public Representation createDiskRequestFromJson(Representation entity) {
+
+        Properties diskProperties = getDiskProperties(entity);
+
+        createDisk(diskProperties);
+
+        String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
+
+        setStatus(Status.SUCCESS_CREATED);
+
+        Map<String, Object> info = new HashMap<String, Object>();
+        info.put("key", "uuid");
+        info.put("value", uuid);
+
+        return createTemplateRepresentation("json/keyvalue.ftl", info,
+                APPLICATION_JSON);
+
+    }
+
+    public Properties getDiskProperties(Representation entity) {
+
+        PersistentDiskApplication.checkEntity(entity);
+        PersistentDiskApplication.checkMediaType(entity.getMediaType());
+
+        Properties diskProperties = processWebForm();
+        List<String> errors = validateDiskProperties(diskProperties);
+
+        // Display form again if we have error(s)
+        if (errors.size() > 0) {
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    PersistentDiskApplication.join(errors, "\", \""));
         }
 
-        return createResourceForm(getEmptyFormProperties(), null);
+        return diskProperties;
     }
 
     private Representation createResourceForm(Properties fieldsValues,
@@ -76,43 +127,6 @@ public class CreateResource extends BaseResource {
         }
 
         return visibilities;
-    }
-
-    @Post
-    public Representation createDiskRequest(Representation entity) {
-        Representation response = null;
-
-        PersistentDiskApplication.checkEntity(entity);
-        PersistentDiskApplication.checkMediaType(entity.getMediaType());
-
-        Properties diskProperties = processWebForm();
-        List<String> errors = validateDiskProperties(diskProperties);
-        String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
-
-        // Display form again if we have error(s)
-        if (errors.size() > 0) {
-            if (useAPI()) {
-                return respondError(Status.CLIENT_ERROR_UNPROCESSABLE_ENTITY,
-                        PersistentDiskApplication.join(errors, "\", \""));
-            }
-
-            return createResourceForm(diskProperties, errors);
-        }
-
-        createDisk(diskProperties);
-
-        if (!useAPI()) {
-            MESSAGES.push("Your disk have been created successfully.");
-            redirectSeeOther(getBaseUrl() + "/disks/" + uuid + "/");
-        } else {
-            setStatus(Status.SUCCESS_CREATED);
-            Map<String, Object> info = new HashMap<String, Object>();
-            info.put("key", "uuid");
-            info.put("value", uuid);
-            response = directTemplateRepresentation("keyvalue.ftl", info);
-        }
-
-        return response;
     }
 
     private Properties processWebForm() {
