@@ -116,8 +116,8 @@ public class DisksResource extends BaseResource {
 
     public Properties getDiskProperties(Representation entity) {
 
-        MiscUtils.checkEntity(entity);
-        MiscUtils.checkMediaType(entity.getMediaType());
+        MiscUtils.checkForNullEntity(entity);
+        MiscUtils.checkForWebForm(entity.getMediaType());
 
         Properties diskProperties = processWebForm();
         List<String> errors = validateDiskProperties(diskProperties);
@@ -162,7 +162,7 @@ public class DisksResource extends BaseResource {
         properties
                 .put(DiskProperties.DISK_OWNER_KEY, getUsername(getRequest()));
         properties.put(DiskProperties.DISK_CREATION_DATE_KEY,
-                MiscUtils.getDateTime());
+                MiscUtils.getTimestamp());
         properties.put(DiskProperties.DISK_USERS_KEY, "0");
 
         return properties;
@@ -175,11 +175,12 @@ public class DisksResource extends BaseResource {
     private List<String> validateDiskProperties(Properties diskProperties) {
         List<String> errors = new LinkedList<String>();
 
+        String visibility = "none";
         try {
-            diskVisibilityFromString(diskProperties.getProperty("visibility",
-                    "None"));
-        } catch (RuntimeException e) {
-            errors.add("Invalid disk visibility");
+            visibility = diskProperties.getProperty("visibility", "none");
+            DiskVisibility.valueOfIgnoreCase(visibility);
+        } catch (IllegalArgumentException e) {
+            errors.add("invalid disk visibility: " + visibility);
         }
 
         try {

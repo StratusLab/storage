@@ -19,15 +19,19 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
+import static org.restlet.data.MediaType.TEXT_HTML;
+
 import java.util.Map;
 
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 
 public class HomeResource extends BaseResource {
-	@Get
-	public Representation getHomePage() {
-		Map<String, Object> infos = createInfoStructure("Home");
-		return directTemplateRepresentation("home.ftl", infos);
-	}
+
+    @Get("html")
+    public Representation getHomePage() {
+        Map<String, Object> info = createInfoStructure("Home");
+        return createTemplateRepresentation("html/home.ftl", info, TEXT_HTML);
+    }
+
 }

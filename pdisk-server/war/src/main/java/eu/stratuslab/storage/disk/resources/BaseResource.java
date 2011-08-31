@@ -19,20 +19,14 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
-import static org.restlet.data.MediaType.APPLICATION_JSON;
-import static org.restlet.data.MediaType.TEXT_HTML;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.log4j.Logger;
 import org.restlet.Request;
 import org.restlet.data.ChallengeResponse;
 import org.restlet.data.MediaType;
-import org.restlet.data.Status;
 import org.restlet.ext.freemarker.TemplateRepresentation;
-import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
@@ -43,13 +37,16 @@ import freemarker.template.Configuration;
 public class BaseResource extends ServerResource {
 
     protected static final DiskProperties zk = new DiskProperties();
-    protected static final Logger LOGGER = Logger.getLogger("org.restlet");
     protected static final Messages MESSAGES = new Messages();
 
     public enum DiskVisibility {
         PRIVATE,
         // RESTRICTED,
-        PUBLIC,
+        PUBLIC;
+
+        public static DiskVisibility valueOfIgnoreCase(String value) {
+            return valueOf(value.toUpperCase());
+        }
     }
 
     private Configuration getFreeMarkerConfiguration() {
@@ -72,12 +69,6 @@ public class BaseResource extends ServerResource {
 
         return new TemplateRepresentation(tpl, freeMarkerConfig, info,
                 mediaType);
-    }
-
-    protected TemplateRepresentation directTemplateRepresentation(String tpl,
-            Map<String, Object> info) {
-        return createTemplateRepresentation(getTemplateType() + "/" + tpl,
-                info, getReturnedMediaType());
     }
 
     protected Map<String, Object> createInfoStructure(String title) {
@@ -139,8 +130,7 @@ public class BaseResource extends ServerResource {
     }
 
     protected static String getDiskZkPath(String uuid) {
-        return RootApplication.CONFIGURATION.ZK_DISKS_PATH + "/"
-                + uuid;
+        return RootApplication.CONFIGURATION.ZK_DISKS_PATH + "/" + uuid;
     }
 
     protected Boolean diskExists(String uuid) {
@@ -156,68 +146,20 @@ public class BaseResource extends ServerResource {
             return true;
         }
 
-        DiskVisibility currentVisibility = diskVisibilityFromString(properties
-                .get(DiskProperties.DISK_VISIBILITY_KEY).toString());
+        String visibility = properties
+                .getProperty(DiskProperties.DISK_VISIBILITY_KEY);
+
+        DiskVisibility currentVisibility = DiskVisibility
+                .valueOfIgnoreCase(visibility);
 
         // Is disk public
-        if (currentVisibility.equals(DiskVisibility.PUBLIC)) {
-            return true;
-        }
-
-        return false;
+        return (currentVisibility == DiskVisibility.PUBLIC);
     }
 
     protected Boolean hasSufficientRightsToDelete(Properties properties) {
         // Need to be the owner to delete the disk
         return properties.get(DiskProperties.DISK_OWNER_KEY).toString()
                 .equals(getUsername(getRequest()));
-    }
-
-    protected String diskVisibilityToString(DiskVisibility visibility) {
-        switch (visibility) {
-        case PUBLIC:
-            return "public";
-            // case RESTRICTED:
-            // return "restricted";
-        case PRIVATE:
-            return "private";
-        default:
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "Invalide disk visibility");
-        }
-    }
-
-    protected DiskVisibility diskVisibilityFromString(String visibility) {
-        if ("public".equals(visibility)) {
-            return DiskVisibility.PUBLIC;
-        } else if ("private".equals(visibility)) {
-            return DiskVisibility.PRIVATE;
-            // } else if ("restricted".equals(visibility)) {
-            // return DiskVisibility.RESTRICTED;
-        } else {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "Invalide disk visibility: " + visibility);
-        }
-    }
-
-    protected Boolean useAPI() {
-        return getRequest().getResourceRef().getPath().startsWith("/api/");
-    }
-
-    protected String getTemplateType() {
-        if (useAPI()) {
-            return "json";
-        } else {
-            return "html";
-        }
-    }
-
-    protected MediaType getReturnedMediaType() {
-        if (useAPI()) {
-            return APPLICATION_JSON;
-        } else {
-            return TEXT_HTML;
-        }
     }
 
     protected String serviceName() {

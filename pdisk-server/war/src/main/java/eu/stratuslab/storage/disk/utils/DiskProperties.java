@@ -244,7 +244,7 @@ public class DiskProperties {
     public void addDiskUser(String node, String vmId, String diskUuid,
             String target) {
         if (!pathExists(getNodeUsagePath(node))) {
-            createNode(getNodeUsagePath(node), MiscUtils.getDateTime());
+            createNode(getNodeUsagePath(node), MiscUtils.getTimestamp());
         }
 
         if (pathExists(getVmUsagePath(node, vmId))) {

@@ -18,14 +18,14 @@ public final class MiscUtils {
 
     }
 
-    public static void checkEntity(Representation entity) {
+    public static void checkForNullEntity(Representation entity) {
         if (entity == null) {
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
                     "post with null entity");
         }
     }
 
-    public static void checkMediaType(MediaType mediaType) {
+    public static void checkForWebForm(MediaType mediaType) {
         if (!APPLICATION_WWW_FORM.equals(mediaType, true)) {
             throw new ResourceException(
                     Status.CLIENT_ERROR_UNSUPPORTED_MEDIA_TYPE,
@@ -33,7 +33,7 @@ public final class MiscUtils {
         }
     }
 
-    public static String getDateTime() {
+    public static String getTimestamp() {
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
         Date date = new Date();
 

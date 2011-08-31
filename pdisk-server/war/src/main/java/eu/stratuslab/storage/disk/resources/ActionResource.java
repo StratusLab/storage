@@ -1,5 +1,7 @@
 package eu.stratuslab.storage.disk.resources;
 
+import static org.restlet.data.MediaType.APPLICATION_JSON;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,37 +24,27 @@ public class ActionResource extends BaseResource {
         ATTACH, DETACH, HOT_ATTACH, HOT_DETACH;
     }
 
-    private enum QueryProcessStatus {
-        MISSING, UNKNOWN, OK;
-    }
-
     private List<String> diskUuids = null;
     private String node = null;
     private String vmId = null;
     private String diskTarget = null;
 
-    @Post
+    @Post("json")
     public Representation actionDispatcher(Representation entity) {
+
         DiskAction action = getAction();
-        QueryProcessStatus processingResult = processRequest(entity);
+        extractNodeAndVmId(entity);
 
-        if (processingResult == QueryProcessStatus.MISSING) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "missing input");
-        } else if (processingResult == QueryProcessStatus.UNKNOWN) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "unknown input");
-        }
-
-        if (action == DiskAction.ATTACH) {
+        switch (action) {
+        case ATTACH:
             return attachDisk(DiskProperties.STATIC_DISK_TARGET);
-        } else if (action == DiskAction.HOT_ATTACH) {
+        case HOT_ATTACH:
             return attachDisk(zk.nextHotpluggedDiskTarget(node, vmId));
-        } else if (action == DiskAction.DETACH) {
+        case DETACH:
             return detachAllDisks();
-        } else if (action == DiskAction.HOT_DETACH) {
+        case HOT_DETACH:
             return detachHotpluggedDisk();
-        } else {
+        default:
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
                     "unknown action");
         }
@@ -157,30 +149,35 @@ public class ActionResource extends BaseResource {
             info.put("target", diskTarget);
         }
 
-        return directTemplateRepresentation("action.ftl", info);
+        return createTemplateRepresentation("json/action.ftl", info,
+                APPLICATION_JSON);
     }
 
-    private QueryProcessStatus processRequest(Representation entity) {
-        MiscUtils.checkEntity(entity);
-        MiscUtils.checkMediaType(entity.getMediaType());
+    private void extractNodeAndVmId(Representation entity) {
+
+        MiscUtils.checkForNullEntity(entity);
+        MiscUtils.checkForWebForm(entity.getMediaType());
 
         Form form = new Form(entity);
 
-        if (form.size() < 2) {
-            return QueryProcessStatus.MISSING;
+        if (form.size() != 2) {
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "form has incorrect number of values; expected 2, received "
+                            + form.size());
         }
 
-        for (String input : form.getNames()) {
-            if (input.equalsIgnoreCase("node")) {
-                node = form.getFirstValue(input);
-            } else if (input.equalsIgnoreCase("vm_id")) {
-                vmId = form.getFirstValue(input);
-            } else {
-                return QueryProcessStatus.UNKNOWN;
-            }
+        node = form.getFirstValue("node");
+        if (node == null) {
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "missing node attribute");
         }
 
-        return QueryProcessStatus.OK;
+        vmId = form.getFirstValue("vm_id");
+        if (vmId == null) {
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "missing vm_id attribute");
+        }
+
     }
 
     private String getDiskId() {
