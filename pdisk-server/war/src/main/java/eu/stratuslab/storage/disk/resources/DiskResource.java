@@ -103,39 +103,51 @@ public class DiskResource extends BaseResource {
                 String.valueOf(zk.remainingFreeUser(getDiskZkPath())));
     }
 
-    @Delete
-    public Representation deleteDiskRequest() {
-        if (!diskExists(getDiskId())) {
-            return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "Disk does not exists");
+    @Delete("html")
+    public void deleteDiskAsHtml() {
+
+        processDeleteDiskRequest();
+
+        MESSAGES.push("Your disk have been deleted successfully");
+        redirectSeeOther(getBaseUrl() + "/disks/");
+
+    }
+
+    @Delete("json")
+    public Representation deleteDiskAsJson() {
+
+        processDeleteDiskRequest();
+
+        Map<String, Object> info = new HashMap<String, Object>();
+        info.put("key", "uuid");
+        info.put("value", getDiskId());
+
+        return createTemplateRepresentation("json/keyvalue.ftl", info,
+                APPLICATION_JSON);
+    }
+
+    public void processDeleteDiskRequest() {
+
+        String diskId = getDiskId();
+
+        if (!diskExists(diskId)) {
+            throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
+                    + diskId + ") does not exist");
         }
 
-        Representation response = null;
         Properties diskProperties = getDiskProperties();
 
         if (!hasSufficientRightsToDelete(diskProperties)) {
-            return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "Not enough rights to delete disk");
+            throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
+                    "insufficient rights to delete disk (" + diskId + ")");
         }
 
         if (zk.getDiskUsersNo(getDiskZkPath()) > 0) {
-            return respondError(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "Can't remove the disk as it is in use");
+            throw new ResourceException(Status.CLIENT_ERROR_CONFLICT, "disk ("
+                    + diskId + ") is in use and can't be deleted");
         }
 
         deleteDisk();
-
-        if (useAPI()) {
-            Map<String, Object> info = new HashMap<String, Object>();
-            info.put("key", "uuid");
-            info.put("value", getDiskId());
-            response = directTemplateRepresentation("keyvalue.ftl", info);
-        } else {
-            MESSAGES.push("Your disk have been deleted successfully");
-            redirectSeeOther(getBaseUrl() + "/disks/");
-        }
-
-        return response;
     }
 
     private void deleteDisk() {
