@@ -5,8 +5,6 @@ import java.io.IOException;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.main.RootApplication;
-
 public class ProcessUtils {
 
     public static void execute(ProcessBuilder pb, String errorMsg) {
@@ -30,15 +28,15 @@ public class ProcessUtils {
         } catch (IOException e) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "An error occurred while executing command: "
-                            + RootApplication.join(pb.command(), " ")
-                            + ".\n" + errorMsg + ".");
+                            + MiscUtils.join(pb.command(), " ") + ".\n"
+                            + errorMsg + ".");
         }
 
         if (returnCode != 0) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "An error occurred while executing command: "
-                            + RootApplication.join(pb.command(), " ")
-                            + ".\n" + errorMsg + ".\nReturn code was: "
+                            + MiscUtils.join(pb.command(), " ") + ".\n"
+                            + errorMsg + ".\nReturn code was: "
                             + String.valueOf(returnCode));
         }
     }

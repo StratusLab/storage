@@ -12,9 +12,9 @@ import org.restlet.representation.Representation;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.disk.utils.MiscUtils;
 
 public class ActionResource extends BaseResource {
 
@@ -23,7 +23,7 @@ public class ActionResource extends BaseResource {
     }
 
     private enum QueryProcessStatus {
-        MISSING, UNKNOW, OK;
+        MISSING, UNKNOWN, OK;
     }
 
     private List<String> diskUuids = null;
@@ -39,7 +39,7 @@ public class ActionResource extends BaseResource {
         if (processingResult == QueryProcessStatus.MISSING) {
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
                     "missing input");
-        } else if (processingResult == QueryProcessStatus.UNKNOW) {
+        } else if (processingResult == QueryProcessStatus.UNKNOWN) {
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
                     "unknown input");
         }
@@ -161,8 +161,8 @@ public class ActionResource extends BaseResource {
     }
 
     private QueryProcessStatus processRequest(Representation entity) {
-        RootApplication.checkEntity(entity);
-        RootApplication.checkMediaType(entity.getMediaType());
+        MiscUtils.checkEntity(entity);
+        MiscUtils.checkMediaType(entity.getMediaType());
 
         Form form = new Form(entity);
 
@@ -176,7 +176,7 @@ public class ActionResource extends BaseResource {
             } else if (input.equalsIgnoreCase("vm_id")) {
                 vmId = form.getFirstValue(input);
             } else {
-                return QueryProcessStatus.UNKNOW;
+                return QueryProcessStatus.UNKNOWN;
             }
         }
 

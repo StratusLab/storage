@@ -83,19 +83,13 @@ public class DiskProperties {
         }
 
         try {
-            if (zk.exists(
-                    RootApplication.CONFIGURATION.ZK_DISKS_PATH,
-                    false) == null) {
-                zk.create(
-                        RootApplication.CONFIGURATION.ZK_DISKS_PATH,
+            if (zk.exists(RootApplication.CONFIGURATION.ZK_DISKS_PATH, false) == null) {
+                zk.create(RootApplication.CONFIGURATION.ZK_DISKS_PATH,
                         "pdiskDisks".getBytes(), Ids.OPEN_ACL_UNSAFE,
                         CreateMode.PERSISTENT);
             }
-            if (zk.exists(
-                    RootApplication.CONFIGURATION.ZK_USAGE_PATH,
-                    false) == null) {
-                zk.create(
-                        RootApplication.CONFIGURATION.ZK_USAGE_PATH,
+            if (zk.exists(RootApplication.CONFIGURATION.ZK_USAGE_PATH, false) == null) {
+                zk.create(RootApplication.CONFIGURATION.ZK_USAGE_PATH,
                         "pdiskUsers".getBytes(), Ids.OPEN_ACL_UNSAFE,
                         CreateMode.PERSISTENT);
             }
@@ -193,7 +187,7 @@ public class DiskProperties {
         List<String> tree = listSubTree(root);
 
         for (int i = tree.size() - 1; i >= 0; --i) {
-            String key = RootApplication.last(tree.get(i).split("/"));
+            String key = MiscUtils.last(tree.get(i).split("/"));
             String content = getNode(tree.get(i));
 
             if (tree.get(i) == root) {
@@ -232,8 +226,7 @@ public class DiskProperties {
     }
 
     private String getNodeUsagePath(String node) {
-        return RootApplication.CONFIGURATION.ZK_USAGE_PATH + "/"
-                + node;
+        return RootApplication.CONFIGURATION.ZK_USAGE_PATH + "/" + node;
     }
 
     private String getVmUsagePath(String node, String vmId) {
@@ -245,15 +238,13 @@ public class DiskProperties {
     }
 
     private String getDiskPath(String uuid) {
-        return RootApplication.CONFIGURATION.ZK_DISKS_PATH + "/"
-                + uuid;
+        return RootApplication.CONFIGURATION.ZK_DISKS_PATH + "/" + uuid;
     }
 
     public void addDiskUser(String node, String vmId, String diskUuid,
             String target) {
         if (!pathExists(getNodeUsagePath(node))) {
-            createNode(getNodeUsagePath(node),
-                    RootApplication.getDateTime());
+            createNode(getNodeUsagePath(node), MiscUtils.getDateTime());
         }
 
         if (pathExists(getVmUsagePath(node, vmId))) {
