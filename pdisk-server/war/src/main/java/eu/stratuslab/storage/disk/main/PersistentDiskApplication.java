@@ -49,7 +49,6 @@ import eu.stratuslab.storage.disk.resources.DiskResource;
 import eu.stratuslab.storage.disk.resources.DisksResource;
 import eu.stratuslab.storage.disk.resources.ForceTrailingSlashResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
-import eu.stratuslab.storage.disk.resources.NotFoundResource;
 import eu.stratuslab.storage.disk.utils.DumpVerifier;
 import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.disk.utils.ProcessUtils;
@@ -376,9 +375,6 @@ public class PersistentDiskApplication extends Application {
         cssDir.setNegotiatingContent(false);
         cssDir.setIndexName("index.html");
         router.attach("/css/", cssDir);
-
-        // Unknown root pages get the home page.
-        router.attachDefault(NotFoundResource.class);
 
         guard.setNext(router);
 

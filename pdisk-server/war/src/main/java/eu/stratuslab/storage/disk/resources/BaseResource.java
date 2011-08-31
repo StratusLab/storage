@@ -32,10 +32,6 @@ import org.restlet.data.ChallengeResponse;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.ext.freemarker.TemplateRepresentation;
-import org.restlet.representation.Representation;
-import org.restlet.resource.Delete;
-import org.restlet.resource.Get;
-import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
 
@@ -54,27 +50,6 @@ public class BaseResource extends ServerResource {
         PRIVATE,
         // RESTRICTED,
         PUBLIC,
-    }
-
-    // FIXME: Remove
-    @Get
-    public Representation getNotAllowed() {
-        return respondError(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED,
-                "Method not allowed");
-    }
-
-    // FIXME: Remove
-    @Post
-    public Representation postNotAllowed() {
-        return respondError(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED,
-                "Method not allowed");
-    }
-
-    // FIXME: Remove
-    @Delete
-    public Representation deleteNotAllowed() {
-        return respondError(Status.CLIENT_ERROR_METHOD_NOT_ALLOWED,
-                "Method not allowed");
     }
 
     private Configuration getFreeMarkerConfiguration() {
@@ -242,19 +217,6 @@ public class BaseResource extends ServerResource {
         } else {
             return TEXT_HTML;
         }
-    }
-
-    protected Representation respondError(Status errorCode, String errorMsg) {
-        setStatus(errorCode);
-        Map<String, Object> error = createInfoStructure("An error occured");
-
-        if (useAPI()) {
-            errorMsg = "\"" + errorMsg + "\"";
-        }
-
-        error.put("errorMsg", errorMsg);
-
-        return directTemplateRepresentation("error.ftl", error);
     }
 
     protected String serviceName() {
