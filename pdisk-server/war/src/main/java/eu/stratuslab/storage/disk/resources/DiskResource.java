@@ -97,9 +97,8 @@ public class DiskResource extends BaseResource {
                     diskUserHeaders);
         }
 
-        diskUserHeaders
-                .add("X-DiskUser-Limit",
-                        String.valueOf(RootApplication.CONFIGURATION.USERS_PER_DISK));
+        diskUserHeaders.add("X-DiskUser-Limit",
+                String.valueOf(RootApplication.CONFIGURATION.USERS_PER_DISK));
         diskUserHeaders.add("X-DiskUser-Remaining",
                 String.valueOf(zk.remainingFreeUser(getDiskZkPath())));
     }
