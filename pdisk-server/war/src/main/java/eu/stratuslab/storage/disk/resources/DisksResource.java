@@ -158,7 +158,8 @@ public class DisksResource extends BaseResource {
     private Properties initializeProperties() {
         Properties properties = getEmptyFormProperties();
         properties.put(DiskProperties.UUID_KEY, generateUUID());
-        properties.put(DiskProperties.DISK_OWNER_KEY, getUsername());
+        properties
+                .put(DiskProperties.DISK_OWNER_KEY, getUsername(getRequest()));
         properties.put(DiskProperties.DISK_CREATION_DATE_KEY,
                 PersistentDiskApplication.getDateTime());
         properties.put(DiskProperties.DISK_USERS_KEY, "0");

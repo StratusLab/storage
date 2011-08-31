@@ -19,14 +19,15 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
-import static org.restlet.data.MediaType.TEXT_HTML;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
+import static org.restlet.data.MediaType.TEXT_HTML;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
+import org.restlet.Request;
 import org.restlet.data.ChallengeResponse;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
@@ -37,6 +38,7 @@ import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
+
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.Messages;
@@ -47,7 +49,6 @@ public class BaseResource extends ServerResource {
     protected static final DiskProperties zk = new DiskProperties();
     protected static final Logger LOGGER = Logger.getLogger("org.restlet");
     protected static final Messages MESSAGES = new Messages();
-    private String username = "";
 
     public enum DiskVisibility {
         PRIVATE,
@@ -85,6 +86,14 @@ public class BaseResource extends ServerResource {
             Map<String, Object> info, MediaType mediaType) {
 
         Configuration freeMarkerConfig = getFreeMarkerConfiguration();
+        return createTemplateRepresentation(freeMarkerConfig, tpl, info,
+                mediaType);
+
+    }
+
+    public static TemplateRepresentation createTemplateRepresentation(
+            Configuration freeMarkerConfig, String tpl,
+            Map<String, Object> info, MediaType mediaType) {
 
         return new TemplateRepresentation(tpl, freeMarkerConfig, info,
                 mediaType);
@@ -97,43 +106,44 @@ public class BaseResource extends ServerResource {
     }
 
     protected Map<String, Object> createInfoStructure(String title) {
-        Map<String, Object> info = new HashMap<String, Object>();
 
-        // Add the standard base URL declaration.
-        info.put("baseurl", getBaseUrl());
+        return createInfoStructure(title, getRequest(), MESSAGES.pop(),
+                getBaseUrl());
+    }
+
+    public static Map<String, Object> createInfoStructure(String title,
+            Request request, String msg, String baseUrl) {
+
+        Map<String, Object> info = new HashMap<String, Object>();
 
         // Add the title if appropriate.
         if (title != null && !"".equals(title)) {
             info.put("title", title);
         }
 
+        // Add the standard base URL declaration.
+        info.put("baseurl", baseUrl);
+
         // Add user name information
-        info.put("username", getUsername());
+        info.put("username", getUsername(request));
 
         // Display message if available
-        info.put("success", MESSAGES.pop());
+        info.put("success", msg);
 
         return info;
     }
 
-    public String getUsername() {
-        if (!username.isEmpty()) {
-            return username;
-        }
-
-        ChallengeResponse cr = getRequest().getChallengeResponse();
-
-        if (cr == null) {
-            username = "UNKNOWN";
-        } else {
-            username = cr.getIdentifier();
-        }
-
-        return username;
+    public static String getUsername(Request request) {
+        ChallengeResponse cr = request.getChallengeResponse();
+        return (cr == null) ? "UNKNOWN" : cr.getIdentifier();
     }
 
     protected String getBaseUrl() {
         return getRequest().getRootRef().toString();
+    }
+
+    public static String getBaseUrl(Request request) {
+        return request.getRootRef().toString();
     }
 
     protected String getCurrentUrl() {
@@ -164,9 +174,9 @@ public class BaseResource extends ServerResource {
     protected Boolean hasSufficientRightsToView(Properties properties) {
         // Is disk owner or service user
         if (properties.get(DiskProperties.DISK_OWNER_KEY).toString()
-                .equals(getUsername())
+                .equals(getUsername(getRequest()))
                 || PersistentDiskApplication.CLOUD_SERVICE_USER
-                        .equals(getUsername())) {
+                        .equals(getUsername(getRequest()))) {
             return true;
         }
 
@@ -184,7 +194,7 @@ public class BaseResource extends ServerResource {
     protected Boolean hasSufficientRightsToDelete(Properties properties) {
         // Need to be the owner to delete the disk
         return properties.get(DiskProperties.DISK_OWNER_KEY).toString()
-                .equals(getUsername());
+                .equals(getUsername(getRequest()));
     }
 
     protected String diskVisibilityToString(DiskVisibility visibility) {
