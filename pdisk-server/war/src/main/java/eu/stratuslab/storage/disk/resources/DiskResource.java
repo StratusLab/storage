@@ -33,7 +33,7 @@ import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class DiskResource extends BaseResource {
@@ -99,7 +99,7 @@ public class DiskResource extends BaseResource {
 
         diskUserHeaders
                 .add("X-DiskUser-Limit",
-                        String.valueOf(PersistentDiskApplication.CONFIGURATION.USERS_PER_DISK));
+                        String.valueOf(RootApplication.CONFIGURATION.USERS_PER_DISK));
         diskUserHeaders.add("X-DiskUser-Remaining",
                 String.valueOf(zk.remainingFreeUser(getDiskZkPath())));
     }

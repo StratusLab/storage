@@ -35,7 +35,7 @@ import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.ServerResource;
 
-import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.Messages;
 import freemarker.template.Configuration;
@@ -53,7 +53,7 @@ public class BaseResource extends ServerResource {
     }
 
     private Configuration getFreeMarkerConfiguration() {
-        return ((PersistentDiskApplication) getApplication())
+        return ((RootApplication) getApplication())
                 .getFreeMarkerConfiguration();
     }
 
@@ -139,7 +139,7 @@ public class BaseResource extends ServerResource {
     }
 
     protected static String getDiskZkPath(String uuid) {
-        return PersistentDiskApplication.CONFIGURATION.ZK_DISKS_PATH + "/"
+        return RootApplication.CONFIGURATION.ZK_DISKS_PATH + "/"
                 + uuid;
     }
 
@@ -151,7 +151,7 @@ public class BaseResource extends ServerResource {
         // Is disk owner or service user
         if (properties.get(DiskProperties.DISK_OWNER_KEY).toString()
                 .equals(getUsername(getRequest()))
-                || PersistentDiskApplication.CONFIGURATION.CLOUD_SERVICE_USER
+                || RootApplication.CONFIGURATION.CLOUD_SERVICE_USER
                         .equals(getUsername(getRequest()))) {
             return true;
         }

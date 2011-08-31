@@ -36,7 +36,7 @@ import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
@@ -116,8 +116,8 @@ public class DisksResource extends BaseResource {
 
     public Properties getDiskProperties(Representation entity) {
 
-        PersistentDiskApplication.checkEntity(entity);
-        PersistentDiskApplication.checkMediaType(entity.getMediaType());
+        RootApplication.checkEntity(entity);
+        RootApplication.checkMediaType(entity.getMediaType());
 
         Properties diskProperties = processWebForm();
         List<String> errors = validateDiskProperties(diskProperties);
@@ -125,7 +125,7 @@ public class DisksResource extends BaseResource {
         // Display form again if we have error(s)
         if (errors.size() > 0) {
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    PersistentDiskApplication.join(errors, "\", \""));
+                    RootApplication.join(errors, "\", \""));
         }
 
         return diskProperties;
@@ -162,7 +162,7 @@ public class DisksResource extends BaseResource {
         properties
                 .put(DiskProperties.DISK_OWNER_KEY, getUsername(getRequest()));
         properties.put(DiskProperties.DISK_CREATION_DATE_KEY,
-                PersistentDiskApplication.getDateTime());
+                RootApplication.getDateTime());
         properties.put(DiskProperties.DISK_USERS_KEY, "0");
 
         return properties;

@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.main.RootApplication;
 
 public class ProcessUtils {
 
@@ -30,14 +30,14 @@ public class ProcessUtils {
         } catch (IOException e) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "An error occurred while executing command: "
-                            + PersistentDiskApplication.join(pb.command(), " ")
+                            + RootApplication.join(pb.command(), " ")
                             + ".\n" + errorMsg + ".");
         }
 
         if (returnCode != 0) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "An error occurred while executing command: "
-                            + PersistentDiskApplication.join(pb.command(), " ")
+                            + RootApplication.join(pb.command(), " ")
                             + ".\n" + errorMsg + ".\nReturn code was: "
                             + String.valueOf(returnCode));
         }

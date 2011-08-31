@@ -1,1 +1,4 @@
-{ "message": [${errorMsg}] }
+{ 
+  "message": ${errorMsg} 
+  "code": ${errorCode} 
+}

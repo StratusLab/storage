@@ -8,7 +8,7 @@ import java.util.Properties;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration.ShareType;
 import eu.stratuslab.storage.disk.resources.BaseResource;
@@ -24,7 +24,7 @@ public final class DiskUtils {
     }
 
     private static void postDiskCreationActions() {
-        if (PersistentDiskApplication.CONFIGURATION.SHARE_TYPE == ShareType.ISCSI) {
+        if (RootApplication.CONFIGURATION.SHARE_TYPE == ShareType.ISCSI) {
             updateISCSIConfiguration();
         }
     }
@@ -36,8 +36,8 @@ public final class DiskUtils {
 
         preDiskCreationActions();
 
-        if (PersistentDiskApplication.CONFIGURATION.SHARE_TYPE == ShareType.NFS
-                || PersistentDiskApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
+        if (RootApplication.CONFIGURATION.SHARE_TYPE == ShareType.NFS
+                || RootApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
             createFileDisk(uuid, size);
         } else {
             createLVMDisk(uuid, size);
@@ -48,7 +48,7 @@ public final class DiskUtils {
 
     private static void createFileDisk(String uuid, int size) {
         File diskFile = new File(
-                PersistentDiskApplication.CONFIGURATION.STORAGE_LOCATION, uuid);
+                RootApplication.CONFIGURATION.STORAGE_LOCATION, uuid);
 
         if (diskFile.exists()) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -60,7 +60,7 @@ public final class DiskUtils {
 
     private static void createLVMDisk(String uuid, int size) {
         File diskFile = new File(
-                PersistentDiskApplication.CONFIGURATION.LVM_GROUPE_PATH, uuid);
+                RootApplication.CONFIGURATION.LVM_GROUPE_PATH, uuid);
 
         if (diskFile.exists()) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -69,16 +69,16 @@ public final class DiskUtils {
 
         String lvmSize = size + "G";
         ProcessBuilder pb = new ProcessBuilder(
-                PersistentDiskApplication.CONFIGURATION.LVCREATE_CMD, "-L",
+                RootApplication.CONFIGURATION.LVCREATE_CMD, "-L",
                 lvmSize,
-                PersistentDiskApplication.CONFIGURATION.LVM_GROUPE_PATH, "-n",
+                RootApplication.CONFIGURATION.LVM_GROUPE_PATH, "-n",
                 uuid);
 
         ProcessUtils.execute(pb, "Unable to recreate the LVM volume");
     }
 
     public static void preDiskRemovalActions() {
-        if (PersistentDiskApplication.CONFIGURATION.SHARE_TYPE == ShareType.ISCSI) {
+        if (RootApplication.CONFIGURATION.SHARE_TYPE == ShareType.ISCSI) {
             updateISCSIConfiguration();
         }
     }
@@ -90,8 +90,8 @@ public final class DiskUtils {
     public static void removeDisk(String uuid) {
         preDiskRemovalActions();
 
-        if (PersistentDiskApplication.CONFIGURATION.SHARE_TYPE == ShareType.NFS
-                || PersistentDiskApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
+        if (RootApplication.CONFIGURATION.SHARE_TYPE == ShareType.NFS
+                || RootApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
             removeFileDisk(uuid);
         } else {
             removeLVMDisk(uuid);
@@ -103,7 +103,7 @@ public final class DiskUtils {
     public static void attachHotplugDisk(String serviceName, int servicePort,
             String node, String vmId, String diskUuid, String target) {
 
-        String attachedDisk = PersistentDiskApplication.CONFIGURATION.CLOUD_NODE_VM_DIR
+        String attachedDisk = RootApplication.CONFIGURATION.CLOUD_NODE_VM_DIR
                 + "/" + vmId + "/images/pdisk-" + diskUuid;
 
         List<String> attachCmd = new ArrayList<String>();
@@ -116,8 +116,8 @@ public final class DiskUtils {
         attachCmd.add("StrictHostKeyChecking=no");
         attachCmd.add("-i");
         attachCmd
-                .add(PersistentDiskApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
-        attachCmd.add(PersistentDiskApplication.CONFIGURATION.CLOUD_NODE_ADMIN
+                .add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
+        attachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN
                 + "@" + node);
         attachCmd.add("/usr/sbin/attach-persistent-disk.sh");
         attachCmd.add("pdisk:" + serviceName + ":"
@@ -142,8 +142,8 @@ public final class DiskUtils {
         detachCmd.add("StrictHostKeyChecking=no");
         detachCmd.add("-i");
         detachCmd
-                .add(PersistentDiskApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
-        detachCmd.add(PersistentDiskApplication.CONFIGURATION.CLOUD_NODE_ADMIN
+                .add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
+        detachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN
                 + "@" + node);
         detachCmd.add("/usr/sbin/detach-persistent-disk.sh");
         detachCmd.add("pdisk:" + serviceName + ":"
@@ -157,7 +157,7 @@ public final class DiskUtils {
 
     private static void removeFileDisk(String uuid) {
         File diskFile = new File(
-                PersistentDiskApplication.CONFIGURATION.STORAGE_LOCATION, uuid);
+                RootApplication.CONFIGURATION.STORAGE_LOCATION, uuid);
 
         if (!diskFile.delete()) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -166,10 +166,10 @@ public final class DiskUtils {
     }
 
     private static void removeLVMDisk(String uuid) {
-        String volumePath = PersistentDiskApplication.CONFIGURATION.LVM_GROUPE_PATH
+        String volumePath = RootApplication.CONFIGURATION.LVM_GROUPE_PATH
                 + "/" + uuid;
         ProcessBuilder pb = new ProcessBuilder(
-                PersistentDiskApplication.CONFIGURATION.LVREMOVE_CMD, "-f",
+                RootApplication.CONFIGURATION.LVREMOVE_CMD, "-f",
                 volumePath);
 
         ProcessUtils.execute(pb, "It's possible that the disk " + uuid
@@ -180,7 +180,7 @@ public final class DiskUtils {
         String configuration = createISCSITargetConfiguration();
 
         FileUtils.writeToFile(
-                PersistentDiskApplication.CONFIGURATION.ISCSI_CONFIG,
+                RootApplication.CONFIGURATION.ISCSI_CONFIG,
                 configuration);
 
         updateISCSIServer();
@@ -202,13 +202,13 @@ public final class DiskUtils {
 
     private static void updateISCSIServer() {
         ProcessBuilder pb = new ProcessBuilder(
-                PersistentDiskApplication.CONFIGURATION.ISCSI_ADMIN,
+                RootApplication.CONFIGURATION.ISCSI_ADMIN,
                 "--update", "ALL");
 
         ProcessUtils.execute(
                 pb,
                 "Perhaps there is a syntax error in "
-                        + PersistentDiskApplication.CONFIGURATION.ISCSI_CONFIG
+                        + RootApplication.CONFIGURATION.ISCSI_CONFIG
                                 .getAbsolutePath() + " or in "
                         + ServiceConfiguration.ISCSI_CONFIG_FILENAME);
     }
@@ -220,11 +220,11 @@ public final class DiskUtils {
     }
 
     private static String getDisksLocation() {
-        if (PersistentDiskApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
-            return PersistentDiskApplication.CONFIGURATION.STORAGE_LOCATION
+        if (RootApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
+            return RootApplication.CONFIGURATION.STORAGE_LOCATION
                     .getAbsolutePath();
         } else {
-            return PersistentDiskApplication.CONFIGURATION.LVM_GROUPE_PATH;
+            return RootApplication.CONFIGURATION.LVM_GROUPE_PATH;
         }
     }
 }

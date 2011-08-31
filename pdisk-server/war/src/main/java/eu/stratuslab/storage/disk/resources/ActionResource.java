@@ -12,7 +12,7 @@ import org.restlet.representation.Representation;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
@@ -161,8 +161,8 @@ public class ActionResource extends BaseResource {
     }
 
     private QueryProcessStatus processRequest(Representation entity) {
-        PersistentDiskApplication.checkEntity(entity);
-        PersistentDiskApplication.checkMediaType(entity.getMediaType());
+        RootApplication.checkEntity(entity);
+        RootApplication.checkMediaType(entity.getMediaType());
 
         Form form = new Form(entity);
 

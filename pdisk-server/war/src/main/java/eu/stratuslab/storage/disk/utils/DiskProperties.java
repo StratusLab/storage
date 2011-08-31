@@ -34,7 +34,7 @@ import org.apache.zookeeper.ZooKeeper.States;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.main.RootApplication;
 
 public class DiskProperties {
     private ZooKeeper zk = null;
@@ -50,7 +50,7 @@ public class DiskProperties {
     public static final String DISK_TARGET_LIMIT = "limit";
 
     public DiskProperties() {
-        connect(PersistentDiskApplication.CONFIGURATION.ZK_ADDRESSES, 3000);
+        connect(RootApplication.CONFIGURATION.ZK_ADDRESSES, 3000);
     }
 
     public void connect(String addresses, int timeout) {
@@ -84,18 +84,18 @@ public class DiskProperties {
 
         try {
             if (zk.exists(
-                    PersistentDiskApplication.CONFIGURATION.ZK_DISKS_PATH,
+                    RootApplication.CONFIGURATION.ZK_DISKS_PATH,
                     false) == null) {
                 zk.create(
-                        PersistentDiskApplication.CONFIGURATION.ZK_DISKS_PATH,
+                        RootApplication.CONFIGURATION.ZK_DISKS_PATH,
                         "pdiskDisks".getBytes(), Ids.OPEN_ACL_UNSAFE,
                         CreateMode.PERSISTENT);
             }
             if (zk.exists(
-                    PersistentDiskApplication.CONFIGURATION.ZK_USAGE_PATH,
+                    RootApplication.CONFIGURATION.ZK_USAGE_PATH,
                     false) == null) {
                 zk.create(
-                        PersistentDiskApplication.CONFIGURATION.ZK_USAGE_PATH,
+                        RootApplication.CONFIGURATION.ZK_USAGE_PATH,
                         "pdiskUsers".getBytes(), Ids.OPEN_ACL_UNSAFE,
                         CreateMode.PERSISTENT);
             }
@@ -169,7 +169,7 @@ public class DiskProperties {
     }
 
     public List<String> getDisks() {
-        return getChildren(PersistentDiskApplication.CONFIGURATION.ZK_DISKS_PATH);
+        return getChildren(RootApplication.CONFIGURATION.ZK_DISKS_PATH);
     }
 
     public void saveDiskProperties(String diskRoot, Properties properties) {
@@ -193,7 +193,7 @@ public class DiskProperties {
         List<String> tree = listSubTree(root);
 
         for (int i = tree.size() - 1; i >= 0; --i) {
-            String key = PersistentDiskApplication.last(tree.get(i).split("/"));
+            String key = RootApplication.last(tree.get(i).split("/"));
             String content = getNode(tree.get(i));
 
             if (tree.get(i) == root) {
@@ -232,7 +232,7 @@ public class DiskProperties {
     }
 
     private String getNodeUsagePath(String node) {
-        return PersistentDiskApplication.CONFIGURATION.ZK_USAGE_PATH + "/"
+        return RootApplication.CONFIGURATION.ZK_USAGE_PATH + "/"
                 + node;
     }
 
@@ -245,7 +245,7 @@ public class DiskProperties {
     }
 
     private String getDiskPath(String uuid) {
-        return PersistentDiskApplication.CONFIGURATION.ZK_DISKS_PATH + "/"
+        return RootApplication.CONFIGURATION.ZK_DISKS_PATH + "/"
                 + uuid;
     }
 
@@ -253,7 +253,7 @@ public class DiskProperties {
             String target) {
         if (!pathExists(getNodeUsagePath(node))) {
             createNode(getNodeUsagePath(node),
-                    PersistentDiskApplication.getDateTime());
+                    RootApplication.getDateTime());
         }
 
         if (pathExists(getVmUsagePath(node, vmId))) {
@@ -344,7 +344,7 @@ public class DiskProperties {
     }
 
     public int remainingFreeUser(String path) {
-        return PersistentDiskApplication.CONFIGURATION.USERS_PER_DISK
+        return RootApplication.CONFIGURATION.USERS_PER_DISK
                 - getDiskUsersNo(path);
     }
 
