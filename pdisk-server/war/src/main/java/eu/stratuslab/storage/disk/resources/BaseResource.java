@@ -139,7 +139,8 @@ public class BaseResource extends ServerResource {
     }
 
     protected static String getDiskZkPath(String uuid) {
-        return PersistentDiskApplication.ZK_DISKS_PATH + "/" + uuid;
+        return PersistentDiskApplication.CONFIGURATION.ZK_DISKS_PATH + "/"
+                + uuid;
     }
 
     protected Boolean diskExists(String uuid) {
@@ -150,7 +151,7 @@ public class BaseResource extends ServerResource {
         // Is disk owner or service user
         if (properties.get(DiskProperties.DISK_OWNER_KEY).toString()
                 .equals(getUsername(getRequest()))
-                || PersistentDiskApplication.CLOUD_SERVICE_USER
+                || PersistentDiskApplication.CONFIGURATION.CLOUD_SERVICE_USER
                         .equals(getUsername(getRequest()))) {
             return true;
         }

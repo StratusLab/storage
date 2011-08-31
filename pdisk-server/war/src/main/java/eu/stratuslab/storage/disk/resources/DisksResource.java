@@ -37,6 +37,7 @@ import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.PersistentDiskApplication;
+import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
@@ -185,11 +186,11 @@ public class DisksResource extends BaseResource {
             String size = diskProperties.getProperty("size", "None");
             int gigabytes = Integer.parseInt(size);
 
-            if (gigabytes < PersistentDiskApplication.DISK_SIZE_MIN
-                    || gigabytes > PersistentDiskApplication.DISK_SIZE_MAX) {
+            if (gigabytes < ServiceConfiguration.DISK_SIZE_MIN
+                    || gigabytes > ServiceConfiguration.DISK_SIZE_MAX) {
                 errors.add("Size must be an integer between "
-                        + PersistentDiskApplication.DISK_SIZE_MIN + " and "
-                        + PersistentDiskApplication.DISK_SIZE_MAX);
+                        + ServiceConfiguration.DISK_SIZE_MIN + " and "
+                        + ServiceConfiguration.DISK_SIZE_MAX);
             }
         } catch (NumberFormatException e) {
             errors.add("Size must be a valid positive integer");

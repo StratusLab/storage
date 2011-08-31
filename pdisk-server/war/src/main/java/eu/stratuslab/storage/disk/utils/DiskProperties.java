@@ -50,7 +50,7 @@ public class DiskProperties {
     public static final String DISK_TARGET_LIMIT = "limit";
 
     public DiskProperties() {
-        connect(PersistentDiskApplication.ZK_ADDRESSES, 3000);
+        connect(PersistentDiskApplication.CONFIGURATION.ZK_ADDRESSES, 3000);
     }
 
     public void connect(String addresses, int timeout) {
@@ -83,13 +83,19 @@ public class DiskProperties {
         }
 
         try {
-            if (zk.exists(PersistentDiskApplication.ZK_DISKS_PATH, false) == null) {
-                zk.create(PersistentDiskApplication.ZK_DISKS_PATH,
+            if (zk.exists(
+                    PersistentDiskApplication.CONFIGURATION.ZK_DISKS_PATH,
+                    false) == null) {
+                zk.create(
+                        PersistentDiskApplication.CONFIGURATION.ZK_DISKS_PATH,
                         "pdiskDisks".getBytes(), Ids.OPEN_ACL_UNSAFE,
                         CreateMode.PERSISTENT);
             }
-            if (zk.exists(PersistentDiskApplication.ZK_USAGE_PATH, false) == null) {
-                zk.create(PersistentDiskApplication.ZK_USAGE_PATH,
+            if (zk.exists(
+                    PersistentDiskApplication.CONFIGURATION.ZK_USAGE_PATH,
+                    false) == null) {
+                zk.create(
+                        PersistentDiskApplication.CONFIGURATION.ZK_USAGE_PATH,
                         "pdiskUsers".getBytes(), Ids.OPEN_ACL_UNSAFE,
                         CreateMode.PERSISTENT);
             }
@@ -163,7 +169,7 @@ public class DiskProperties {
     }
 
     public List<String> getDisks() {
-        return getChildren(PersistentDiskApplication.ZK_DISKS_PATH);
+        return getChildren(PersistentDiskApplication.CONFIGURATION.ZK_DISKS_PATH);
     }
 
     public void saveDiskProperties(String diskRoot, Properties properties) {
@@ -226,7 +232,8 @@ public class DiskProperties {
     }
 
     private String getNodeUsagePath(String node) {
-        return PersistentDiskApplication.ZK_USAGE_PATH + "/" + node;
+        return PersistentDiskApplication.CONFIGURATION.ZK_USAGE_PATH + "/"
+                + node;
     }
 
     private String getVmUsagePath(String node, String vmId) {
@@ -238,7 +245,8 @@ public class DiskProperties {
     }
 
     private String getDiskPath(String uuid) {
-        return PersistentDiskApplication.ZK_DISKS_PATH + "/" + uuid;
+        return PersistentDiskApplication.CONFIGURATION.ZK_DISKS_PATH + "/"
+                + uuid;
     }
 
     public void addDiskUser(String node, String vmId, String diskUuid,
@@ -336,7 +344,8 @@ public class DiskProperties {
     }
 
     public int remainingFreeUser(String path) {
-        return PersistentDiskApplication.USERS_PER_DISK - getDiskUsersNo(path);
+        return PersistentDiskApplication.CONFIGURATION.USERS_PER_DISK
+                - getDiskUsersNo(path);
     }
 
     private List<String> listSubTree(String pathRoot) {
