@@ -29,11 +29,11 @@ import org.restlet.resource.Directory;
 import org.restlet.routing.Router;
 import org.restlet.security.ChallengeAuthenticator;
 
-import eu.stratuslab.storage.disk.resources.ActionResource;
 import eu.stratuslab.storage.disk.resources.DiskResource;
 import eu.stratuslab.storage.disk.resources.DisksResource;
 import eu.stratuslab.storage.disk.resources.ForceTrailingSlashResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
+import eu.stratuslab.storage.disk.resources.MountsResource;
 import eu.stratuslab.storage.disk.utils.DumpVerifier;
 import freemarker.template.Configuration;
 
@@ -69,8 +69,8 @@ public class RootApplication extends Application {
         router.attach("/disks/", DisksResource.class);
         router.attach("/disks", ForceTrailingSlashResource.class);
 
-        router.attach("/api/{action}/{uuid}", ActionResource.class);
-        router.attach("/api/{action}", ActionResource.class);
+        router.attach("/api/{action}/{uuid}", MountsResource.class);
+        router.attach("/api/{action}", MountsResource.class);
 
         router.attach("/", HomeResource.class);
 

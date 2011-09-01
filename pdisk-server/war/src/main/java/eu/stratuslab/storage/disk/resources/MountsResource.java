@@ -18,7 +18,7 @@ import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
 
-public class ActionResource extends BaseResource {
+public class MountsResource extends BaseResource {
 
     private enum DiskAction {
         ATTACH, DETACH, HOTATTACH, HOTDETACH;
