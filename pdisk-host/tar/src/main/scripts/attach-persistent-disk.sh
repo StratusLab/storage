@@ -24,7 +24,7 @@ REGISTER_FILE="$VM_DIR/$REGISTER_FILENAME"
 register_disk() {
     # We assume here that the disk can be mounted by the user (permission and remaning places)
     local NODE=`hostname`
-    local REGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/api/attach/${DISK_UUID} -d node=${NODE}&vm_id=${VM_ID}"
+    local REGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/disks/${DISK_UUID}/mounts -d node=${NODE}&vm_id=${VM_ID}"
     $REGISTER_CMD
 }
 
