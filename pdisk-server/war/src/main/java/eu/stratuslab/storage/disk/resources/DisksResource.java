@@ -62,6 +62,8 @@ public class DisksResource extends BaseResource {
     private Map<String, Object> listDisks() {
         Map<String, Object> info = createInfoStructure("Disks list");
 
+        addCreateFormDefaults(info);
+
         List<Properties> diskInfoList = new LinkedList<Properties>();
         List<String> disks = zk.getDisks();
 
@@ -77,6 +79,21 @@ public class DisksResource extends BaseResource {
         }
 
         return info;
+    }
+
+    private void addCreateFormDefaults(Map<String, Object> info) {
+        Map<String, Object> defaults = new HashMap<String, Object>();
+        defaults.put("size", "1");
+        defaults.put("tag", "");
+
+        info.put("values", defaults);
+
+        List<String> visibilities = new LinkedList<String>();
+        for (DiskVisibility visibility : DiskVisibility.values()) {
+            visibilities.add(visibility.toString());
+        }
+
+        info.put("visibilities", visibilities);
     }
 
     @Post("html")

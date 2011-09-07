@@ -16,14 +16,14 @@
 </ul>
 </#if>
 
-<form action="${baseurl}/create/" enctype="application/x-www-form-urlencoded" method="POST">
+<form action="${baseurl}/disks/" enctype="application/x-www-form-urlencoded" method="POST">
     <p> 
         <label for="size">Size (in GiBs):</label>
-        <input type="text" name="size" size="10" value="${values.size}" /> 
+        <input type="text" name="size" size="10" value="${values.size!}" /> 
     </p>
     <p> 
         <label for="tag">Tag:</label>
-        <input type="text" name="tag" size="40" value="${values.tag}" /> 
+        <input type="text" name="tag" size="40" value="${values.tag!}" /> 
     </p>
     
     <p>
@@ -78,9 +78,7 @@
         </table>
         </#escape>
     <#else> 
-            <p>No disk found. Try to <a href="${baseurl}/create/">add one</a>!</p>
+            <p>No disk found.</p>
     </#if>
-    
-    <p class="right"><a href="${baseurl}/create/">New disk</a></p>
     
 <#include "/html/footer.ftl">
