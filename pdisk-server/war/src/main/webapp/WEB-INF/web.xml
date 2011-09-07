@@ -30,7 +30,7 @@
     <servlet-class>org.restlet.ext.servlet.ServerServlet</servlet-class>
     <init-param>
       <param-name>org.restlet.application</param-name>
-      <param-value>eu.stratuslab.storage.disk.main.PersistentDiskApplication</param-value>
+      <param-value>eu.stratuslab.storage.disk.main.RootApplication</param-value>
     </init-param>
   </servlet>
 
