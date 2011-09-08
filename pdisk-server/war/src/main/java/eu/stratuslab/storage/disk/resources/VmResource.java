@@ -3,11 +3,11 @@ package eu.stratuslab.storage.disk.resources;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.restlet.Request;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
@@ -74,8 +74,14 @@ public class VmResource extends BaseResource {
     }
 
     private Map<String, Object> getVmProperties() {
-        Map<String, Object> info = new HashMap<String, Object>();
+
+        Request request = getRequest();
+
+        Map<String, Object> info = createInfoStructure("Virtual Machine",
+                request, "", BaseResource.getBaseUrl(request));
+
         info.put("vmId", vmId);
+
         return info;
     }
 

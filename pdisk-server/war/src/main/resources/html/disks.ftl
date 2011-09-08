@@ -37,8 +37,10 @@
           <td>
             <select name="visibility">
                 <#list visibilities as diskVisibility>
-                <option <#if diskVisibility == ${values.visibility}>selected="selected"</#if> 
-                    value="${diskVisibility}">${diskVisibility?capitalize}</option>
+                <option 
+                    <#if diskVisibility == values.visibility>selected="selected"</#if>
+                    value="${diskVisibility}"
+                >${diskVisibility?capitalize}</option>
                 </#list>
             </select>
           </td>

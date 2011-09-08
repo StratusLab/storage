@@ -3,9 +3,9 @@ package eu.stratuslab.storage.disk.resources;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
-import java.util.HashMap;
 import java.util.Map;
 
+import org.restlet.Request;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 
@@ -27,8 +27,11 @@ public class VmsResource extends BaseResource {
     }
 
     private Map<String, Object> getVmProperties() {
-        Map<String, Object> info = new HashMap<String, Object>();
+        Request request = getRequest();
+
+        Map<String, Object> info = createInfoStructure("Virtual Machines",
+                request, "", BaseResource.getBaseUrl(request));
+
         return info;
     }
-
 }
