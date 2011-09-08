@@ -25,10 +25,11 @@ fi
 deregister_disks() {
     local NODE=`hostname`
     local DEREGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/disks/${TARGET}/mounts/${VM_ID}-${NODE}"
+    echo "$DEREGISTER_CMD"
     $DEREGISTER_CMD
 }
 
-detatch_nfs() {
+detach_nfs() {
     local UUID_URL="$1"
     
     PORTAL=`echo $UUID_URL | cut -d ':' -f 2`
@@ -36,7 +37,7 @@ detatch_nfs() {
     DISK_UUID=`echo $UUID_URL | cut -d ':' -f 4`
 }
 
-detatch_iscsi() {
+detach_iscsi() {
     local UUID_URL="$1"
     
     PORTAL=`echo $UUID_URL | cut -d ':' -f 2`
@@ -66,6 +67,7 @@ detatch_iscsi() {
     if [ `sudo /usr/sbin/lsof $DISK_PATH | wc -l` -eq 0 ]
     then
         local DETACH_CMD="sudo $ISCSIADM --mode node --portal $PORTAL_IP --targetname $DISK --logout"
+        echo "$DETACH_CMD"
         $DETACH_CMD
     fi
 }
@@ -78,14 +80,15 @@ detach_all_disks() {
 
     for DISK_INFO in ${ATTACHED_DISK[*]}
     do
-        detatch_${SHARE_TYPE} $DISK_INFO
+        echo "detach_${SHARE_TYPE} $DISK_INFO"
+        detach_${SHARE_TYPE} $DISK_INFO
         deregister_disks
     done
 }
 
 detach_hotplug_disk() {
     sudo /usr/bin/virsh detach-disk one-$VM_ID $TARGET
-    detatch_${SHARE_TYPE} $UUID_URL
+    detach_${SHARE_TYPE} $UUID_URL
 }
 
 if [ "x$TARGET" = "x" ]
