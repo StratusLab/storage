@@ -85,6 +85,7 @@ public class DisksResource extends BaseResource {
         Map<String, Object> defaults = new HashMap<String, Object>();
         defaults.put("size", "1");
         defaults.put("tag", "");
+        defaults.put("visibility", DiskVisibility.PRIVATE.toString());
 
         info.put("values", defaults);
 
