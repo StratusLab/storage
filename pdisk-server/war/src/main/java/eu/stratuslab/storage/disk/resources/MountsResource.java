@@ -68,7 +68,8 @@ public class MountsResource extends BaseResource {
     }
 
     public Map<String, Object> getMountProperties() {
-        return new HashMap<String, Object>();
+        Map<String, Object> info = this.createInfoStructure("mounts");
+        return info;
     }
 
     private Representation actionResponse(List<String> diskUuids,

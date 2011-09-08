@@ -3,7 +3,6 @@ package eu.stratuslab.storage.disk.resources;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -100,7 +99,7 @@ public class MountResource extends BaseResource {
 
     public Map<String, Object> getMountProperties() {
 
-        Map<String, Object> info = new HashMap<String, Object>();
+        Map<String, Object> info = this.createInfoStructure("mount");
         info.put("diskId", diskId);
         info.put("mountId", mountId);
         info.put("vmId", vmId);
