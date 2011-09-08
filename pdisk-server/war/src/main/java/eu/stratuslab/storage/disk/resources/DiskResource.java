@@ -104,13 +104,16 @@ public class DiskResource extends BaseResource {
     }
 
     @Delete("html")
-    public void deleteDiskAsHtml() {
+    public Representation deleteDiskAsHtml() {
 
         processDeleteDiskRequest();
 
         MESSAGES.push("Your disk have been deleted successfully");
         redirectSeeOther(getBaseUrl() + "/disks/");
 
+        Map<String, Object> info = createInfoStructure("redirect");
+        return createTemplateRepresentation("html/redirect.ftl", info,
+                TEXT_HTML);
     }
 
     @Delete("json")

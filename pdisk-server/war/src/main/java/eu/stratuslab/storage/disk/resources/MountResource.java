@@ -79,9 +79,13 @@ public class MountResource extends BaseResource {
     }
 
     @Delete("html")
-    public void detachDiskAsHtml(Representation entity) {
+    public Representation detachDiskAsHtml(Representation entity) {
         MESSAGES.push("Your disk has been unmounted.");
         redirectSeeOther(getBaseUrl() + "/disks/" + diskId + "/mounts/");
+
+        Map<String, Object> info = createInfoStructure("redirect");
+        return createTemplateRepresentation("html/redirect.ftl", info,
+                TEXT_HTML);
     }
 
     @Delete("json")

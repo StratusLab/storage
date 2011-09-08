@@ -69,8 +69,12 @@ public class VmResource extends BaseResource {
     }
 
     @Delete
-    public void deleteAllMounts() {
+    public Representation deleteAllMounts() {
         detachAllDisks();
+
+        Map<String, Object> info = createInfoStructure("redirect");
+        return createTemplateRepresentation("html/redirect.ftl", info,
+                TEXT_HTML);
     }
 
     private Map<String, Object> getVmProperties() {

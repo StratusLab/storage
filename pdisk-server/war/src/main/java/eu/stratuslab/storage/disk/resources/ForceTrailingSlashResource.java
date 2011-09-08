@@ -19,7 +19,10 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
+import static org.restlet.data.MediaType.TEXT_HTML;
 import static org.restlet.data.MediaType.TEXT_PLAIN;
+
+import java.util.Map;
 
 import org.restlet.Response;
 import org.restlet.data.Reference;
@@ -54,8 +57,11 @@ public class ForceTrailingSlashResource extends BaseResource {
     }
 
     @Delete
-    public void redirectDelete() {
+    public Representation redirectDelete() {
         setRedirectRef();
+        Map<String, Object> info = createInfoStructure("redirect");
+        return createTemplateRepresentation("html/redirect.ftl", info,
+                TEXT_HTML);
     }
 
     private void setRedirectRef() {
