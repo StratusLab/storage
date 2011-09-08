@@ -30,7 +30,7 @@
         <label for="visibility">Visibility:<label>
         <select name="visibility">
             <#list visibilities as diskVisibility>
-            <option <#if diskVisibility == values.visibility>selected="selected"</#if> 
+            <option <#if diskVisibility == ${values.visibility}>selected="selected"</#if> 
                 value="${diskVisibility}">${diskVisibility?capitalize}</option>
             </#list>
         </select>
@@ -59,7 +59,7 @@
             <#list disks as disk>
             <tr class="${zebra(disk_index)}">
               <td><#if disk.tag == ""><em>No tag</em></#if>${disk.tag!}</td>
-              <td class="center">${disk.size} GB</td>
+              <td class="center">${disk.size} GiB</td>
               <td class="center">${disk.users}</td>
               <td class="center">${disk.owner}</td>
               <td><a href="${baseurl}/disks/${disk.uuid}/">${disk.uuid}</a></td>
@@ -78,7 +78,7 @@
         </table>
         </#escape>
     <#else> 
-            <p>No disk found.</p>
+            <p>No disks.</p>
     </#if>
     
 <#include "/html/footer.ftl">

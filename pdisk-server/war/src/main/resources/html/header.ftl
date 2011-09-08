@@ -24,8 +24,7 @@
         <ul>
             <li><a href="${baseurl}/">Home</a></li>
             <li><a href="${baseurl}/disks/">Disks</a></li>
-            <li><a href="${baseurl}/create/">Create</a></li>
-            <!-- <li><a href="${baseurl}/logout/">Logout</a> <span class="username">(${username})</span></li> -->
+            <li><a href="${baseurl}/vms/">VMs</a></li>
         </ul>
     </nav>
 </header>
