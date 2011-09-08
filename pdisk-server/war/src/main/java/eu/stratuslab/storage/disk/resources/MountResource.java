@@ -12,7 +12,6 @@ import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class MountResource extends BaseResource {
@@ -79,6 +78,9 @@ public class MountResource extends BaseResource {
 
     @Delete("html")
     public Representation detachDiskAsHtml(Representation entity) {
+
+        detachHotPluggedDisk();
+
         MESSAGES.push("Your disk has been unmounted.");
         redirectSeeOther(getBaseUrl() + "/disks/" + diskId + "/mounts/");
 
@@ -122,10 +124,10 @@ public class MountResource extends BaseResource {
         }
 
         String diskTarget = zk.diskTarget(node, vmId, diskId);
-        if (diskTarget.equals(DiskProperties.STATIC_DISK_TARGET)) {
-            throw new ResourceException(Status.CLIENT_ERROR_CONFLICT,
-                    "disk has not been hot-plugged");
-        }
+        // if (diskTarget.equals(DiskProperties.STATIC_DISK_TARGET)) {
+        // throw new ResourceException(Status.CLIENT_ERROR_CONFLICT,
+        // "disk has not been hot-plugged");
+        // }
 
         zk.removeDiskUser(node, vmId, diskId);
         DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node, vmId,
