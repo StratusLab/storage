@@ -17,30 +17,40 @@
 </#if>
 
 <form action="${baseurl}/disks/" enctype="application/x-www-form-urlencoded" method="POST">
-    <p> 
-        <label for="size">Size (in GiBs):</label>
-        <input type="text" name="size" size="10" value="${values.size!}" /> 
-    </p>
-    <p> 
-        <label for="tag">Tag:</label>
-        <input type="text" name="tag" size="40" value="${values.tag!}" /> 
-    </p>
-    
-    <p>
-        <label for="visibility">Visibility:<label>
-        <select name="visibility">
-            <#list visibilities as diskVisibility>
-            <option <#if diskVisibility == ${values.visibility}>selected="selected"</#if> 
-                value="${diskVisibility}">${diskVisibility?capitalize}</option>
-            </#list>
-        </select>
-    </p>
-        
-    <p>
-        <input type="submit" value="Create" />
-    </p>
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Size (GiB)</th>
+          <th>Visibility</th>
+          <th>Tag</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <input type="submit" value="Create" />
+          </td>
+          <td>
+            <input type="text" name="size" size="10" value="${values.size!}" /> 
+          </td>
+          <td>
+            <select name="visibility">
+                <#list visibilities as diskVisibility>
+                <option <#if diskVisibility == ${values.visibility}>selected="selected"</#if> 
+                    value="${diskVisibility}">${diskVisibility?capitalize}</option>
+                </#list>
+            </select>
+          </td>
+          <td>
+            <input type="text" name="tag" size="40" value="${values.tag!}" /> 
+          </td>
+        </tr>
+      </tbody>
+    </table>
 </form>
 
+<hr/>
 <br/>
     
     <#if disks?has_content>

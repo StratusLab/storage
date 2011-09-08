@@ -97,7 +97,7 @@ public class DisksResource extends BaseResource {
         info.put("visibilities", visibilities);
     }
 
-    @Post("html")
+    @Post("form:html")
     public Representation createDiskRequestFromHtml(Representation entity) {
 
         Properties diskProperties = getDiskProperties(entity);
@@ -112,7 +112,7 @@ public class DisksResource extends BaseResource {
         return null;
     }
 
-    @Post("json")
+    @Post("form:json")
     public Representation createDiskRequestFromJson(Representation entity) {
 
         Properties diskProperties = getDiskProperties(entity);

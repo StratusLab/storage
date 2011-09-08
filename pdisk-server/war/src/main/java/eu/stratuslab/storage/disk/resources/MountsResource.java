@@ -54,7 +54,7 @@ public class MountsResource extends BaseResource {
                 APPLICATION_JSON);
     }
 
-    @Post("json")
+    @Post("form:json")
     public Representation actionDispatcher(Representation entity) {
 
         extractNodeAndVmId(entity);
