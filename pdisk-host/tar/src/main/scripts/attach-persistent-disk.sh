@@ -22,9 +22,9 @@ VM_ID=`basename $VM_DIR`
 REGISTER_FILE="$VM_DIR/$REGISTER_FILENAME"
 
 register_disk() {
-    # We assume here that the disk can be mounted by the user (permission and remaning places)
+    # We assume here that the disk can be mounted by the user (permission and remaining places)
     local NODE=`hostname`
-    local REGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/disks/${DISK_UUID}/mounts -d node=${NODE}&vm_id=${VM_ID}"
+    local REGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/disks/${DISK_UUID}/mounts/ -d node=${NODE}&vm_id=${VM_ID}"
     $REGISTER_CMD
 }
 
