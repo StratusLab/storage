@@ -22,12 +22,6 @@ import freemarker.template.Configuration;
 
 public class CommonStatusService extends StatusService {
 
-    private Configuration freeMarkerConfiguration = null;
-
-    public CommonStatusService(Configuration freeMarkerConfiguration) {
-        this.freeMarkerConfiguration = freeMarkerConfiguration;
-    }
-
     @Override
     public Representation getRepresentation(Status status, Request request,
             Response response) {
@@ -38,44 +32,54 @@ public class CommonStatusService extends StatusService {
 
         Map<String, Object> info = getErrorInfo(status, request);
 
+        Configuration freeMarkerConfiguration = BaseResource
+                .extractFmConfiguration(request);
+
+        if (freeMarkerConfiguration == null) {
+            return null;
+        }
+
         for (Preference<MediaType> preference : mediaTypes) {
 
             MediaType desiredMediaType = preference.getMetadata();
 
             if (TEXT_HTML.isCompatible(desiredMediaType)) {
 
-                return toHtml(info);
+                return toHtml(freeMarkerConfiguration, info);
 
             } else if (APPLICATION_XHTML.isCompatible(desiredMediaType)) {
 
-                return toHtml(info);
+                return toHtml(freeMarkerConfiguration, info);
 
             } else if (TEXT_PLAIN.isCompatible(desiredMediaType)) {
 
-                return toText(info);
+                return toText(freeMarkerConfiguration, info);
 
             } else if (APPLICATION_JSON.isCompatible(desiredMediaType)) {
 
-                return toJson(info);
+                return toJson(freeMarkerConfiguration, info);
 
             }
         }
 
-        return toText(info);
+        return toText(freeMarkerConfiguration, info);
     }
 
-    private Representation toText(Map<String, Object> info) {
+    private Representation toText(Configuration freeMarkerConfiguration,
+            Map<String, Object> info) {
         return BaseResource.createTemplateRepresentation(
                 freeMarkerConfiguration, "text/error.ftl", info, TEXT_PLAIN);
     }
 
-    private Representation toJson(Map<String, Object> info) {
+    private Representation toJson(Configuration freeMarkerConfiguration,
+            Map<String, Object> info) {
         return BaseResource.createTemplateRepresentation(
                 freeMarkerConfiguration, "json/error.ftl", info,
                 APPLICATION_JSON);
     }
 
-    private Representation toHtml(Map<String, Object> info) {
+    private Representation toHtml(Configuration freeMarkerConfiguration,
+            Map<String, Object> info) {
         return BaseResource.createTemplateRepresentation(
                 freeMarkerConfiguration, "html/error.ftl", info, TEXT_HTML);
     }

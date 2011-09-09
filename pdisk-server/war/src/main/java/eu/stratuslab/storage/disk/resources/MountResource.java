@@ -12,6 +12,7 @@ import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
 
+import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class MountResource extends BaseResource {
@@ -124,14 +125,15 @@ public class MountResource extends BaseResource {
         }
 
         String diskTarget = zk.diskTarget(node, vmId, diskId);
-        // if (diskTarget.equals(DiskProperties.STATIC_DISK_TARGET)) {
-        // throw new ResourceException(Status.CLIENT_ERROR_CONFLICT,
-        // "disk has not been hot-plugged");
-        // }
-
         zk.removeDiskUser(node, vmId, diskId);
-        DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node, vmId,
-                diskId, diskTarget);
+
+        // Only force the dismount if this was mounted through the
+        // storage service.
+        if (!diskTarget.equals(DiskProperties.STATIC_DISK_TARGET)) {
+            DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node,
+                    vmId, diskId, diskTarget);
+        }
+
     }
 
 }

@@ -30,6 +30,7 @@ import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.resource.ServerResource;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
+import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.Messages;
 import freemarker.template.Configuration;
@@ -176,6 +177,37 @@ public class BaseResource extends ServerResource {
 
     public static DiskProperties getZooKeeper() {
         return zk;
+    }
+
+    public Configuration extractFmConfiguration() {
+        Request request = getRequest();
+        return extractFmConfiguration(request);
+    }
+
+    public static Configuration extractFmConfiguration(Request request) {
+        try {
+            Map<String, Object> attributes = request.getAttributes();
+            Object value = attributes.get(RootApplication.FM_CONFIGURATION_KEY);
+            return (Configuration) value;
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+
+    public ServiceConfiguration extractSvcConfiguration() {
+        Request request = getRequest();
+        return extractSvcConfiguration(request);
+    }
+
+    public static ServiceConfiguration extractSvcConfiguration(Request request) {
+        try {
+            Map<String, Object> attributes = request.getAttributes();
+            Object value = attributes
+                    .get(RootApplication.SVC_CONFIGURATION_KEY);
+            return (ServiceConfiguration) value;
+        } catch (ClassCastException e) {
+            return null;
+        }
     }
 
 }

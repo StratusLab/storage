@@ -19,8 +19,12 @@
  */
 package eu.stratuslab.storage.disk.main;
 
+import java.util.Map;
+
 import org.restlet.Application;
 import org.restlet.Context;
+import org.restlet.Request;
+import org.restlet.Response;
 import org.restlet.Restlet;
 import org.restlet.data.ChallengeScheme;
 import org.restlet.data.LocalReference;
@@ -42,6 +46,9 @@ import freemarker.template.Configuration;
 
 public class RootApplication extends Application {
 
+    public static final String SVC_CONFIGURATION_KEY = "PDISK_SVC_CONFIG";
+    public static final String FM_CONFIGURATION_KEY = "PDISK_FM_CONFIG";
+
     public static final ServiceConfiguration CONFIGURATION = ServiceConfiguration
             .getInstance();
 
@@ -53,6 +60,8 @@ public class RootApplication extends Application {
         setOwner("StratusLab");
         setAuthor("Charles Loomis");
 
+        setStatusService(new CommonStatusService());
+
         getTunnelService().setUserAgentTunnel(true);
     }
 
@@ -62,9 +71,9 @@ public class RootApplication extends Application {
 
         freeMarkerConfiguration = createFreeMarkerConfig(context);
 
-        setStatusService(new CommonStatusService(freeMarkerConfiguration));
-
-        Router router = new Router(context);
+        ServiceConfiguration configuration = ServiceConfiguration.getInstance();
+        Router router = new RootRouter(context, configuration,
+                freeMarkerConfiguration);
 
         router.attach("/disks/{uuid}/mounts/{mountid}/", MountResource.class);
         router.attach("/disks/{uuid}/mounts/{mountid}",
@@ -130,6 +139,32 @@ public class RootApplication extends Application {
 
     public Configuration getFreeMarkerConfiguration() {
         return freeMarkerConfiguration;
+    }
+
+    public static class RootRouter extends Router {
+
+        ServiceConfiguration configuration = null;
+        Configuration freeMarkerConfiguration = null;
+
+        public RootRouter(Context context, ServiceConfiguration configuration,
+                Configuration freeMarkerConfiguration) {
+            super(context);
+            this.configuration = configuration;
+            this.freeMarkerConfiguration = freeMarkerConfiguration;
+        }
+
+        @Override
+        public void doHandle(Restlet next, Request request, Response response) {
+
+            Map<String, Object> attributes = request.getAttributes();
+
+            attributes.put(SVC_CONFIGURATION_KEY, configuration);
+            attributes.put(FM_CONFIGURATION_KEY, freeMarkerConfiguration);
+            request.setAttributes(attributes);
+
+            super.doHandle(next, request, response);
+        }
+
     }
 
 }
