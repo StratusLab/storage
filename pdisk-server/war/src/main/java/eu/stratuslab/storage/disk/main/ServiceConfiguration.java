@@ -62,7 +62,7 @@ public class ServiceConfiguration {
     public final File ISCSI_CONFIG;
     public final String ISCSI_ADMIN;
 
-    public final String LVM_GROUPE_PATH;
+    public final String LVM_GROUP_PATH;
     public final String VGDISPLAY_CMD;
     public final String LVCREATE_CMD;
     public final String LVREMOVE_CMD;
@@ -89,7 +89,7 @@ public class ServiceConfiguration {
         VGDISPLAY_CMD = getCommand("disk.store.lvm.vgdisplay");
         LVCREATE_CMD = getCommand("disk.store.lvm.create");
         LVREMOVE_CMD = getCommand("disk.store.lvm.remove");
-        LVM_GROUPE_PATH = getLVMGroup();
+        LVM_GROUP_PATH = getLVMGroup();
 
         ISCSI_DISK_TYPE = getDiskType();
         ISCSI_CONFIG = getISCSIConfig();

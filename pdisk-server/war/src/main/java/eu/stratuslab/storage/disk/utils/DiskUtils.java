@@ -11,13 +11,16 @@ import org.restlet.resource.ResourceException;
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration.ShareType;
-import eu.stratuslab.storage.disk.resources.BaseResource;
 
 public final class DiskUtils {
 
     // Template for an iSCSI target entry.
     private static final String TARGET_TEMPLATE = "<target iqn.2011-01.eu.stratuslab:%s>\n"
             + "backing-store %s/%s\n" + "</target>\n";
+
+    private DiskUtils() {
+
+    }
 
     private static void preDiskCreationActions() {
 
@@ -59,8 +62,8 @@ public final class DiskUtils {
     }
 
     private static void createLVMDisk(String uuid, int size) {
-        File diskFile = new File(
-                RootApplication.CONFIGURATION.LVM_GROUPE_PATH, uuid);
+        File diskFile = new File(RootApplication.CONFIGURATION.LVM_GROUP_PATH,
+                uuid);
 
         if (diskFile.exists()) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -69,10 +72,8 @@ public final class DiskUtils {
 
         String lvmSize = size + "G";
         ProcessBuilder pb = new ProcessBuilder(
-                RootApplication.CONFIGURATION.LVCREATE_CMD, "-L",
-                lvmSize,
-                RootApplication.CONFIGURATION.LVM_GROUPE_PATH, "-n",
-                uuid);
+                RootApplication.CONFIGURATION.LVCREATE_CMD, "-L", lvmSize,
+                RootApplication.CONFIGURATION.LVM_GROUP_PATH, "-n", uuid);
 
         ProcessUtils.execute(pb, "Unable to recreate the LVM volume");
     }
@@ -115,10 +116,9 @@ public final class DiskUtils {
         attachCmd.add("-o");
         attachCmd.add("StrictHostKeyChecking=no");
         attachCmd.add("-i");
-        attachCmd
-                .add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
-        attachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN
-                + "@" + node);
+        attachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
+        attachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN + "@"
+                + node);
         attachCmd.add("/usr/sbin/attach-persistent-disk.sh");
         attachCmd.add("pdisk:" + serviceName + ":"
                 + String.valueOf(servicePort) + ":" + diskUuid);
@@ -141,10 +141,9 @@ public final class DiskUtils {
         detachCmd.add("-o");
         detachCmd.add("StrictHostKeyChecking=no");
         detachCmd.add("-i");
-        detachCmd
-                .add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
-        detachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN
-                + "@" + node);
+        detachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
+        detachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN + "@"
+                + node);
         detachCmd.add("/usr/sbin/detach-persistent-disk.sh");
         detachCmd.add("pdisk:" + serviceName + ":"
                 + String.valueOf(servicePort) + ":" + diskUuid);
@@ -166,11 +165,10 @@ public final class DiskUtils {
     }
 
     private static void removeLVMDisk(String uuid) {
-        String volumePath = RootApplication.CONFIGURATION.LVM_GROUPE_PATH
-                + "/" + uuid;
+        String volumePath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
+                + uuid;
         ProcessBuilder pb = new ProcessBuilder(
-                RootApplication.CONFIGURATION.LVREMOVE_CMD, "-f",
-                volumePath);
+                RootApplication.CONFIGURATION.LVREMOVE_CMD, "-f", volumePath);
 
         ProcessUtils.execute(pb, "It's possible that the disk " + uuid
                 + " is still logged on a node");
@@ -179,8 +177,7 @@ public final class DiskUtils {
     private static Boolean updateISCSIConfiguration() {
         String configuration = createISCSITargetConfiguration();
 
-        FileUtils.writeToFile(
-                RootApplication.CONFIGURATION.ISCSI_CONFIG,
+        FileUtils.writeToFile(RootApplication.CONFIGURATION.ISCSI_CONFIG,
                 configuration);
 
         updateISCSIServer();
@@ -202,20 +199,15 @@ public final class DiskUtils {
 
     private static void updateISCSIServer() {
         ProcessBuilder pb = new ProcessBuilder(
-                RootApplication.CONFIGURATION.ISCSI_ADMIN,
-                "--update", "ALL");
+                RootApplication.CONFIGURATION.ISCSI_ADMIN, "--update", "ALL");
 
-        ProcessUtils.execute(
-                pb,
-                "Perhaps there is a syntax error in "
-                        + RootApplication.CONFIGURATION.ISCSI_CONFIG
-                                .getAbsolutePath() + " or in "
-                        + ServiceConfiguration.ISCSI_CONFIG_FILENAME);
+        ProcessUtils.execute(pb, "Perhaps there is a syntax error in "
+                + RootApplication.CONFIGURATION.ISCSI_CONFIG.getAbsolutePath()
+                + " or in " + ServiceConfiguration.ISCSI_CONFIG_FILENAME);
     }
 
     private static List<String> getAllDisks() {
-        DiskProperties zk = BaseResource.getZooKeeper();
-
+        DiskProperties zk = new DiskProperties();
         return zk.getDisks();
     }
 
@@ -224,7 +216,7 @@ public final class DiskUtils {
             return RootApplication.CONFIGURATION.STORAGE_LOCATION
                     .getAbsolutePath();
         } else {
-            return RootApplication.CONFIGURATION.LVM_GROUPE_PATH;
+            return RootApplication.CONFIGURATION.LVM_GROUP_PATH;
         }
     }
 }

@@ -37,7 +37,7 @@ import freemarker.template.Configuration;
 
 public class BaseResource extends ServerResource {
 
-    protected static final DiskProperties zk = new DiskProperties();
+    protected final DiskProperties zk;
     protected static final Messages MESSAGES = new Messages();
 
     public enum DiskVisibility {
@@ -48,6 +48,11 @@ public class BaseResource extends ServerResource {
         public static DiskVisibility valueOfIgnoreCase(String value) {
             return valueOf(value.toUpperCase());
         }
+    }
+
+    public BaseResource() {
+        super();
+        zk = new DiskProperties();
     }
 
     private Configuration getFreeMarkerConfiguration() {
@@ -173,10 +178,6 @@ public class BaseResource extends ServerResource {
 
     protected Properties getDiskProperties(String uuid) {
         return zk.getDiskProperties(getDiskZkPath(uuid));
-    }
-
-    public static DiskProperties getZooKeeper() {
-        return zk;
     }
 
     public Configuration extractFmConfiguration() {

@@ -20,6 +20,7 @@
 package eu.stratuslab.storage.disk.utils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Enumeration;
 import java.util.LinkedList;
@@ -53,13 +54,7 @@ public class DiskProperties {
         connect(RootApplication.CONFIGURATION.ZK_ADDRESSES, 3000);
     }
 
-    public void connect(String addresses, int timeout) {
-        if (zk != null) {
-            try {
-                zk.close();
-            } catch (InterruptedException e) {
-            }
-        }
+    private void connect(String addresses, int timeout) {
 
         try {
             zk = new ZooKeeper(addresses, timeout, null);
@@ -276,7 +271,7 @@ public class DiskProperties {
             return false;
         }
 
-        List<String> diskUuids = getAttachedDisk(node, vmId);
+        List<String> diskUuids = getAttachedDisks(node, vmId);
 
         deleteRecursively(vmUsagePath);
 
@@ -287,14 +282,18 @@ public class DiskProperties {
         return true;
     }
 
-    public List<String> getAttachedDisk(String node, String vmId) {
+    public List<String> getAttachedDisks(String node, String vmId) {
+
+        List<String> disks = Collections.emptyList();
+
+        String nodeUsagePath = getNodeUsagePath(node);
         String vmUsagePath = getVmUsagePath(node, vmId);
 
-        if (!pathExists(getNodeUsagePath(node)) || !pathExists(vmUsagePath)) {
-            return null;
+        if (pathExists(nodeUsagePath) && pathExists(vmUsagePath)) {
+            disks = getChildren(vmUsagePath);
         }
 
-        return getChildren(vmUsagePath);
+        return disks;
     }
 
     public String diskTarget(String node, String vmId, String diskUuid) {
@@ -377,7 +376,4 @@ public class DiskProperties {
         return children;
     }
 
-    public ZooKeeper getZooKeeper() {
-        return zk;
-    }
 }

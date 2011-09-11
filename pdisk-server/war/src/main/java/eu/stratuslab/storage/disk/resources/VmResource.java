@@ -90,12 +90,7 @@ public class VmResource extends BaseResource {
     }
 
     private void detachAllDisks() {
-        List<String> diskUuids = zk.getAttachedDisk(node, vmId);
-
-        if (diskUuids == null) {
-            throw new ResourceException(Status.CLIENT_ERROR_CONFLICT,
-                    "VM don't have disk attached");
-        }
+        List<String> diskUuids = zk.getAttachedDisks(node, vmId);
 
         for (String uuid : diskUuids) {
             Properties diskProperties = getDiskProperties(uuid);

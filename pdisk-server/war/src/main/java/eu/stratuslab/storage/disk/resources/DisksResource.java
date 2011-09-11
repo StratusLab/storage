@@ -135,7 +135,6 @@ public class DisksResource extends BaseResource {
     public Properties getDiskProperties(Representation entity) {
 
         MiscUtils.checkForNullEntity(entity);
-        MiscUtils.checkForWebForm(entity.getMediaType());
 
         Properties diskProperties = processWebForm();
         List<String> errors = validateDiskProperties(diskProperties);

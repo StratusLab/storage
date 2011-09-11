@@ -108,7 +108,7 @@ public class MountsResource extends BaseResource {
         }
 
         zk.addDiskUser(node, vmId, diskId, target);
-        List<String> diskUuids = zk.getAttachedDisk(node, vmId);
+        List<String> diskUuids = zk.getAttachedDisks(node, vmId);
 
         if (!target.equals(DiskProperties.STATIC_DISK_TARGET)) {
             DiskUtils.attachHotplugDisk(serviceName(), servicePort(), node,
@@ -121,7 +121,6 @@ public class MountsResource extends BaseResource {
     private void extractNodeAndVmId(Representation entity) {
 
         MiscUtils.checkForNullEntity(entity);
-        MiscUtils.checkForWebForm(entity.getMediaType());
 
         Form form = new Form(entity);
 

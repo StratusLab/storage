@@ -5,7 +5,11 @@ import java.io.IOException;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
-public class ProcessUtils {
+public final class ProcessUtils {
+
+    private ProcessUtils() {
+
+    }
 
     public static void execute(ProcessBuilder pb, String errorMsg) {
         int returnCode = 1;
@@ -13,16 +17,7 @@ public class ProcessUtils {
 
         try {
             process = pb.start();
-
-            boolean blocked = true;
-            while (blocked) {
-                try {
-                    process.waitFor();
-                    blocked = false;
-                } catch (InterruptedException consumed) {
-                    // just continue to wait
-                }
-            }
+            processWait(process);
 
             returnCode = process.exitValue();
         } catch (IOException e) {
@@ -39,6 +34,19 @@ public class ProcessUtils {
                             + errorMsg + ".\nReturn code was: "
                             + String.valueOf(returnCode));
         }
+    }
+
+    private static void processWait(Process process) {
+        boolean blocked = true;
+        while (blocked) {
+            try {
+                process.waitFor();
+                blocked = false;
+            } catch (InterruptedException consumed) {
+                // just continue to wait
+            }
+        }
+
     }
 
 }

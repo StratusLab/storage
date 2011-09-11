@@ -15,7 +15,11 @@ import java.io.Writer;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
-public class FileUtils {
+public final class FileUtils {
+
+    private FileUtils() {
+
+    }
 
     public static Boolean isExecutable(String filename) {
         File exec = new File(filename);
