@@ -170,10 +170,9 @@ public class DiskProperties {
             String key = (String) propertiesEnum.nextElement();
             String content = properties.getProperty(key);
 
-            if (key == DiskProperties.UUID_KEY)
-                continue;
-
-            createNode(diskRoot + "/" + key, content);
+            if (key != DiskProperties.UUID_KEY) {
+                createNode(diskRoot + "/" + key, content);
+            }
         }
     }
 

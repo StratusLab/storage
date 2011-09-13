@@ -59,6 +59,41 @@ public class DisksResource extends BaseResource {
 
     }
 
+    @Post("form:html")
+    public Representation createDiskRequestFromHtml(Representation entity) {
+
+        Properties diskProperties = getDiskProperties(entity);
+
+        createDisk(diskProperties);
+
+        String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
+
+        MESSAGES.push("Your disk has been created successfully.");
+        redirectSeeOther(getBaseUrl() + "/disks/" + uuid + "/");
+
+        return null;
+    }
+
+    @Post("form:json")
+    public Representation createDiskRequestFromJson(Representation entity) {
+
+        Properties diskProperties = getDiskProperties(entity);
+
+        createDisk(diskProperties);
+
+        String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
+
+        setStatus(Status.SUCCESS_CREATED);
+
+        Map<String, Object> info = new HashMap<String, Object>();
+        info.put("key", "uuid");
+        info.put("value", uuid);
+
+        return createTemplateRepresentation("json/keyvalue.ftl", info,
+                APPLICATION_JSON);
+
+    }
+
     private Map<String, Object> listDisks() {
         Map<String, Object> info = createInfoStructure("Disks list");
 
@@ -97,42 +132,7 @@ public class DisksResource extends BaseResource {
         info.put("visibilities", visibilities);
     }
 
-    @Post("form:html")
-    public Representation createDiskRequestFromHtml(Representation entity) {
-
-        Properties diskProperties = getDiskProperties(entity);
-
-        createDisk(diskProperties);
-
-        String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
-
-        MESSAGES.push("Your disk has been created successfully.");
-        redirectSeeOther(getBaseUrl() + "/disks/" + uuid + "/");
-
-        return null;
-    }
-
-    @Post("form:json")
-    public Representation createDiskRequestFromJson(Representation entity) {
-
-        Properties diskProperties = getDiskProperties(entity);
-
-        createDisk(diskProperties);
-
-        String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
-
-        setStatus(Status.SUCCESS_CREATED);
-
-        Map<String, Object> info = new HashMap<String, Object>();
-        info.put("key", "uuid");
-        info.put("value", uuid);
-
-        return createTemplateRepresentation("json/keyvalue.ftl", info,
-                APPLICATION_JSON);
-
-    }
-
-    public Properties getDiskProperties(Representation entity) {
+    private Properties getDiskProperties(Representation entity) {
 
         MiscUtils.checkForNullEntity(entity);
 
@@ -218,11 +218,14 @@ public class DisksResource extends BaseResource {
     }
 
     private void createDisk(Properties properties) {
-        String diskRoot = getDiskZkPath(properties.get(DiskProperties.UUID_KEY)
-                .toString());
-
-        zk.saveDiskProperties(diskRoot, properties);
+        registerDisk(properties);
         DiskUtils.createDisk(properties);
+    }
+
+    private void registerDisk(Properties properties) {
+        String uuid = properties.get(DiskProperties.UUID_KEY).toString();
+        String diskRoot = getDiskZkPath(uuid);
+        zk.saveDiskProperties(diskRoot, properties);
     }
 
 }
