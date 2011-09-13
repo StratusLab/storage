@@ -38,8 +38,6 @@ import eu.stratuslab.storage.disk.resources.DisksResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
 import eu.stratuslab.storage.disk.resources.MountResource;
 import eu.stratuslab.storage.disk.resources.MountsResource;
-import eu.stratuslab.storage.disk.resources.VmResource;
-import eu.stratuslab.storage.disk.resources.VmsResource;
 import eu.stratuslab.storage.disk.utils.DumpVerifier;
 import freemarker.template.Configuration;
 
@@ -86,11 +84,11 @@ public class RootApplication extends Application {
         router.attach("/disks/", DisksResource.class);
         router.attach("/disks", DisksResource.class);
 
-        router.attach("/vms/{mountid}/", VmResource.class);
-        router.attach("/vms/{mountid}", VmResource.class);
+        // router.attach("/vms/{mountid}/", VmResource.class);
+        // router.attach("/vms/{mountid}", VmResource.class);
 
-        router.attach("/vms/", VmsResource.class);
-        router.attach("/vms", VmsResource.class);
+        // router.attach("/vms/", VmsResource.class);
+        // router.attach("/vms", VmsResource.class);
 
         router.attach("/", HomeResource.class);
 

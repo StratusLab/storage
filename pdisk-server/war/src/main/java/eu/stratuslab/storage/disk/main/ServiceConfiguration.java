@@ -244,7 +244,7 @@ public class ServiceConfiguration {
 
         ProcessUtils
                 .execute(pb,
-                        "LVM Group does not exists. Please create it and restart pdisk service");
+                        "LVM Group does not exist. Please create it and restart pdisk service");
     }
 
 }

@@ -1,11 +1,14 @@
 package eu.stratuslab.storage.disk.utils;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
 public final class ProcessUtils {
+
+    private static final Logger LOGGER = Logger.getLogger("org.restlet");
 
     private ProcessUtils() {
 
@@ -21,18 +24,26 @@ public final class ProcessUtils {
 
             returnCode = process.exitValue();
         } catch (IOException e) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "An error occurred while executing command: "
-                            + MiscUtils.join(pb.command(), " ") + ".\n"
-                            + errorMsg + ".");
+
+            String msg = "An error occurred while executing command: "
+                    + MiscUtils.join(pb.command(), " ") + ".\n" + errorMsg
+                    + ".";
+
+            LOGGER.severe(msg);
+            LOGGER.severe(e.getMessage());
+
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL, msg);
         }
 
         if (returnCode != 0) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "An error occurred while executing command: "
-                            + MiscUtils.join(pb.command(), " ") + ".\n"
-                            + errorMsg + ".\nReturn code was: "
-                            + String.valueOf(returnCode));
+
+            String msg = "An error occurred while executing command: "
+                    + MiscUtils.join(pb.command(), " ") + ".\n" + errorMsg
+                    + ".\nReturn code was: " + String.valueOf(returnCode);
+
+            LOGGER.severe(msg);
+
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL, msg);
         }
     }
 

@@ -7,10 +7,8 @@ allowing users to create disks of a given size, to attach them to virtual
 machines (either at launch or dynamically), and to destroy the disks.
 </p>
 
-<h3>Get Started:</h3>
-<ul>
-    <li><a href="${baseurl}/disks/">Disks</a>: Create new disks and list existing ones</li>
-    <li><a href="${baseurl}/vms/">VMs</a>: List virtual machines using disks</li>
-</ul>
+<p>
+Get started: <a href="${baseurl}/disks/">: create new disks and list existing ones</a>.
+</p>
 
 <#include "/html/footer.ftl">

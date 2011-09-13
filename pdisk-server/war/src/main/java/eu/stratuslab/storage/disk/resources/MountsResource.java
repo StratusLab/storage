@@ -42,6 +42,8 @@ public class MountsResource extends BaseResource {
     @Get("html")
     public Representation getAsHtml() {
 
+        getLogger().info("DiskResource getAsHtml: " + diskId);
+
         Map<String, Object> info = getMountProperties();
         return createTemplateRepresentation("html/mounts.ftl", info, TEXT_HTML);
     }
@@ -49,25 +51,36 @@ public class MountsResource extends BaseResource {
     @Get("json")
     public Representation getAsJson() {
 
+        getLogger().info("DiskResource getAsJson: " + diskId);
+
         Map<String, Object> info = getMountProperties();
         return createTemplateRepresentation("json/mounts.ftl", info,
                 APPLICATION_JSON);
     }
 
     @Post("form:json")
-    public Representation actionDispatcher(Representation entity) {
+    public Representation mountDiskAsJson(Representation entity) {
 
         extractNodeAndVmId(entity);
 
         if (node != null || vmId != null) {
+
+            getLogger().info(
+                    "DiskResource mountDiskAsJson (dynamic): " + diskId + ", "
+                            + node + ", " + vmId);
+
             return attachDisk(zk.nextHotpluggedDiskTarget(node, vmId));
         } else {
+
+            getLogger()
+                    .info("DiskResource mountDiskAsJson (static): " + diskId);
+
             return attachDisk(DiskProperties.STATIC_DISK_TARGET);
         }
 
     }
 
-    public Map<String, Object> getMountProperties() {
+    private Map<String, Object> getMountProperties() {
         Map<String, Object> info = this.createInfoStructure("mounts");
         return info;
     }

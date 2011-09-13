@@ -41,6 +41,8 @@ public class DiskResource extends BaseResource {
     @Get("html")
     public Representation getAsHtml() {
 
+        getLogger().info("DiskResource getAsHtml: " + getDiskId());
+
         Map<String, Object> info = listDiskProperties();
 
         addDiskUserHeader();
@@ -51,6 +53,8 @@ public class DiskResource extends BaseResource {
     @Get("json")
     public Representation getAsJson() {
 
+        getLogger().info("DiskResource getAsJson: " + getDiskId());
+
         Map<String, Object> info = listDiskProperties();
 
         addDiskUserHeader();
@@ -59,7 +63,37 @@ public class DiskResource extends BaseResource {
                 APPLICATION_JSON);
     }
 
-    public Map<String, Object> listDiskProperties() {
+    @Delete("html")
+    public Representation deleteDiskAsHtml() {
+
+        getLogger().info("DiskResource deleteDiskAsHtml: " + getDiskId());
+
+        processDeleteDiskRequest();
+
+        MESSAGES.push("Your disk have been deleted successfully");
+        redirectSeeOther(getBaseUrl() + "/disks/");
+
+        Map<String, Object> info = createInfoStructure("redirect");
+        return createTemplateRepresentation("html/redirect.ftl", info,
+                TEXT_HTML);
+    }
+
+    @Delete("json")
+    public Representation deleteDiskAsJson() {
+
+        getLogger().info("DiskResource deleteDiskAsJson: " + getDiskId());
+
+        processDeleteDiskRequest();
+
+        Map<String, Object> info = new HashMap<String, Object>();
+        info.put("key", "uuid");
+        info.put("value", getDiskId());
+
+        return createTemplateRepresentation("json/keyvalue.ftl", info,
+                APPLICATION_JSON);
+    }
+
+    private Map<String, Object> listDiskProperties() {
         Map<String, Object> infos = createInfoStructure("Disk info");
 
         if (!diskExists(getDiskId())) {
@@ -103,33 +137,7 @@ public class DiskResource extends BaseResource {
                 String.valueOf(zk.remainingFreeUser(getDiskZkPath())));
     }
 
-    @Delete("html")
-    public Representation deleteDiskAsHtml() {
-
-        processDeleteDiskRequest();
-
-        MESSAGES.push("Your disk have been deleted successfully");
-        redirectSeeOther(getBaseUrl() + "/disks/");
-
-        Map<String, Object> info = createInfoStructure("redirect");
-        return createTemplateRepresentation("html/redirect.ftl", info,
-                TEXT_HTML);
-    }
-
-    @Delete("json")
-    public Representation deleteDiskAsJson() {
-
-        processDeleteDiskRequest();
-
-        Map<String, Object> info = new HashMap<String, Object>();
-        info.put("key", "uuid");
-        info.put("value", getDiskId());
-
-        return createTemplateRepresentation("json/keyvalue.ftl", info,
-                APPLICATION_JSON);
-    }
-
-    public void processDeleteDiskRequest() {
+    private void processDeleteDiskRequest() {
 
         String diskId = getDiskId();
 

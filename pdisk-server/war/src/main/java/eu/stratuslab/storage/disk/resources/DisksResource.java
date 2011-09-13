@@ -45,6 +45,9 @@ public class DisksResource extends BaseResource {
 
     @Get("html")
     public Representation getAsHtml() {
+
+        getLogger().info("DisksResource getAsHtml");
+
         Map<String, Object> info = listDisks();
 
         return createTemplateRepresentation("html/disks.ftl", info, TEXT_HTML);
@@ -52,6 +55,9 @@ public class DisksResource extends BaseResource {
 
     @Get("json")
     public Representation getAsJson() {
+
+        getLogger().info("DisksResource getAsJson");
+
         Map<String, Object> info = listDisks();
 
         return createTemplateRepresentation("json/disks.ftl", info,
@@ -61,6 +67,8 @@ public class DisksResource extends BaseResource {
 
     @Post("form:html")
     public Representation createDiskRequestFromHtml(Representation entity) {
+
+        getLogger().info("DisksResource createDiskRequestFromHtml");
 
         Properties diskProperties = getDiskProperties(entity);
 
@@ -76,6 +84,8 @@ public class DisksResource extends BaseResource {
 
     @Post("form:json")
     public Representation createDiskRequestFromJson(Representation entity) {
+
+        getLogger().info("DisksResource createDiskRequestFromJson");
 
         Properties diskProperties = getDiskProperties(entity);
 

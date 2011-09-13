@@ -65,12 +65,20 @@ public class MountResource extends BaseResource {
     @Get("html")
     public Representation getAsHtml() {
 
+        getLogger().info(
+                "DiskResource getAsHtml: " + diskId + ", " + mountId + ", "
+                        + node + ", " + vmId);
+
         Map<String, Object> info = getMountProperties();
         return createTemplateRepresentation("html/mount.ftl", info, TEXT_HTML);
     }
 
     @Get("json")
     public Representation getAsJson() {
+
+        getLogger().info(
+                "DiskResource getAsJson: " + diskId + ", " + mountId + ", "
+                        + node + ", " + vmId);
 
         Map<String, Object> info = getMountProperties();
         return createTemplateRepresentation("json/mount.ftl", info,
@@ -79,6 +87,10 @@ public class MountResource extends BaseResource {
 
     @Delete("html")
     public Representation detachDiskAsHtml(Representation entity) {
+
+        getLogger().info(
+                "DiskResource detachDiskAsHtml: " + diskId + ", " + mountId
+                        + ", " + node + ", " + vmId);
 
         detachHotPluggedDisk();
 
@@ -93,6 +105,10 @@ public class MountResource extends BaseResource {
     @Delete("json")
     public Representation detachDiskAsJson(Representation entity) {
 
+        getLogger().info(
+                "DiskResource detachDiskAsJson: " + diskId + ", " + mountId
+                        + ", " + node + ", " + vmId);
+
         detachHotPluggedDisk();
 
         Map<String, Object> info = getMountProperties();
@@ -100,7 +116,7 @@ public class MountResource extends BaseResource {
                 APPLICATION_JSON);
     }
 
-    public Map<String, Object> getMountProperties() {
+    private Map<String, Object> getMountProperties() {
 
         Map<String, Object> info = this.createInfoStructure("mount");
         info.put("diskId", diskId);
