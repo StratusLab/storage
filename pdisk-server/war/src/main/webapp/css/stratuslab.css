@@ -1,115 +1,23 @@
+
 body {
-    margin: 1em auto;
-    font-family:"Lucida Grande","bitstream vera sans","trebuchet ms",sans-serif,verdana;
-    width: 720px;
+  margin: 10px 95px;
+  font-family:"Lucida Grande","bitstream vera sans","trebuchet ms",sans-serif,verdana;
+
+  background-image: url('stratuslab-logo-s-vertical.png');
+  background-repeat: no-repeat;
+  background-position: -25px 0px;
+  
+  width: 500px;
 }
 
-header {
-    background: url('stratuslab-logo.png') no-repeat top right;
-    padding: 1em 0;
-    margin: 0;
+.breadcrumbs {
+  background-color: #f0f0f0;
 }
 
-    header h1 {
-        font-size: 2.3em;
-        font-weight: 600;
-        margin: 0;
-        padding: 0;
-        color: #333;
-    }
-
-    header p {
-        color: #333;
-        margin: 0;
-        padding: 0;
-        letter-spacing: 0.1em;
-    }
-
-    header nav ul {
-        margin: 0;
-        padding: 0;
-    }
-
-    header nav li {
-        display: inline;
-        margin: 0.1em 0.2em;
-        color: #222;
-    }
-
-    header nav li a {
-        color: black;
-        text-decoration: none;
-    }
-
-    header nav li a:hover {
-        text-decoration: underline;        
-        color: #143262;
-    }
-    
-    header nav li span.username {
-        color: #555;
-    }
-
-#content {
-    margin: 2em 0;
+.breadcrumbs a {
+  text-decoration: none;
+  color: black;
 }
-
-    #content a {
-        color: #143262;
-    }
-
-    #content h1 {
-        border-bottom: 1px solid #eee;
-        padding: 0;
-        margin: 1em 0;
-        font-weight: 600;
-        font-variant: small-caps;
-        color: #143262;
-        letter-spacing: 0.1em;
-    }
-
-    #content form label {
-        width: 200px;
-        display: block;
-    }
-
-    #content form input {
-        border: 1px solid #222;
-        padding: 0.1em;
-    }
-
-    #content form input[type=submit] {
-        padding: 0.2em 1.4em;
-        background: #F0F0F0;
-    }
-
-    #content dl dt {
-        font-weight: bold;
-    }
-
-    #content dl dd {
-        margin: 0 0 1em 0.5em;
-    }
-
-    #content .right {
-        text-align: right;
-    }
-
-    #content .left {
-        text-align: left;
-    }
-
-.error, .alert, .notice, .success, .info {padding:0.8em;margin-bottom:1em;border:2px solid #ddd;}
-.error, .alert {background:#fbe3e4;color:#8a1f11;border-color:#fbc2c4;}
-.notice {background:#fff6bf;color:#514721;border-color:#ffd324;}
-.success {background:#e6efc2;color:#264409;border-color:#c6d880;}
-.info {background:#d5edf8;color:#205791;border-color:#92cae4;}
-.error a, .alert a {color:#8a1f11;}
-.notice a {color:#514721;}
-.success a {color:#264409;}
-.info a {color:#205791;}
-
-.error li { margin-left: 1em }
 
 /* get rid of those system borders being generated for A tags */
 a:active {
@@ -192,12 +100,4 @@ tr.even {
 td.details {
         background-color: #d1cfd0;
         border: 2px solid #A19B9E;
-}
-
-footer {
-    clear: both;
-    margin: 3em 0 1em 0;
-    padding: 0;
-    color: #333;
-    text-align: right;
 }
