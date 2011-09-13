@@ -123,6 +123,7 @@ public class MountResource extends BaseResource {
         info.put("mountId", mountId);
         info.put("vmId", vmId);
         info.put("node", node);
+        info.put("url", getCurrentUrl());
         return info;
     }
 
