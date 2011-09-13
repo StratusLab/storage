@@ -345,7 +345,7 @@ public class DiskProperties implements Closeable {
             }
         }
 
-        return target + String.valueOf(hotplugged);
+        return target + hotplugged;
     }
 
     private void setDiskUserCounter(String diskUuid, int operation) {

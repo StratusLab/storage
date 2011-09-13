@@ -65,15 +65,19 @@ public class MountsResource extends BaseResource {
 
         if (node != null || vmId != null) {
 
+            String target = zk.nextHotpluggedDiskTarget(node, vmId);
+
             getLogger().info(
                     "DiskResource mountDiskAsJson (dynamic): " + diskId + ", "
-                            + node + ", " + vmId);
+                            + node + ", " + vmId + ", " + target);
 
-            return attachDisk(zk.nextHotpluggedDiskTarget(node, vmId));
+            return attachDisk(target);
+
         } else {
 
-            getLogger()
-                    .info("DiskResource mountDiskAsJson (static): " + diskId);
+            getLogger().info(
+                    "DiskResource mountDiskAsJson (static): " + diskId + ", "
+                            + DiskProperties.STATIC_DISK_TARGET);
 
             return attachDisk(DiskProperties.STATIC_DISK_TARGET);
         }
@@ -128,7 +132,7 @@ public class MountsResource extends BaseResource {
                     vmId, diskId, target);
         }
 
-        return actionResponse(diskUuids, null);
+        return actionResponse(diskUuids, target);
     }
 
     private void extractNodeAndVmId(Representation entity) {
