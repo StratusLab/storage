@@ -19,6 +19,7 @@
  */
 package eu.stratuslab.storage.disk.utils;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
@@ -37,7 +38,7 @@ import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
 
-public class DiskProperties {
+public class DiskProperties implements Closeable {
     private ZooKeeper zk = null;
 
     // Property keys
@@ -52,6 +53,29 @@ public class DiskProperties {
 
     public DiskProperties() {
         connect(RootApplication.CONFIGURATION.ZK_ADDRESSES, 3000);
+    }
+
+    public void close() {
+        disconnect();
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        close();
+        super.finalize();
+    }
+
+    private void disconnect() {
+        if (zk != null) {
+            boolean closed = false;
+            while (!closed) {
+                try {
+                    zk.close();
+                    closed = true;
+                } catch (InterruptedException consumed) {
+                }
+            }
+        }
     }
 
     private void connect(String addresses, int timeout) {

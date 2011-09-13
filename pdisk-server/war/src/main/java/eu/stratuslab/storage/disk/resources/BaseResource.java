@@ -55,6 +55,14 @@ public class BaseResource extends ServerResource {
         zk = new DiskProperties();
     }
 
+    @Override
+    protected void doRelease() {
+        if (zk != null) {
+            zk.close();
+        }
+        super.doRelease();
+    }
+
     private Configuration getFreeMarkerConfiguration() {
         return ((RootApplication) getApplication())
                 .getFreeMarkerConfiguration();
