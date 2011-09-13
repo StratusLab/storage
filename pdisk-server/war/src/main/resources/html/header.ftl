@@ -21,7 +21,7 @@
      </div>
   </div>
 
-  <#include "html/breadcrumbs.ftl">
+  <#include "breadcrumbs.ftl">
 
 <div id="content">
 
