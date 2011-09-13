@@ -1,6 +1,7 @@
 {
-  "diskId" : diskId, 
-  "mountId" : mountId, 
-  "vmId" : vmId, 
-  "node" : node
+  "diskId" : ${diskId}, 
+  "mountId" : ${mountId}, 
+  "vmId" : ${vmId}, 
+  "node" : ${node},
+  "target" : ${target}
 }
