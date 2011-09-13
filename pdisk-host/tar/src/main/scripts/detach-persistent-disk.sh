@@ -24,7 +24,7 @@ fi
 
 deregister_disks() {
     local NODE=`hostname`
-    local DEREGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} --data method=delete https://${PORTAL}:${PORTAL_PORT}/disks/${DISK_UUID}/mounts/${VM_ID}-${NODE}"
+    local DEREGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} -X DELETE https://${PORTAL}:${PORTAL_PORT}/disks/${DISK_UUID}/mounts/${VM_ID}-${NODE}"
     echo "$DEREGISTER_CMD"
     $DEREGISTER_CMD
 }

@@ -10,4 +10,8 @@
 </ul>
 </p>
 
+<form action="${url}?method=delete" enctype="application/x-www-form-urlencoded" method="POST">
+  <p><input type="submit" value="Unmount"></p>
+</form>
+
 <#include "/html/footer.ftl">

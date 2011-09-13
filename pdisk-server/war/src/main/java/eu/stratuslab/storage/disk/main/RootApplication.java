@@ -35,7 +35,6 @@ import org.restlet.security.ChallengeAuthenticator;
 
 import eu.stratuslab.storage.disk.resources.DiskResource;
 import eu.stratuslab.storage.disk.resources.DisksResource;
-import eu.stratuslab.storage.disk.resources.ForceTrailingSlashResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
 import eu.stratuslab.storage.disk.resources.MountResource;
 import eu.stratuslab.storage.disk.resources.MountsResource;
@@ -76,23 +75,22 @@ public class RootApplication extends Application {
                 freeMarkerConfiguration);
 
         router.attach("/disks/{uuid}/mounts/{mountid}/", MountResource.class);
-        router.attach("/disks/{uuid}/mounts/{mountid}",
-                ForceTrailingSlashResource.class);
+        router.attach("/disks/{uuid}/mounts/{mountid}", MountResource.class);
 
         router.attach("/disks/{uuid}/mounts/", MountsResource.class);
-        router.attach("/disks/{uuid}/mounts", ForceTrailingSlashResource.class);
+        router.attach("/disks/{uuid}/mounts", MountsResource.class);
 
         router.attach("/disks/{uuid}/", DiskResource.class);
-        router.attach("/disks/{uuid}", ForceTrailingSlashResource.class);
+        router.attach("/disks/{uuid}", DiskResource.class);
 
         router.attach("/disks/", DisksResource.class);
-        router.attach("/disks", ForceTrailingSlashResource.class);
+        router.attach("/disks", DisksResource.class);
 
         router.attach("/vms/{mountid}/", VmResource.class);
-        router.attach("/vms/{mountid}", ForceTrailingSlashResource.class);
+        router.attach("/vms/{mountid}", VmResource.class);
 
         router.attach("/vms/", VmsResource.class);
-        router.attach("/vms", ForceTrailingSlashResource.class);
+        router.attach("/vms", VmsResource.class);
 
         router.attach("/", HomeResource.class);
 
