@@ -109,9 +109,10 @@ public class MountResource extends BaseResource {
                 "DiskResource detachDiskAsJson: " + diskId + ", " + mountId
                         + ", " + node + ", " + vmId);
 
-        detachHotPluggedDisk();
+        String diskTarget = detachHotPluggedDisk();
 
         Map<String, Object> info = getMountProperties();
+        info.put("target", diskTarget);
         return createTemplateRepresentation("json/mount.ftl", info,
                 APPLICATION_JSON);
     }
@@ -127,7 +128,7 @@ public class MountResource extends BaseResource {
         return info;
     }
 
-    private void detachHotPluggedDisk() {
+    private String detachHotPluggedDisk() {
 
         Properties diskProperties = getDiskProperties(diskId);
 
@@ -150,6 +151,8 @@ public class MountResource extends BaseResource {
             DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node,
                     vmId, diskId, diskTarget);
         }
+
+        return diskTarget;
 
     }
 
