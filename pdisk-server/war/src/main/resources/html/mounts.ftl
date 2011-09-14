@@ -16,7 +16,7 @@
   </ul>
 </#if>
 
-<form action="${baseurl}/mounts/" enctype="application/x-www-form-urlencoded" method="POST">
+<form action="${baseurl}/disks/${uuid}/mounts/" enctype="application/x-www-form-urlencoded" method="POST">
   <table>
     <thead>
       <tr>

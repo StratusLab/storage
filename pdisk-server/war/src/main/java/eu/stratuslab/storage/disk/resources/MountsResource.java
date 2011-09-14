@@ -89,6 +89,7 @@ public class MountsResource extends BaseResource {
 
     private Map<String, Object> getMountProperties(String uuid) {
         Map<String, Object> info = this.createInfoStructure("mounts");
+        info.put("uuid", diskId);
         info.put("mounts", zk.getDiskMounts(uuid));
         return info;
     }

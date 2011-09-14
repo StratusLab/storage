@@ -8,7 +8,7 @@ machines (either at launch or dynamically), and to destroy the disks.
 </p>
 
 <p>
-Get started: <a href="${baseurl}/disks/">: create new disks and list existing ones</a>.
+Get started by <a href="${baseurl}/disks/"> creating new disks and listing existing ones</a>.
 </p>
 
 <#include "/html/footer.ftl">
