@@ -119,7 +119,8 @@ public class MountResource extends BaseResource {
 
     private Map<String, Object> getMountProperties() {
 
-        Map<String, Object> info = this.createInfoStructure("mount");
+        Map<String, Object> info = this
+                .createInfoStructure("Mount Information");
         info.put("diskId", diskId);
         info.put("mountId", mountId);
         info.put("vmId", vmId);

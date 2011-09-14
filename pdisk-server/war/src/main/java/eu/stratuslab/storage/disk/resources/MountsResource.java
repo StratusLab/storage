@@ -61,6 +61,36 @@ public class MountsResource extends BaseResource {
                 APPLICATION_JSON);
     }
 
+    @Post("form:html")
+    public Representation createDiskRequestFromHtml(Representation entity) {
+
+        extractNodeAndVmId(entity);
+
+        getLogger().info("DisksResource createDiskRequestFromHtml");
+
+        if (node != null || vmId != null) {
+
+            String target = zk.nextDiskDevice(node, vmId, diskId, getLogger());
+
+            getLogger().info(
+                    "DiskResource mountDiskAsHtml (dynamic): " + diskId + ", "
+                            + node + ", " + vmId + ", " + target);
+
+            // Ignoring the return value.
+            attachDisk(target);
+
+        } else {
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "vmId and node must be defined");
+        }
+
+        MESSAGES.push("Your disk has been mounted successfully.");
+        redirectSeeOther(getBaseUrl() + "/disks/" + diskId + "/mounts/" + vmId
+                + "-" + node + "/");
+
+        return null;
+    }
+
     @Post("form:json")
     public Representation mountDiskAsJson(Representation entity) {
 
@@ -68,7 +98,7 @@ public class MountsResource extends BaseResource {
 
         if (node != null || vmId != null) {
 
-            String target = zk.nextHotpluggedDiskTarget(node, vmId, diskId);
+            String target = zk.nextDiskDevice(node, vmId, diskId, getLogger());
 
             getLogger().info(
                     "DiskResource mountDiskAsJson (dynamic): " + diskId + ", "
@@ -88,7 +118,8 @@ public class MountsResource extends BaseResource {
     }
 
     private Map<String, Object> getMountProperties(String uuid) {
-        Map<String, Object> info = this.createInfoStructure("mounts");
+        Map<String, Object> info = this
+                .createInfoStructure("Mount Information");
         info.put("uuid", diskId);
         info.put("mounts", zk.getDiskMounts(uuid));
         return info;
@@ -134,6 +165,7 @@ public class MountsResource extends BaseResource {
                         + target);
 
         zk.addDiskMount(node, vmId, diskId, target, getLogger());
+        zk.addDiskMountDevice(vmId, diskId, target, getLogger());
 
         List<String> diskIds = new LinkedList<String>();
         diskIds.add(diskId);

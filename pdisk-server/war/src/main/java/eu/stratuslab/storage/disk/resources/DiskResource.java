@@ -94,7 +94,7 @@ public class DiskResource extends BaseResource {
     }
 
     private Map<String, Object> listDiskProperties() {
-        Map<String, Object> infos = createInfoStructure("Disk info");
+        Map<String, Object> infos = createInfoStructure("Disk Information");
 
         if (!zk.diskExists(getDiskId())) {
             throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("

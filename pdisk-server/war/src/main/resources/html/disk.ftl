@@ -4,20 +4,29 @@
 
 <#escape x as x?html>
   <#assign keys=properties?keys>
-  <dl>
+  <table>
     <#list keys as key>
-      <dt>${key?capitalize}:</dt>
-      <dd>${properties[key]}</dd>
+      <tr>
+        <td><strong>${key?capitalize}</strong></td>
+        <td>${properties[key]}</td>
+      </tr>
     </#list>
-  </dl>
-</#escape>
 
 <#if can_delete == true>
-  <form action="${url}?method=delete" 
-        enctype="application/x-www-form-urlencoded" 
-        method="POST">
-    <p><input type="submit" value="Delete"></p>
-  </form>
+  <tr>
+    <td>
+      <form action="${url}?method=delete" 
+            enctype="application/x-www-form-urlencoded" 
+            method="POST">
+        <input type="submit" value="Delete">
+      </form>
+    </td>
+    <td></td>
+  </tr>
 </#if>
+
+  </table>
+</#escape>
+
 
 <#include "/html/footer.ftl">

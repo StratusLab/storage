@@ -78,15 +78,6 @@
           </tr>
         </#list>
       </tbody>
-      <tfoot>
-        <tr>
-          <th>Tag</th>
-          <th>Size</th>
-          <th>Users</th>
-          <th>Owner</th>
-          <th>UUID</th>
-        </tr>
-      </tfoot>
     </table>
   </#escape>
 <#else> 

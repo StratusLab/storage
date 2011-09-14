@@ -271,6 +271,33 @@ public class DiskProperties implements Closeable {
                 + pathExists(mountPath) + ", " + target);
     }
 
+    public void addDiskMountDevice(String vmId, String uuid, String target,
+            Logger logger) {
+
+        String deviceMountPath = getMountDevicePath(vmId, uuid);
+
+        if (pathExists(deviceMountPath)) {
+            deleteNode(deviceMountPath);
+        }
+
+        logger.info("Creating node: " + deviceMountPath + " " + target);
+        createNode(deviceMountPath, target);
+    }
+
+    public String getDiskMountDevice(String vmId, String uuid, Logger logger) {
+
+        String value = "";
+
+        String deviceMountPath = getMountDevicePath(vmId, uuid);
+        if (pathExists(deviceMountPath)) {
+            value = getNode(deviceMountPath);
+        }
+
+        logger.info("Disk Mount Device: " + deviceMountPath + ", " + value);
+
+        return value;
+    }
+
     public void removeDiskMount(String node, String vmId, String uuid,
             Logger logger) {
 
@@ -296,6 +323,10 @@ public class DiskProperties implements Closeable {
 
     private String getMountPath(String node, String vmId, String uuid) {
         return String.format("%s/%s-%s", getDiskMountPath(uuid), vmId, node);
+    }
+
+    private String getMountDevicePath(String vmId, String uuid) {
+        return String.format("%s/%s", getDiskMountPath(uuid), vmId);
     }
 
     public int getNumberOfMounts(String uuid) {
@@ -346,22 +377,19 @@ public class DiskProperties implements Closeable {
         return getNode(mountPath);
     }
 
-    public String nextHotpluggedDiskTarget(String node, String vmId, String uuid) {
+    public String nextDiskDevice(String node, String vmId, String uuid,
+            Logger logger) {
 
         char newDriveLetter = 'a';
 
-        String mountPath = getMountPath(node, vmId, uuid);
+        String device = getDiskMountDevice(vmId, uuid, logger);
 
-        if (pathExists(mountPath)) {
+        if (!"".equals(device) && !STATIC_DISK_TARGET.equals(device)) {
+            newDriveLetter = device.charAt(device.length() - 1);
+            newDriveLetter++;
 
-            String device = getNode(mountPath);
-            if (!STATIC_DISK_TARGET.equals(device)) {
-                newDriveLetter = device.charAt(device.length() - 1);
-                newDriveLetter++;
-
-                if (newDriveLetter > 'z') {
-                    return DISK_TARGET_LIMIT;
-                }
+            if (newDriveLetter > 'z') {
+                return DISK_TARGET_LIMIT;
             }
         }
 
