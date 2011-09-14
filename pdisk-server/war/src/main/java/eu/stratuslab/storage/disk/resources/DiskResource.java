@@ -134,7 +134,7 @@ public class DiskResource extends BaseResource {
         diskUserHeaders.add("X-DiskUser-Limit",
                 String.valueOf(RootApplication.CONFIGURATION.USERS_PER_DISK));
         diskUserHeaders.add("X-DiskUser-Remaining",
-                String.valueOf(zk.remainingFreeUser(getDiskZkPath())));
+                String.valueOf(zk.remainingFreeUser(getDiskId())));
     }
 
     private void processDeleteDiskRequest() {
@@ -153,7 +153,7 @@ public class DiskResource extends BaseResource {
                     "insufficient rights to delete disk (" + diskId + ")");
         }
 
-        if (zk.getDiskUsersNo(getDiskZkPath()) > 0) {
+        if (zk.getNumberOfMounts(diskId) > 0) {
             throw new ResourceException(Status.CLIENT_ERROR_CONFLICT, "disk ("
                     + diskId + ") is in use and can't be deleted");
         }

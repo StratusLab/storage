@@ -43,6 +43,8 @@ public class DiskProperties implements Closeable {
 
     private ZooKeeper zk = null;
 
+    private static final String DEVICE_PREFIX = "vd";
+
     // Property keys
     public static final String UUID_KEY = "uuid";
     public static final String DISK_OWNER_KEY = "owner";
@@ -152,18 +154,6 @@ public class DiskProperties implements Closeable {
         }
     }
 
-    private void setNode(String root, String value) {
-        try {
-            zk.setData(root, value.getBytes(), -1);
-        } catch (KeeperException e) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "ZooKeeper error: " + e.getMessage());
-        } catch (InterruptedException e) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    e.getMessage());
-        }
-    }
-
     private void deleteNode(String root) {
         try {
             zk.delete(root, -1);
@@ -190,13 +180,13 @@ public class DiskProperties implements Closeable {
     public void saveDiskProperties(String diskRoot, Properties properties) {
         Enumeration<?> propertiesEnum = properties.propertyNames();
 
-        createNode(diskRoot, properties.get(DiskProperties.UUID_KEY).toString());
+        createNode(diskRoot, properties.get(UUID_KEY).toString());
 
         while (propertiesEnum.hasMoreElements()) {
             String key = (String) propertiesEnum.nextElement();
             String content = properties.getProperty(key);
 
-            if (key != DiskProperties.UUID_KEY) {
+            if (key != UUID_KEY) {
                 createNode(diskRoot + "/" + key, content);
             }
         }
@@ -231,121 +221,6 @@ public class DiskProperties implements Closeable {
         }
     }
 
-    public int getDiskUsersNo(String diskPath) {
-        Properties diskProp = getDiskProperties(diskPath);
-        int users = 0;
-
-        try {
-            users = Integer.parseInt(diskProp
-                    .get(DiskProperties.DISK_USERS_KEY).toString());
-        } catch (NumberFormatException e) {
-            // Assume there's not user
-        }
-
-        return users;
-    }
-
-    private String getNodeUsagePath(String node) {
-        return RootApplication.CONFIGURATION.ZK_USAGE_PATH + "/" + node;
-    }
-
-    private String getVmUsagePath(String node, String vmId) {
-        return getNodeUsagePath(node) + "/" + vmId;
-    }
-
-    private String getDiskUsagePath(String node, String vmId, String diskUuid) {
-        return getVmUsagePath(node, vmId) + "/" + diskUuid;
-    }
-
-    private String getDiskPath(String uuid) {
-        return RootApplication.CONFIGURATION.ZK_DISKS_PATH + "/" + uuid;
-    }
-
-    public void addDiskUser(String node, String vmId, String diskUuid,
-            String target, Logger logger) {
-
-        String nodeUsagePath = getNodeUsagePath(node);
-        if (!pathExists(nodeUsagePath)) {
-            String timestamp = MiscUtils.getTimestamp();
-            logger.info("Creating node: " + nodeUsagePath + " " + timestamp);
-            createNode(nodeUsagePath, timestamp);
-        }
-
-        String vmUsagePath = getVmUsagePath(node, vmId);
-        if (pathExists(vmUsagePath)) {
-            logger.info("Setting node: " + vmUsagePath + " " + target);
-            setNode(vmUsagePath, target);
-        } else {
-            logger.info("Creating node: " + vmUsagePath + " " + target);
-            createNode(vmUsagePath, target);
-        }
-
-        String diskUsagePath = getDiskUsagePath(node, vmId, diskUuid);
-        if (pathExists(diskUsagePath)) {
-            // Normally this should not happen.
-            logger.info("Setting node: " + diskUsagePath + " " + target);
-            setNode(diskUsagePath, target);
-        } else {
-            logger.info("Creating node: " + diskUsagePath + " " + target);
-            createNode(diskUsagePath, target);
-            setDiskUserCounter(diskUuid, +1);
-        }
-
-        logger.info("add disk usage path: " + diskUsagePath + ", "
-                + pathExists(diskUsagePath) + ", " + target);
-    }
-
-    public void removeDiskUser(String node, String vmId, String diskUuid,
-            Logger logger) {
-
-        String diskPath = getDiskUsagePath(node, vmId, diskUuid);
-
-        logger.info("delete disk usage path: " + diskPath + ", "
-                + pathExists(diskPath));
-
-        logger.info("Deleting node: " + diskPath);
-
-        try {
-            deleteNode(diskPath);
-        } catch (ResourceException e) {
-            logger.info("delete caught exception: " + e.getMessage());
-            throw e;
-        }
-        setDiskUserCounter(diskUuid, -1);
-    }
-
-    public Boolean removeDiskUser(String node, String vmId) {
-        String vmUsagePath = getVmUsagePath(node, vmId);
-
-        if (!pathExists(vmUsagePath)) {
-            return false;
-        }
-
-        List<String> diskUuids = getAttachedDisks(node, vmId);
-
-        deleteRecursively(vmUsagePath);
-
-        for (String disk : diskUuids) {
-            setDiskUserCounter(disk, -1);
-        }
-
-        return true;
-    }
-
-    public List<String> getAttachedDisks(String node, String vmId) {
-
-        List<String> disks = Collections.emptyList();
-
-        String nodeUsagePath = getNodeUsagePath(node);
-        String vmUsagePath = getVmUsagePath(node, vmId);
-
-        if (pathExists(nodeUsagePath) && pathExists(vmUsagePath)) {
-            disks = getChildren(vmUsagePath);
-        }
-
-        return disks;
-    }
-
     public void addDiskMount(String node, String vmId, String uuid,
             String target, Logger logger) {
 
@@ -368,7 +243,6 @@ public class DiskProperties implements Closeable {
 
         logger.info("Creating node: " + mountPath + ", " + target);
         createNode(mountPath, target);
-        setDiskUserCounter(uuid, +1);
 
         logger.info("add disk usage path: " + mountPath + ", "
                 + pathExists(mountPath) + ", " + target);
@@ -384,7 +258,6 @@ public class DiskProperties implements Closeable {
 
         if (pathExists(mountPath)) {
             deleteNode(mountPath);
-            setDiskUserCounter(uuid, -1);
         } else {
             String msg = String.format(
                     "disk %s is not mounted on VM %s on node %s", uuid, vmId,
@@ -402,58 +275,59 @@ public class DiskProperties implements Closeable {
         return String.format("%s/%s-%s", getDiskMountPath(uuid), vmId, node);
     }
 
+    public int getNumberOfMounts(String uuid) {
+        List<String> mounts = getDiskMounts(uuid);
+        return mounts.size();
+    }
+
     public List<String> getDiskMounts(String uuid) {
 
-        List<String> disks = Collections.emptyList();
+        List<String> mounts = Collections.emptyList();
 
         String diskMountPath = getDiskMountPath(uuid);
         if (pathExists(diskMountPath)) {
-            disks = getChildren(diskMountPath);
+            mounts = getChildren(diskMountPath);
         }
 
-        return disks;
+        return mounts;
     }
 
-    public String diskTarget(String node, String vmId, String diskUuid) {
-        String diskPath = getDiskUsagePath(node, vmId, diskUuid);
+    public String diskTarget(String node, String vmId, String uuid) {
 
-        if (!pathExists(diskPath)) {
+        String mountPath = getMountPath(node, vmId, uuid);
+
+        if (!pathExists(mountPath)) {
             return STATIC_DISK_TARGET;
         }
 
-        return getNode(diskPath);
+        return getNode(mountPath);
     }
 
-    public String nextHotpluggedDiskTarget(String node, String vmId) {
-        String target = "vd";
-        char hotplugged = 'a';
+    public String nextHotpluggedDiskTarget(String node, String vmId, String uuid) {
 
-        if (pathExists(getVmUsagePath(node, vmId))) {
-            if (!getNode(getVmUsagePath(node, vmId)).equals(STATIC_DISK_TARGET)) {
-                char[] currentTarget = getNode(getVmUsagePath(node, vmId))
-                        .toCharArray();
-                hotplugged = ++(currentTarget[currentTarget.length - 1]);
+        char newDriveLetter = 'a';
 
-                if (hotplugged > 'z') {
+        String mountPath = getMountPath(node, vmId, uuid);
+
+        if (pathExists(mountPath)) {
+
+            String device = getNode(mountPath);
+            if (!STATIC_DISK_TARGET.equals(device)) {
+                newDriveLetter = device.charAt(device.length() - 1);
+                newDriveLetter++;
+
+                if (newDriveLetter > 'z') {
                     return DISK_TARGET_LIMIT;
                 }
             }
         }
 
-        return target + hotplugged;
-    }
-
-    private void setDiskUserCounter(String diskUuid, int operation) {
-        String path = getDiskPath(diskUuid);
-        int currentUser = getDiskUsersNo(path);
-
-        setNode(path + "/" + DISK_USERS_KEY,
-                String.valueOf(currentUser + operation));
+        return DEVICE_PREFIX + newDriveLetter;
     }
 
     public int remainingFreeUser(String path) {
         return RootApplication.CONFIGURATION.USERS_PER_DISK
-                - getDiskUsersNo(path);
+                - getNumberOfMounts(path);
     }
 
     private List<String> listSubTree(String pathRoot) {
@@ -479,7 +353,8 @@ public class DiskProperties implements Closeable {
     }
 
     private List<String> getChildren(String path) {
-        List<String> children = null;
+
+        List<String> children = Collections.emptyList();
 
         try {
             children = zk.getChildren(path, false);
@@ -493,5 +368,4 @@ public class DiskProperties implements Closeable {
 
         return children;
     }
-
 }

@@ -4,6 +4,7 @@ import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -69,7 +70,7 @@ public class MountsResource extends BaseResource {
 
         if (node != null || vmId != null) {
 
-            String target = zk.nextHotpluggedDiskTarget(node, vmId);
+            String target = zk.nextHotpluggedDiskTarget(node, vmId, diskId);
 
             getLogger().info(
                     "DiskResource mountDiskAsJson (dynamic): " + diskId + ", "
@@ -134,7 +135,8 @@ public class MountsResource extends BaseResource {
 
         zk.addDiskMount(node, vmId, diskId, target, getLogger());
 
-        List<String> diskUuids = zk.getAttachedDisks(node, vmId);
+        List<String> diskIds = new LinkedList<String>();
+        diskIds.add(diskId);
 
         if (!target.equals(DiskProperties.STATIC_DISK_TARGET)) {
             getLogger().info(
@@ -144,7 +146,7 @@ public class MountsResource extends BaseResource {
                     vmId, diskId, target);
         }
 
-        return actionResponse(diskUuids, target);
+        return actionResponse(diskIds, target);
     }
 
     private void extractNodeAndVmId(Representation entity) {
