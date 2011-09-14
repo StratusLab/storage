@@ -294,7 +294,7 @@ public class DiskProperties implements Closeable {
 
     public List<Properties> getDiskMounts(String uuid) {
 
-        List<Properties> results = Collections.emptyList();
+        List<Properties> results = new LinkedList<Properties>();
 
         String diskMountPath = getDiskMountPath(uuid);
 
