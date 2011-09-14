@@ -143,14 +143,6 @@ public class BaseResource extends ServerResource {
         return (queryString != null && queryString.equals(key));
     }
 
-    protected static String getDiskZkPath(String uuid) {
-        return RootApplication.CONFIGURATION.ZK_DISKS_PATH + "/" + uuid;
-    }
-
-    protected Boolean diskExists(String uuid) {
-        return zk.pathExists(getDiskZkPath(uuid));
-    }
-
     protected Boolean hasSufficientRightsToView(Properties properties) {
         // Is disk owner or service user
         if (properties.get(DiskProperties.DISK_OWNER_KEY).toString()
@@ -182,10 +174,6 @@ public class BaseResource extends ServerResource {
 
     protected int servicePort() {
         return getRequest().getHostRef().getHostPort();
-    }
-
-    protected Properties getDiskProperties(String uuid) {
-        return zk.getDiskProperties(getDiskZkPath(uuid));
     }
 
     public Configuration extractFmConfiguration() {

@@ -166,18 +166,32 @@ public class DiskProperties implements Closeable {
         }
     }
 
-    public void deleteRecursively(String root) {
+    public void deleteRecursively(String uuid) {
+
+        String root = getDiskZkPath(uuid);
+
         List<String> tree = listSubTree(root);
         for (int i = tree.size() - 1; i >= 0; --i) {
             deleteNode(tree.get(i));
         }
     }
 
+    private static String getDiskZkPath(String uuid) {
+        return RootApplication.CONFIGURATION.ZK_DISKS_PATH + "/" + uuid;
+    }
+
+    public Boolean diskExists(String uuid) {
+        return pathExists(getDiskZkPath(uuid));
+    }
+
     public List<String> getDisks() {
         return getChildren(RootApplication.CONFIGURATION.ZK_DISKS_PATH);
     }
 
-    public void saveDiskProperties(String diskRoot, Properties properties) {
+    public void saveDiskProperties(String uuid, Properties properties) {
+
+        String diskRoot = getDiskZkPath(uuid);
+
         Enumeration<?> propertiesEnum = properties.propertyNames();
 
         createNode(diskRoot, properties.get(UUID_KEY).toString());
@@ -192,7 +206,10 @@ public class DiskProperties implements Closeable {
         }
     }
 
-    public Properties getDiskProperties(String root) {
+    public Properties getDiskProperties(String uuid) {
+
+        String root = getDiskZkPath(uuid);
+
         Properties properties = new Properties();
         List<String> tree = listSubTree(root);
 
@@ -206,6 +223,12 @@ public class DiskProperties implements Closeable {
 
             properties.put(key, content);
         }
+
+        // Add the number of mounts since this isn't in the same
+        // metadata tree.
+        int mounts = getNumberOfMounts(uuid);
+        properties.put(DISK_USERS_KEY, String.valueOf(mounts));
+
         return properties;
     }
 

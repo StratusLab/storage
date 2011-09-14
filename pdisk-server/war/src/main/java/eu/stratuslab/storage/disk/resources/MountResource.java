@@ -130,14 +130,14 @@ public class MountResource extends BaseResource {
 
     private String detachHotPluggedDisk() {
 
-        Properties diskProperties = getDiskProperties(diskId);
+        Properties diskProperties = zk.getDiskProperties(diskId);
 
         if (!hasSufficientRightsToView(diskProperties)) {
             throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
                     "insufficient rights to detach disk");
         }
 
-        if (diskId == null || !diskExists(diskId)) {
+        if (diskId == null || !zk.diskExists(diskId)) {
             throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND,
                     "unknown disk: " + diskId);
         }

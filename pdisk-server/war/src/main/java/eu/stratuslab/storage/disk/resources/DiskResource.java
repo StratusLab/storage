@@ -96,12 +96,12 @@ public class DiskResource extends BaseResource {
     private Map<String, Object> listDiskProperties() {
         Map<String, Object> infos = createInfoStructure("Disk info");
 
-        if (!diskExists(getDiskId())) {
+        if (!zk.diskExists(getDiskId())) {
             throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
                     + getDiskId() + ") does not exist");
         }
 
-        Properties diskProperties = getDiskProperties();
+        Properties diskProperties = zk.getDiskProperties(getDiskId());
 
         if (!hasSufficientRightsToView(diskProperties)) {
             throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
@@ -115,10 +115,6 @@ public class DiskResource extends BaseResource {
 
         return infos;
 
-    }
-
-    private Properties getDiskProperties() {
-        return getDiskProperties(getDiskId());
     }
 
     private void addDiskUserHeader() {
@@ -141,12 +137,12 @@ public class DiskResource extends BaseResource {
 
         String diskId = getDiskId();
 
-        if (!diskExists(diskId)) {
+        if (!zk.diskExists(diskId)) {
             throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
                     + diskId + ") does not exist");
         }
 
-        Properties diskProperties = getDiskProperties();
+        Properties diskProperties = zk.getDiskProperties(diskId);
 
         if (!hasSufficientRightsToDelete(diskProperties)) {
             throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
@@ -162,12 +158,8 @@ public class DiskResource extends BaseResource {
     }
 
     private void deleteDisk() {
-        zk.deleteRecursively(getDiskZkPath());
+        zk.deleteRecursively(getDiskId());
         DiskUtils.removeDisk(getDiskId());
-    }
-
-    private String getDiskZkPath() {
-        return getDiskZkPath(getDiskId());
     }
 
     private String getDiskId() {

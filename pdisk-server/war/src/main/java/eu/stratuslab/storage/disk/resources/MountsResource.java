@@ -114,7 +114,7 @@ public class MountsResource extends BaseResource {
         if (diskId == null) {
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
                     "Disk UUID not provided");
-        } else if (!diskExists(diskId)) {
+        } else if (!zk.diskExists(diskId)) {
             throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND,
                     "unknown disk UUID");
         } else if (target.equals(DiskProperties.DISK_TARGET_LIMIT)) {
@@ -122,7 +122,7 @@ public class MountsResource extends BaseResource {
                     "Target limit reached. Restart instance to attach new disk");
         }
 
-        Properties diskProperties = getDiskProperties(diskId);
+        Properties diskProperties = zk.getDiskProperties(diskId);
         if (!hasSufficientRightsToView(diskProperties)) {
             throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
                     "Not enough rights to attach disk");

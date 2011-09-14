@@ -114,7 +114,7 @@ public class DisksResource extends BaseResource {
 
         List<String> disks = zk.getDisks();
         for (String uuid : disks) {
-            Properties properties = zk.getDiskProperties(getDiskZkPath(uuid));
+            Properties properties = zk.getDiskProperties(uuid);
 
             // List only disk of the user
             if (hasSufficientRightsToView(properties)) {
@@ -233,8 +233,7 @@ public class DisksResource extends BaseResource {
 
     private void registerDisk(Properties properties) {
         String uuid = properties.get(DiskProperties.UUID_KEY).toString();
-        String diskRoot = getDiskZkPath(uuid);
-        zk.saveDiskProperties(diskRoot, properties);
+        zk.saveDiskProperties(uuid, properties);
     }
 
 }
