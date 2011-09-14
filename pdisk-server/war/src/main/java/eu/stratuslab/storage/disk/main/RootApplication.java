@@ -84,12 +84,6 @@ public class RootApplication extends Application {
         router.attach("/disks/", DisksResource.class);
         router.attach("/disks", DisksResource.class);
 
-        // router.attach("/vms/{mountid}/", VmResource.class);
-        // router.attach("/vms/{mountid}", VmResource.class);
-
-        // router.attach("/vms/", VmsResource.class);
-        // router.attach("/vms", VmsResource.class);
-
         router.attach("/", HomeResource.class);
 
         router.attach("/css/", createCssDirectory(context));

@@ -346,6 +346,74 @@ public class DiskProperties implements Closeable {
         return disks;
     }
 
+    public void addDiskMount(String node, String vmId, String uuid,
+            String target, Logger logger) {
+
+        String diskMountPath = getDiskMountPath(uuid);
+
+        if (!pathExists(diskMountPath)) {
+            String timestamp = MiscUtils.getTimestamp();
+            logger.info("Creating node: " + diskMountPath + " " + timestamp);
+            createNode(diskMountPath, timestamp);
+        }
+
+        String mountPath = getMountPath(node, vmId, uuid);
+
+        if (pathExists(mountPath)) {
+            String msg = String.format(
+                    "disk %s is already mounted on VM %s on node %s", uuid,
+                    vmId, node);
+            throw new ResourceException(Status.CLIENT_ERROR_CONFLICT, msg);
+        }
+
+        logger.info("Creating node: " + mountPath + ", " + target);
+        createNode(mountPath, target);
+        setDiskUserCounter(uuid, +1);
+
+        logger.info("add disk usage path: " + mountPath + ", "
+                + pathExists(mountPath) + ", " + target);
+    }
+
+    public void removeDiskMount(String node, String vmId, String uuid,
+            Logger logger) {
+
+        String mountPath = getMountPath(node, vmId, uuid);
+
+        logger.info("Deleting node: " + mountPath + ", "
+                + pathExists(mountPath));
+
+        if (pathExists(mountPath)) {
+            deleteNode(mountPath);
+            setDiskUserCounter(uuid, -1);
+        } else {
+            String msg = String.format(
+                    "disk %s is not mounted on VM %s on node %s", uuid, vmId,
+                    node);
+            throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, msg);
+        }
+    }
+
+    private String getDiskMountPath(String uuid) {
+        return String.format("%s/%s",
+                RootApplication.CONFIGURATION.ZK_USAGE_PATH, uuid);
+    }
+
+    private String getMountPath(String node, String vmId, String uuid) {
+        return String.format("%s/%s-%s", getDiskMountPath(uuid), vmId, node);
+    }
+
+    public List<String> getDiskMounts(String uuid) {
+
+        List<String> disks = Collections.emptyList();
+
+        String diskMountPath = getDiskMountPath(uuid);
+        if (pathExists(diskMountPath)) {
+            disks = getChildren(diskMountPath);
+        }
+
+        return disks;
+    }
+
     public String diskTarget(String node, String vmId, String diskUuid) {
         String diskPath = getDiskUsagePath(node, vmId, diskUuid);
 

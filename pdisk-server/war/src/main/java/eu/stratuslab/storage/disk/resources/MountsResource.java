@@ -45,6 +45,8 @@ public class MountsResource extends BaseResource {
         getLogger().info("DiskResource getAsHtml: " + diskId);
 
         Map<String, Object> info = getMountProperties();
+        info.put("mounts", zk.getDiskMounts(diskId));
+
         return createTemplateRepresentation("html/mounts.ftl", info, TEXT_HTML);
     }
 
@@ -54,6 +56,8 @@ public class MountsResource extends BaseResource {
         getLogger().info("DiskResource getAsJson: " + diskId);
 
         Map<String, Object> info = getMountProperties();
+        info.put("mounts", zk.getDiskMounts(diskId));
+
         return createTemplateRepresentation("json/mounts.ftl", info,
                 APPLICATION_JSON);
     }
@@ -128,7 +132,8 @@ public class MountsResource extends BaseResource {
                 "attachDisk: " + node + " " + vmId + " " + diskId + " "
                         + target);
 
-        zk.addDiskUser(node, vmId, diskId, target, getLogger());
+        zk.addDiskMount(node, vmId, diskId, target, getLogger());
+
         List<String> diskUuids = zk.getAttachedDisks(node, vmId);
 
         if (!target.equals(DiskProperties.STATIC_DISK_TARGET)) {

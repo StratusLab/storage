@@ -143,7 +143,7 @@ public class MountResource extends BaseResource {
         }
 
         String diskTarget = zk.diskTarget(node, vmId, diskId);
-        zk.removeDiskUser(node, vmId, diskId, getLogger());
+        zk.removeDiskMount(node, vmId, diskId, getLogger());
 
         // Only force the dismount if this was mounted through the
         // storage service.
