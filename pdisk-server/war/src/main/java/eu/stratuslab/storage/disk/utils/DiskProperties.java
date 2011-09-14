@@ -276,20 +276,40 @@ public class DiskProperties implements Closeable {
     }
 
     public int getNumberOfMounts(String uuid) {
-        List<String> mounts = getDiskMounts(uuid);
+        List<String> mounts = getDiskMountIds(uuid);
         return mounts.size();
     }
 
-    public List<String> getDiskMounts(String uuid) {
+    public List<String> getDiskMountIds(String uuid) {
 
-        List<String> mounts = Collections.emptyList();
+        List<String> results = Collections.emptyList();
 
         String diskMountPath = getDiskMountPath(uuid);
         if (pathExists(diskMountPath)) {
-            mounts = getChildren(diskMountPath);
+            results = getChildren(diskMountPath);
         }
 
-        return mounts;
+        return results;
+    }
+
+    public List<Properties> getDiskMounts(String uuid) {
+
+        List<Properties> results = Collections.emptyList();
+
+        String diskMountPath = getDiskMountPath(uuid);
+
+        for (String mount : getDiskMountIds(uuid)) {
+            String childPath = diskMountPath + "/" + mount;
+            String value = getNode(childPath);
+
+            Properties properties = new Properties();
+            properties.put("uuid", uuid);
+            properties.put("mountid", mount);
+            properties.put("device", value);
+            results.add(properties);
+        }
+
+        return results;
     }
 
     public String diskTarget(String node, String vmId, String uuid) {

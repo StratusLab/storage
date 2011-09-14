@@ -45,8 +45,7 @@ public class MountsResource extends BaseResource {
 
         getLogger().info("DiskResource getAsHtml: " + diskId);
 
-        Map<String, Object> info = getMountProperties();
-        info.put("mounts", zk.getDiskMounts(diskId));
+        Map<String, Object> info = getMountProperties(diskId);
 
         return createTemplateRepresentation("html/mounts.ftl", info, TEXT_HTML);
     }
@@ -56,8 +55,7 @@ public class MountsResource extends BaseResource {
 
         getLogger().info("DiskResource getAsJson: " + diskId);
 
-        Map<String, Object> info = getMountProperties();
-        info.put("mounts", zk.getDiskMounts(diskId));
+        Map<String, Object> info = getMountProperties(diskId);
 
         return createTemplateRepresentation("json/mounts.ftl", info,
                 APPLICATION_JSON);
@@ -89,8 +87,9 @@ public class MountsResource extends BaseResource {
 
     }
 
-    private Map<String, Object> getMountProperties() {
+    private Map<String, Object> getMountProperties(String uuid) {
         Map<String, Object> info = this.createInfoStructure("mounts");
+        info.put("mounts", zk.getDiskMounts(uuid));
         return info;
     }
 

@@ -1,6 +1,6 @@
 <#include "/html/header.ftl">
 
-<p><a href="${url}/mounts">View mounts</a> for this disk.</p>
+<p><a href="${url}mounts">View mounts</a> for this disk.</p>
 
 <#escape x as x?html>
   <#assign keys=properties?keys>

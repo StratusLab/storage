@@ -110,10 +110,9 @@ public class DisksResource extends BaseResource {
         addCreateFormDefaults(info);
 
         List<Properties> diskInfoList = new LinkedList<Properties>();
-        List<String> disks = zk.getDisks();
-
         info.put("disks", diskInfoList);
 
+        List<String> disks = zk.getDisks();
         for (String uuid : disks) {
             Properties properties = zk.getDiskProperties(getDiskZkPath(uuid));
 

@@ -49,33 +49,18 @@
     <table class="display">  
       <thead>
         <tr>
-          <th>Tag</th>
-          <th>Size</th>
-          <th>Users</th>
-          <th>Owner</th>
-          <th>UUID</th>
+          <th>Mount ID</th>
+          <th>Device</th>
         </tr>
       </thead>
       <tbody>
         <#list mounts as mount>
           <tr class="${zebra(mount_index)}">
-            <td><#if mount.tag == ""><em>No tag</em></#if>${mount.tag!}</td>
-            <td class="center">${mount.size} GiB</td>
-            <td class="center">${mount.users}</td>
-            <td class="center">${mount.owner}</td>
-            <td><a href="${baseurl}/mounts/${mount.uuid}/">${mount.uuid}</a></td>
+            <td><a href="${baseurl}/disks/${mount.uuid}/mounts/${mount.mountid}/">${mount.mountid}</a></td>
+            <td class="center">${mount.device}</td>
           </tr>
         </#list>
       </tbody>
-      <tfoot>
-        <tr>
-          <th>Tag</th>
-          <th>Size</th>
-          <th>Users</th>
-          <th>Owner</th>
-          <th>UUID</th>
-        </tr>
-      </tfoot>
     </table>
   </#escape>
 <#else> 
