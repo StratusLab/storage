@@ -143,11 +143,14 @@ public class MountResource extends BaseResource {
         }
 
         String diskTarget = zk.diskTarget(node, vmId, diskId);
-        zk.removeDiskUser(node, vmId, diskId);
+        zk.removeDiskUser(node, vmId, diskId, getLogger());
 
         // Only force the dismount if this was mounted through the
         // storage service.
         if (!diskTarget.equals(DiskProperties.STATIC_DISK_TARGET)) {
+            getLogger().info(
+                    "hotDetach: " + node + ", " + vmId + ", " + diskId + ", "
+                            + diskTarget);
             DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node,
                     vmId, diskId, diskTarget);
         }

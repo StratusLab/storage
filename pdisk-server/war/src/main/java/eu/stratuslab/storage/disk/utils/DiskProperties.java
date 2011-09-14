@@ -27,8 +27,8 @@ import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.Logger;
 
-import org.apache.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs.Ids;
@@ -40,8 +40,6 @@ import org.restlet.resource.ResourceException;
 import eu.stratuslab.storage.disk.main.RootApplication;
 
 public class DiskProperties implements Closeable {
-
-    private static final Logger LOGGER = Logger.getLogger("org.restlet");
 
     private ZooKeeper zk = null;
 
@@ -264,42 +262,55 @@ public class DiskProperties implements Closeable {
     }
 
     public void addDiskUser(String node, String vmId, String diskUuid,
-            String target) {
+            String target, Logger logger) {
 
         String nodeUsagePath = getNodeUsagePath(node);
         if (!pathExists(nodeUsagePath)) {
             String timestamp = MiscUtils.getTimestamp();
-            LOGGER.info("Creating node: " + nodeUsagePath + " " + timestamp);
+            logger.info("Creating node: " + nodeUsagePath + " " + timestamp);
             createNode(nodeUsagePath, timestamp);
         }
 
         String vmUsagePath = getVmUsagePath(node, vmId);
         if (pathExists(vmUsagePath)) {
-            LOGGER.info("Setting node: " + vmUsagePath + " " + target);
+            logger.info("Setting node: " + vmUsagePath + " " + target);
             setNode(vmUsagePath, target);
         } else {
-            LOGGER.info("Creating node: " + vmUsagePath + " " + target);
+            logger.info("Creating node: " + vmUsagePath + " " + target);
             createNode(vmUsagePath, target);
         }
 
         String diskUsagePath = getDiskUsagePath(node, vmId, diskUuid);
         if (pathExists(diskUsagePath)) {
             // Normally this should not happen.
-            LOGGER.info("Setting node: " + diskUsagePath + " " + target);
+            logger.info("Setting node: " + diskUsagePath + " " + target);
             setNode(diskUsagePath, target);
         } else {
-            LOGGER.info("Creating node: " + diskUsagePath + " " + target);
+            logger.info("Creating node: " + diskUsagePath + " " + target);
             createNode(diskUsagePath, target);
             setDiskUserCounter(diskUuid, +1);
         }
+
+        logger.info("add disk usage path: " + diskUsagePath + ", "
+                + pathExists(diskUsagePath) + ", " + target);
     }
 
-    public void removeDiskUser(String node, String vmId, String diskUuid) {
+    public void removeDiskUser(String node, String vmId, String diskUuid,
+            Logger logger) {
+
         String diskPath = getDiskUsagePath(node, vmId, diskUuid);
 
-        LOGGER.info("Deleting node: " + diskPath);
+        logger.info("delete disk usage path: " + diskPath + ", "
+                + pathExists(diskPath));
 
-        deleteNode(diskPath);
+        logger.info("Deleting node: " + diskPath);
+
+        try {
+            deleteNode(diskPath);
+        } catch (ResourceException e) {
+            logger.info("delete caught exception: " + e.getMessage());
+            throw e;
+        }
         setDiskUserCounter(diskUuid, -1);
     }
 

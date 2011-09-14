@@ -128,7 +128,7 @@ public class MountsResource extends BaseResource {
                 "attachDisk: " + node + " " + vmId + " " + diskId + " "
                         + target);
 
-        zk.addDiskUser(node, vmId, diskId, target);
+        zk.addDiskUser(node, vmId, diskId, target, getLogger());
         List<String> diskUuids = zk.getAttachedDisks(node, vmId);
 
         if (!target.equals(DiskProperties.STATIC_DISK_TARGET)) {
