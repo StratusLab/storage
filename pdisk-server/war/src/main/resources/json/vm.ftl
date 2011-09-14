@@ -1,3 +1,3 @@
 {
-  "vmId" : ${vmId}
+  "vmId" : "${vmId}"
 }

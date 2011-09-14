@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 
+import org.apache.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs.Ids;
@@ -39,6 +40,9 @@ import org.restlet.resource.ResourceException;
 import eu.stratuslab.storage.disk.main.RootApplication;
 
 public class DiskProperties implements Closeable {
+
+    private static final Logger LOGGER = Logger.getLogger("org.restlet");
+
     private ZooKeeper zk = null;
 
     // Property keys
@@ -261,27 +265,39 @@ public class DiskProperties implements Closeable {
 
     public void addDiskUser(String node, String vmId, String diskUuid,
             String target) {
-        if (!pathExists(getNodeUsagePath(node))) {
-            createNode(getNodeUsagePath(node), MiscUtils.getTimestamp());
+
+        String nodeUsagePath = getNodeUsagePath(node);
+        if (!pathExists(nodeUsagePath)) {
+            String timestamp = MiscUtils.getTimestamp();
+            LOGGER.info("Creating node: " + nodeUsagePath + " " + timestamp);
+            createNode(nodeUsagePath, timestamp);
         }
 
-        if (pathExists(getVmUsagePath(node, vmId))) {
-            setNode(getVmUsagePath(node, vmId), target);
+        String vmUsagePath = getVmUsagePath(node, vmId);
+        if (pathExists(vmUsagePath)) {
+            LOGGER.info("Setting node: " + vmUsagePath + " " + target);
+            setNode(vmUsagePath, target);
         } else {
-            createNode(getVmUsagePath(node, vmId), target);
+            LOGGER.info("Creating node: " + vmUsagePath + " " + target);
+            createNode(vmUsagePath, target);
         }
 
-        // This should normally not happen
-        if (pathExists(getDiskUsagePath(node, vmId, diskUuid))) {
-            setNode(getDiskUsagePath(node, vmId, diskUuid), target);
+        String diskUsagePath = getDiskUsagePath(node, vmId, diskUuid);
+        if (pathExists(diskUsagePath)) {
+            // Normally this should not happen.
+            LOGGER.info("Setting node: " + diskUsagePath + " " + target);
+            setNode(diskUsagePath, target);
         } else {
-            createNode(getDiskUsagePath(node, vmId, diskUuid), target);
+            LOGGER.info("Creating node: " + diskUsagePath + " " + target);
+            createNode(diskUsagePath, target);
             setDiskUserCounter(diskUuid, +1);
         }
     }
 
     public void removeDiskUser(String node, String vmId, String diskUuid) {
         String diskPath = getDiskUsagePath(node, vmId, diskUuid);
+
+        LOGGER.info("Deleting node: " + diskPath);
 
         deleteNode(diskPath);
         setDiskUserCounter(diskUuid, -1);

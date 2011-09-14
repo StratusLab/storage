@@ -124,10 +124,17 @@ public class MountsResource extends BaseResource {
                     "Not enough rights to attach disk");
         }
 
+        getLogger().info(
+                "attachDisk: " + node + " " + vmId + " " + diskId + " "
+                        + target);
+
         zk.addDiskUser(node, vmId, diskId, target);
         List<String> diskUuids = zk.getAttachedDisks(node, vmId);
 
         if (!target.equals(DiskProperties.STATIC_DISK_TARGET)) {
+            getLogger().info(
+                    "hotPlugDisk: " + node + " " + vmId + " " + diskId + " "
+                            + target);
             DiskUtils.attachHotplugDisk(serviceName(), servicePort(), node,
                     vmId, diskId, target);
         }
