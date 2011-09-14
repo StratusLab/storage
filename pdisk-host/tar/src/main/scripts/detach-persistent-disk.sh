@@ -73,7 +73,7 @@ detach_iscsi() {
 }
 
 detach_all_disks() {
-    ATTACHED_DISK="`cat $REGISTER_FILE 2>/dev/null`"
+    ATTACHED_DISK="`cat $REGISTER_FILE | sort -u 2>/dev/null`"
 
     # if no pdisk attached, nothing to do
     [ "x$ATTACHED_DISK" = "x" ] && return
