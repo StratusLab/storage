@@ -247,6 +247,14 @@ public class DiskProperties implements Closeable {
     public void addDiskMount(String node, String vmId, String uuid,
             String target, Logger logger) {
 
+        String diskPath = getDiskPath(uuid);
+
+        if (!pathExists(diskPath)) {
+            String timestamp = MiscUtils.getTimestamp();
+            logger.info("Creating node: " + diskPath + " " + timestamp);
+            createNode(diskPath, timestamp);
+        }
+
         String diskMountPath = getDiskMountPath(uuid);
 
         if (!pathExists(diskMountPath)) {
@@ -316,9 +324,13 @@ public class DiskProperties implements Closeable {
         }
     }
 
-    private String getDiskMountPath(String uuid) {
+    private String getDiskPath(String uuid) {
         return String.format("%s/%s",
                 RootApplication.CONFIGURATION.ZK_USAGE_PATH, uuid);
+    }
+
+    private String getDiskMountPath(String uuid) {
+        return String.format("%s/mounts", getDiskPath(uuid));
     }
 
     private String getMountPath(String node, String vmId, String uuid) {
@@ -326,7 +338,7 @@ public class DiskProperties implements Closeable {
     }
 
     private String getMountDevicePath(String vmId, String uuid) {
-        return String.format("%s/%s", getDiskMountPath(uuid), vmId);
+        return String.format("%s/%s", getDiskPath(uuid), vmId);
     }
 
     public int getNumberOfMounts(String uuid) {
