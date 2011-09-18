@@ -55,8 +55,6 @@ public class ServiceConfiguration {
     public final ShareType SHARE_TYPE;
 
     public final String ZK_ADDRESSES;
-    public final String ZK_DISKS_PATH;
-    public final String ZK_USAGE_PATH;
 
     public final DiskType ISCSI_DISK_TYPE;
     public final File ISCSI_CONFIG;
@@ -83,8 +81,6 @@ public class ServiceConfiguration {
         SHARE_TYPE = getShareType();
 
         ZK_ADDRESSES = getConfigValue("disk.store.zookeeper.address");
-        ZK_DISKS_PATH = getConfigValue("disk.store.zookeeper.disks");
-        ZK_USAGE_PATH = getConfigValue("disk.store.zookeeper.usage");
 
         VGDISPLAY_CMD = getCommand("disk.store.lvm.vgdisplay");
         LVCREATE_CMD = getCommand("disk.store.lvm.create");

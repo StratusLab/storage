@@ -45,6 +45,12 @@ public class DiskProperties implements Closeable {
 
     private static final String DEVICE_PREFIX = "vd";
 
+    private static final String ZK_USAGE_PATH = "/usage";
+
+    private static final String ZK_DISKS_PATH = "/disks";
+
+    private static final String ZK_DEVICES_PATH = "/devices";
+
     // Property keys
     public static final String UUID_KEY = "uuid";
     public static final String DISK_OWNER_KEY = "owner";
@@ -106,15 +112,13 @@ public class DiskProperties implements Closeable {
         }
 
         try {
-            if (zk.exists(RootApplication.CONFIGURATION.ZK_DISKS_PATH, false) == null) {
-                zk.create(RootApplication.CONFIGURATION.ZK_DISKS_PATH,
-                        "pdiskDisks".getBytes(), Ids.OPEN_ACL_UNSAFE,
-                        CreateMode.PERSISTENT);
+            if (zk.exists(ZK_DISKS_PATH, false) == null) {
+                zk.create(ZK_DISKS_PATH, "pdiskDisks".getBytes(),
+                        Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             }
-            if (zk.exists(RootApplication.CONFIGURATION.ZK_USAGE_PATH, false) == null) {
-                zk.create(RootApplication.CONFIGURATION.ZK_USAGE_PATH,
-                        "pdiskUsers".getBytes(), Ids.OPEN_ACL_UNSAFE,
-                        CreateMode.PERSISTENT);
+            if (zk.exists(ZK_USAGE_PATH, false) == null) {
+                zk.create(ZK_USAGE_PATH, "pdiskUsers".getBytes(),
+                        Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             }
         } catch (KeeperException e) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -177,7 +181,7 @@ public class DiskProperties implements Closeable {
     }
 
     private static String getDiskZkPath(String uuid) {
-        return RootApplication.CONFIGURATION.ZK_DISKS_PATH + "/" + uuid;
+        return ZK_DISKS_PATH + "/" + uuid;
     }
 
     public Boolean diskExists(String uuid) {
@@ -185,7 +189,7 @@ public class DiskProperties implements Closeable {
     }
 
     public List<String> getDisks() {
-        return getChildren(RootApplication.CONFIGURATION.ZK_DISKS_PATH);
+        return getChildren(ZK_DISKS_PATH);
     }
 
     public void saveDiskProperties(String uuid, Properties properties) {
@@ -325,8 +329,7 @@ public class DiskProperties implements Closeable {
     }
 
     private String getDiskPath(String uuid) {
-        return String.format("%s/%s",
-                RootApplication.CONFIGURATION.ZK_USAGE_PATH, uuid);
+        return String.format("%s/%s", ZK_USAGE_PATH, uuid);
     }
 
     private String getDiskMountPath(String uuid) {
