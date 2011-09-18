@@ -144,7 +144,6 @@ public class MountResource extends BaseResource {
         }
 
         String diskTarget = zk.diskTarget(node, vmId, diskId);
-        zk.removeDiskMount(node, vmId, diskId, getLogger());
 
         // Only force the dismount if this was mounted through the
         // storage service.
@@ -155,6 +154,9 @@ public class MountResource extends BaseResource {
             DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node,
                     vmId, diskId, diskTarget);
         }
+
+        // Remove the metadata ONLY if the removal was sucessful.
+        zk.removeDiskMount(node, vmId, diskId, getLogger());
 
         return diskTarget;
 

@@ -49,7 +49,7 @@ public class DiskProperties implements Closeable {
 
     private static final String ZK_DISKS_PATH = "/disks";
 
-    private static final String ZK_DEVICES_PATH = "/devices";
+    private static final String ZK_TARGETS_PATH = "/targets";
 
     // Property keys
     public static final String UUID_KEY = "uuid";
@@ -120,6 +120,10 @@ public class DiskProperties implements Closeable {
                 zk.create(ZK_USAGE_PATH, "pdiskUsers".getBytes(),
                         Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             }
+            if (zk.exists(ZK_TARGETS_PATH, false) == null) {
+                zk.create(ZK_TARGETS_PATH, "pdiskTargets".getBytes(),
+                        Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            }
         } catch (KeeperException e) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "ZooKeeper error: " + e.getMessage());
@@ -149,6 +153,25 @@ public class DiskProperties implements Closeable {
         try {
             zk.create(path, content.getBytes(), Ids.OPEN_ACL_UNSAFE,
                     CreateMode.PERSISTENT);
+        } catch (KeeperException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "ZooKeeper error: " + e.getMessage());
+        } catch (InterruptedException e) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    e.getMessage());
+        }
+    }
+
+    private void createNodeOrFail(String path, String content)
+            throws KeeperException.NodeExistsException {
+
+        try {
+            zk.create(path, content.getBytes(), Ids.OPEN_ACL_UNSAFE,
+                    CreateMode.PERSISTENT);
+        } catch (KeeperException.NodeExistsException e) {
+            // If this already exists, rethrow the exception to allow
+            // the client to deal with the fact that the node exists.
+            throw e;
         } catch (KeeperException e) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "ZooKeeper error: " + e.getMessage());
@@ -349,6 +372,14 @@ public class DiskProperties implements Closeable {
         return mounts.size();
     }
 
+    private String getTargetsVMPath(String vmId) {
+        return String.format("%s/%s", ZK_TARGETS_PATH, vmId);
+    }
+
+    private String getTargetPath(String vmId, String target) {
+        return String.format("%s/%s/%s", ZK_TARGETS_PATH, vmId, target);
+    }
+
     public List<String> getDiskMountIds(String uuid) {
 
         List<String> results = Collections.emptyList();
@@ -392,23 +423,49 @@ public class DiskProperties implements Closeable {
         return getNode(mountPath);
     }
 
-    public String nextDiskDevice(String node, String vmId, String uuid,
-            Logger logger) {
+    public void ensureTargetParentExists(String vmId) {
 
-        char newDriveLetter = 'a';
-
-        String device = getDiskMountDevice(vmId, uuid, logger);
-
-        if (!"".equals(device) && !STATIC_DISK_TARGET.equals(device)) {
-            newDriveLetter = device.charAt(device.length() - 1);
-            newDriveLetter++;
-
-            if (newDriveLetter > 'z') {
-                return DISK_TARGET_LIMIT;
-            }
+        String targetsPath = getTargetsVMPath(vmId);
+        if (!pathExists(targetsPath)) {
+            String timestamp = MiscUtils.getTimestamp();
+            createNode(targetsPath, timestamp);
         }
 
-        return DEVICE_PREFIX + newDriveLetter;
+    }
+
+    public String nextDiskTarget(String vmId) {
+
+        String nextTarget = null;
+
+        ensureTargetParentExists(vmId);
+
+        for (char driveLetter = 'a'; driveLetter <= 'z'; driveLetter++) {
+            String device = DEVICE_PREFIX + driveLetter;
+            String devicePath = getTargetPath(vmId, device);
+            try {
+                createNodeOrFail(devicePath, MiscUtils.getTimestamp());
+            } catch (KeeperException.NodeExistsException e) {
+                continue;
+            }
+            nextTarget = device;
+            break;
+        }
+
+        if (nextTarget == null) {
+            throw new ResourceException(Status.CLIENT_ERROR_CONFLICT,
+                    "no free devices available");
+        }
+
+        return nextTarget;
+    }
+
+    public void deleteDiskTarget(String vmId, String target) {
+
+        ensureTargetParentExists(vmId);
+
+        String device = getTargetPath(vmId, target);
+        deleteNode(device);
+
     }
 
     public int remainingFreeUser(String path) {

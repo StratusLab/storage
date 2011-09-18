@@ -70,14 +70,18 @@ public class MountsResource extends BaseResource {
 
         if (node != null || vmId != null) {
 
-            String target = zk.nextDiskDevice(node, vmId, diskId, getLogger());
+            String target = zk.nextDiskTarget(vmId);
 
             getLogger().info(
                     "DiskResource mountDiskAsHtml (dynamic): " + diskId + ", "
                             + node + ", " + vmId + ", " + target);
 
-            // Ignoring the return value.
-            attachDisk(target);
+            try {
+                attachDisk(target); // ignore return value
+            } catch (RuntimeException e) {
+                zk.deleteDiskTarget(vmId, target);
+                throw e;
+            }
 
         } else {
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
@@ -98,13 +102,21 @@ public class MountsResource extends BaseResource {
 
         if (node != null || vmId != null) {
 
-            String target = zk.nextDiskDevice(node, vmId, diskId, getLogger());
+            String target = zk.nextDiskTarget(vmId);
 
             getLogger().info(
                     "DiskResource mountDiskAsJson (dynamic): " + diskId + ", "
                             + node + ", " + vmId + ", " + target);
 
-            return attachDisk(target);
+            Representation representation = null;
+            try {
+                representation = attachDisk(target);
+            } catch (RuntimeException e) {
+                zk.deleteDiskTarget(vmId, target);
+                throw e;
+            }
+
+            return representation;
 
         } else {
 
@@ -164,12 +176,6 @@ public class MountsResource extends BaseResource {
                 "attachDisk: " + node + " " + vmId + " " + diskId + " "
                         + target);
 
-        zk.addDiskMount(node, vmId, diskId, target, getLogger());
-        zk.addDiskMountDevice(vmId, diskId, target, getLogger());
-
-        List<String> diskIds = new LinkedList<String>();
-        diskIds.add(diskId);
-
         if (!target.equals(DiskProperties.STATIC_DISK_TARGET)) {
             getLogger().info(
                     "hotPlugDisk: " + node + " " + vmId + " " + diskId + " "
@@ -178,6 +184,12 @@ public class MountsResource extends BaseResource {
                     vmId, diskId, target);
         }
 
+        // Add this metadata only AFTER the device has been successfully added.
+        zk.addDiskMount(node, vmId, diskId, target, getLogger());
+        zk.addDiskMountDevice(vmId, diskId, target, getLogger());
+
+        List<String> diskIds = new LinkedList<String>();
+        diskIds.add(diskId);
         return actionResponse(diskIds, target);
     }
 
