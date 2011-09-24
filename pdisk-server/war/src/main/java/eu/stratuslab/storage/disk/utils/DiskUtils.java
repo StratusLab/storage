@@ -1,6 +1,5 @@
 package eu.stratuslab.storage.disk.utils;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -11,24 +10,38 @@ import org.restlet.resource.ResourceException;
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration.ShareType;
+import eu.stratuslab.storage.disk.plugins.DiskSharing;
+import eu.stratuslab.storage.disk.plugins.DiskStorage;
+import eu.stratuslab.storage.disk.plugins.FileSystemSharing;
+import eu.stratuslab.storage.disk.plugins.IscsiSharing;
+import eu.stratuslab.storage.disk.plugins.LvmStorage;
+import eu.stratuslab.storage.disk.plugins.PosixStorage;
 
 public final class DiskUtils {
-
-    // Template for an iSCSI target entry.
-    private static final String TARGET_TEMPLATE = "<target iqn.2011-01.eu.stratuslab:%s>\n"
-            + "backing-store %s/%s\n" + "</target>\n";
 
     private DiskUtils() {
 
     }
 
-    private static void preDiskCreationActions() {
-
+    private static DiskSharing getDiskSharing() {
+        switch (RootApplication.CONFIGURATION.SHARE_TYPE) {
+        case NFS:
+            return new FileSystemSharing();
+        case ISCSI:
+            return new IscsiSharing();
+        default:
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL);
+        }
     }
 
-    private static void postDiskCreationActions() {
-        if (RootApplication.CONFIGURATION.SHARE_TYPE == ShareType.ISCSI) {
-            updateISCSIConfiguration();
+    private static DiskStorage getDiskStorage() {
+
+        if (RootApplication.CONFIGURATION.SHARE_TYPE == ShareType.NFS
+                || RootApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
+
+            return new PosixStorage();
+        } else {
+            return new LvmStorage();
         }
     }
 
@@ -37,68 +50,26 @@ public final class DiskUtils {
                 .toString();
         int size = Integer.parseInt(properties.getProperty("size").toString());
 
-        preDiskCreationActions();
+        DiskSharing diskSharing = getDiskSharing();
+        DiskStorage diskStorage = getDiskStorage();
 
-        if (RootApplication.CONFIGURATION.SHARE_TYPE == ShareType.NFS
-                || RootApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
-            createFileDisk(uuid, size);
-        } else {
-            createLVMDisk(uuid, size);
-        }
+        diskSharing.preDiskCreationActions();
 
-        postDiskCreationActions();
-    }
+        diskStorage.create(uuid, size);
 
-    private static void createFileDisk(String uuid, int size) {
-        File diskFile = new File(
-                RootApplication.CONFIGURATION.STORAGE_LOCATION, uuid);
-
-        if (diskFile.exists()) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "A disk with the same name already exists.");
-        }
-
-        FileUtils.createZeroFile(diskFile, size);
-    }
-
-    private static void createLVMDisk(String uuid, int size) {
-        File diskFile = new File(RootApplication.CONFIGURATION.LVM_GROUP_PATH,
-                uuid);
-
-        if (diskFile.exists()) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "A disk with the same name already exists.");
-        }
-
-        String lvmSize = size + "G";
-        ProcessBuilder pb = new ProcessBuilder(
-                RootApplication.CONFIGURATION.LVCREATE_CMD, "-L", lvmSize,
-                RootApplication.CONFIGURATION.LVM_GROUP_PATH, "-n", uuid);
-
-        ProcessUtils.execute(pb, "Unable to recreate the LVM volume");
-    }
-
-    public static void preDiskRemovalActions() {
-        if (RootApplication.CONFIGURATION.SHARE_TYPE == ShareType.ISCSI) {
-            updateISCSIConfiguration();
-        }
-    }
-
-    public static void postDiskRemovalActions() {
-
+        diskSharing.postDiskCreationActions();
     }
 
     public static void removeDisk(String uuid) {
-        preDiskRemovalActions();
 
-        if (RootApplication.CONFIGURATION.SHARE_TYPE == ShareType.NFS
-                || RootApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
-            removeFileDisk(uuid);
-        } else {
-            removeLVMDisk(uuid);
-        }
+        DiskSharing diskSharing = getDiskSharing();
+        DiskStorage diskStorage = getDiskStorage();
 
-        postDiskRemovalActions();
+        diskSharing.preDiskRemovalActions();
+
+        diskStorage.delete(uuid);
+
+        diskSharing.postDiskRemovalActions();
     }
 
     public static void attachHotplugDisk(String serviceName, int servicePort,
@@ -152,71 +123,5 @@ public final class DiskUtils {
 
         ProcessBuilder pb = new ProcessBuilder(detachCmd);
         ProcessUtils.execute(pb, "Unable to detach persistent disk");
-    }
-
-    private static void removeFileDisk(String uuid) {
-        File diskFile = new File(
-                RootApplication.CONFIGURATION.STORAGE_LOCATION, uuid);
-
-        if (!diskFile.delete()) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "An error occcured while removing disk content " + uuid);
-        }
-    }
-
-    private static void removeLVMDisk(String uuid) {
-        String volumePath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
-                + uuid;
-        ProcessBuilder pb = new ProcessBuilder(
-                RootApplication.CONFIGURATION.LVREMOVE_CMD, "-f", volumePath);
-
-        ProcessUtils.execute(pb, "It's possible that the disk " + uuid
-                + " is still logged on a node");
-    }
-
-    private static Boolean updateISCSIConfiguration() {
-        String configuration = createISCSITargetConfiguration();
-
-        FileUtils.writeToFile(RootApplication.CONFIGURATION.ISCSI_CONFIG,
-                configuration);
-
-        updateISCSIServer();
-
-        return true;
-    }
-
-    private static String createISCSITargetConfiguration() {
-        StringBuilder sb = new StringBuilder();
-        List<String> disks = getAllDisks();
-        String disksLocation = getDisksLocation();
-
-        for (String uuid : disks) {
-            sb.append(String.format(TARGET_TEMPLATE, uuid, disksLocation, uuid));
-        }
-
-        return sb.toString();
-    }
-
-    private static void updateISCSIServer() {
-        ProcessBuilder pb = new ProcessBuilder(
-                RootApplication.CONFIGURATION.ISCSI_ADMIN, "--update", "ALL");
-
-        ProcessUtils.execute(pb, "Perhaps there is a syntax error in "
-                + RootApplication.CONFIGURATION.ISCSI_CONFIG.getAbsolutePath()
-                + " or in " + ServiceConfiguration.ISCSI_CONFIG_FILENAME);
-    }
-
-    private static List<String> getAllDisks() {
-        DiskProperties zk = new DiskProperties();
-        return zk.getDisks();
-    }
-
-    private static String getDisksLocation() {
-        if (RootApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
-            return RootApplication.CONFIGURATION.STORAGE_LOCATION
-                    .getAbsolutePath();
-        } else {
-            return RootApplication.CONFIGURATION.LVM_GROUP_PATH;
-        }
     }
 }
