@@ -180,7 +180,8 @@
             Jetty packaging that includes StratusLab Persistent Disk server. 
           </description>
           <requires>
-            <require>java</require>
+            <require>stratuslab-authn-config</require>
+	    <require>java-1.6.0-openjdk</require>          
           </requires>
           <mappings>
 
@@ -274,34 +275,6 @@
                 </source>
               </sources>
             </mapping>
-
-	        <mapping>
-	          <directory>${configuration.dir}</directory>
-	          <filemode>644</filemode>
-	          <username>root</username>
-	          <groupname>root</groupname>
-	          <directoryIncluded>false</directoryIncluded>
-	          <configuration>noreplace</configuration>
-	          <sources>
-		        <source>
-		          <location>target/service-config</location>
-		        </source>
-	          </sources>
-	        </mapping>
-
-	        <!--<mapping>
-	          <directory>${configuration.dir}/etc/overrides</directory>
-	          <filemode>644</filemode>
-	          <username>root</username>
-	          <groupname>root</groupname>
-	          <directoryIncluded>false</directoryIncluded>
-	          <configuration>noreplace</configuration>
-	          <sources>
-		        <source>
-		          <location>src/main/jetty-config/etc/overrides</location>
-		        </source>
-	          </sources>
-	        </mapping>-->
 
             <mapping>
               <directory>/etc/stratuslab/</directory>
