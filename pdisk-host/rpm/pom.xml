@@ -22,7 +22,7 @@
   </dependencies>
   
   <properties> 
-    <maven.build.timestamp.format>yyyyMMdd.HHmmss</maven.build.timestamp.format> 
+    <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format> 
     <RELEASE>0.${maven.build.timestamp}</RELEASE>
   </properties>
 
