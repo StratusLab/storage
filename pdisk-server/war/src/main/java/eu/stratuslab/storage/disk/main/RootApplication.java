@@ -116,7 +116,9 @@ public class RootApplication extends Application {
     }
 
     private static Directory createCssDirectory(Context context) {
-        Directory cssDir = new Directory(context, "war:///css");
+		String cssLocation = System.getProperty(
+				"css.content.location", "war:///css");
+        Directory cssDir = new Directory(context, cssLocation);
         cssDir.setNegotiatingContent(false);
         cssDir.setIndexName("index.html");
 
