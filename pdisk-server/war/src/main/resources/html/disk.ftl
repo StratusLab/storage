@@ -28,5 +28,15 @@
   </table>
 </#escape>
 
+  <script language="javascript" src="/css/external/jquery.min.js"></script>
+  <script language="javascript" type="text/javascript">
+    $(document).ready(function() {
+      $('td').each(function(i, element) {
+        var value = $(element).text();
+        value = value.replace('&lt;', '<').replace('&gt;', '>');
+        $(element).html(value);
+      });
+    });
+  </script>
 
 <#include "/html/footer.ftl">
