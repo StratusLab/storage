@@ -27,21 +27,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.UUID;
 
 import org.restlet.data.Form;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
-import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
-import eu.stratuslab.storage.disk.utils.DiskUtils;
-import eu.stratuslab.storage.disk.utils.MiscUtils;
 
-public class DisksResource extends BaseResource {
+public class DisksResource extends DiskBaseResource {
 
     @Get("html")
     public Representation getAsHtml() {
@@ -70,8 +65,10 @@ public class DisksResource extends BaseResource {
 
         getLogger().info("DisksResource createDiskRequestFromHtml");
 
-        Properties diskProperties = getDiskProperties(entity);
+        Properties diskProperties = getDiskProperties(new Form(entity));
 
+        validateDiskProperties(diskProperties);
+        
         createDisk(diskProperties);
 
         String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
@@ -87,8 +84,10 @@ public class DisksResource extends BaseResource {
 
         getLogger().info("DisksResource createDiskRequestFromJson");
 
-        Properties diskProperties = getDiskProperties(entity);
+        Properties diskProperties = getDiskProperties(new Form(entity));
 
+        validateDiskProperties(diskProperties);
+        
         createDisk(diskProperties);
 
         String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
@@ -96,7 +95,7 @@ public class DisksResource extends BaseResource {
         setStatus(Status.SUCCESS_CREATED);
 
         Map<String, Object> info = new HashMap<String, Object>();
-        info.put("key", "uuid");
+        info.put("key", DiskProperties.UUID_KEY);
         info.put("value", uuid);
 
         return createTemplateRepresentation("json/keyvalue.ftl", info,
@@ -127,9 +126,9 @@ public class DisksResource extends BaseResource {
 
     private void addCreateFormDefaults(Map<String, Object> info) {
         Map<String, Object> defaults = new HashMap<String, Object>();
-        defaults.put("size", "1");
-        defaults.put("tag", "");
-        defaults.put("visibility", DiskVisibility.PRIVATE.toString());
+        defaults.put(DiskProperties.DISK_SIZE_KEY, "1");
+        defaults.put(DiskProperties.DISK_TAG_KEY, "");
+        defaults.put(DiskProperties.DISK_VISIBILITY_KEY, DiskVisibility.PRIVATE.toString());
 
         info.put("values", defaults);
 
@@ -139,101 +138,6 @@ public class DisksResource extends BaseResource {
         }
 
         info.put("visibilities", visibilities);
-    }
-
-    private Properties getDiskProperties(Representation entity) {
-
-        MiscUtils.checkForNullEntity(entity);
-
-        Properties diskProperties = processWebForm();
-        List<String> errors = validateDiskProperties(diskProperties);
-
-        // Display form again if we have error(s)
-        if (errors.size() > 0) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    MiscUtils.join(errors, "\", \""));
-        }
-
-        return diskProperties;
-    }
-
-    private Properties getEmptyFormProperties() {
-        Properties properties = new Properties();
-
-        properties.put("size", "");
-        properties.put("tag", "");
-        properties.put("visibility", "private");
-
-        return properties;
-    }
-
-    private Properties processWebForm() {
-        Properties properties = initializeProperties();
-        Representation entity = getRequest().getEntity();
-        Form form = new Form(entity);
-
-        for (String name : form.getNames()) {
-            String value = form.getFirstValue(name);
-            if (value != null) {
-                properties.put(name, value);
-            }
-        }
-
-        return properties;
-    }
-
-    private Properties initializeProperties() {
-        Properties properties = getEmptyFormProperties();
-        properties.put(DiskProperties.UUID_KEY, generateUUID());
-        properties
-                .put(DiskProperties.DISK_OWNER_KEY, getUsername(getRequest()));
-        properties.put(DiskProperties.DISK_CREATION_DATE_KEY,
-                MiscUtils.getTimestamp());
-        properties.put(DiskProperties.DISK_USERS_KEY, "0");
-
-        return properties;
-    }
-
-    private static String generateUUID() {
-        return UUID.randomUUID().toString();
-    }
-
-    private List<String> validateDiskProperties(Properties diskProperties) {
-        List<String> errors = new LinkedList<String>();
-
-        String visibility = "none";
-        try {
-            visibility = diskProperties.getProperty("visibility", "none");
-            DiskVisibility.valueOfIgnoreCase(visibility);
-        } catch (IllegalArgumentException e) {
-            errors.add("invalid disk visibility: " + visibility);
-        }
-
-        try {
-            String size = diskProperties.getProperty("size", "None");
-            int gigabytes = Integer.parseInt(size);
-
-            if (gigabytes < ServiceConfiguration.DISK_SIZE_MIN
-                    || gigabytes > ServiceConfiguration.DISK_SIZE_MAX) {
-                errors.add("Size must be an integer between "
-                        + ServiceConfiguration.DISK_SIZE_MIN + " and "
-                        + ServiceConfiguration.DISK_SIZE_MAX);
-            }
-        } catch (NumberFormatException e) {
-            errors.add("Size must be a valid positive integer");
-        }
-
-        return errors;
-    }
-
-    private void createDisk(Properties properties) {
-        registerDisk(properties);
-        DiskUtils.createDisk(properties);
-    }
-
-    private void registerDisk(Properties properties) {
-        String uuid = properties.get(DiskProperties.UUID_KEY).toString();
-        zk.saveDiskProperties(uuid, properties);
     }
 
 }
