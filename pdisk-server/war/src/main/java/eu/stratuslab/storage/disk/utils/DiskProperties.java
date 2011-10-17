@@ -57,6 +57,10 @@ public class DiskProperties implements Closeable {
     public static final String DISK_VISIBILITY_KEY = "visibility";
     public static final String DISK_CREATION_DATE_KEY = "created";
     public static final String DISK_USERS_KEY = "users";
+    public static final String DISK_READ_ONLY_KEY = "isreadonly";
+    public static final String DISK_COW_BASE_KEY = "iscow";
+	public static final String DISK_TAG_KEY = "tag";
+	public static final String DISK_SIZE_KEY = "size";
 
     public static final String STATIC_DISK_TARGET = "static";
     public static final String DISK_TARGET_LIMIT = "limit";
@@ -204,7 +208,7 @@ public class DiskProperties implements Closeable {
     }
 
     private static String getDiskZkPath(String uuid) {
-        return ZK_DISKS_PATH + "/" + uuid;
+    	return String.format("%s/%s", ZK_DISKS_PATH, uuid);
     }
 
     public Boolean diskExists(String uuid) {
@@ -219,16 +223,25 @@ public class DiskProperties implements Closeable {
 
         String diskRoot = getDiskZkPath(uuid);
 
-        Enumeration<?> propertiesEnum = properties.propertyNames();
-
         createNode(diskRoot, properties.get(UUID_KEY).toString());
+
+        updateDiskProperties(uuid, properties);
+    }
+
+    public void updateDiskProperties(String uuid, Properties properties) {
+
+        String diskRoot = getDiskZkPath(uuid);
+
+        Enumeration<?> propertiesEnum = properties.propertyNames();
 
         while (propertiesEnum.hasMoreElements()) {
             String key = (String) propertiesEnum.nextElement();
-            String content = properties.getProperty(key);
+            String content = properties.get(key).toString();
 
             if (key != UUID_KEY) {
-                createNode(diskRoot + "/" + key, content);
+            	String path = diskRoot + "/" + key;
+            	deleteIfExists(path);
+                createNode(path, content);
             }
         }
     }
@@ -311,13 +324,17 @@ public class DiskProperties implements Closeable {
 
         String deviceMountPath = getMountDevicePath(vmId, uuid);
 
-        if (pathExists(deviceMountPath)) {
-            deleteNode(deviceMountPath);
-        }
+        deleteIfExists(deviceMountPath);
 
         logger.info("Creating node: " + deviceMountPath + " " + target);
         createNode(deviceMountPath, target);
     }
+
+	public void deleteIfExists(String path) {
+		if (pathExists(path)) {
+            deleteNode(path);
+        }
+	}
 
     public String getDiskMountDevice(String vmId, String uuid, Logger logger) {
 
@@ -351,8 +368,8 @@ public class DiskProperties implements Closeable {
         }
     }
 
-    private String getDiskPath(String uuid) {
-        return String.format("%s/%s", ZK_USAGE_PATH, uuid);
+    public static String getDiskPath(String uuid) {
+    	return getDiskZkPath(uuid);
     }
 
     private String getDiskMountPath(String uuid) {
@@ -365,6 +382,10 @@ public class DiskProperties implements Closeable {
 
     private String getMountDevicePath(String vmId, String uuid) {
         return String.format("%s/%s", getDiskPath(uuid), vmId);
+    }
+
+    public String getPathValue(String key, String uuid) {
+        return String.format("%s/%s", getDiskZkPath(uuid), key);
     }
 
     public int getNumberOfMounts(String uuid) {
@@ -403,7 +424,7 @@ public class DiskProperties implements Closeable {
             String value = getNode(childPath);
 
             Properties properties = new Properties();
-            properties.put("uuid", uuid);
+            properties.put(UUID_KEY, uuid);
             properties.put("mountid", mount);
             properties.put("device", value);
             results.add(properties);
@@ -511,4 +532,18 @@ public class DiskProperties implements Closeable {
 
         return children;
     }
+    
+    public boolean isCoW(String uuid) {
+        return isTrue(DiskProperties.DISK_COW_BASE_KEY, uuid);
+    }
+    
+    public boolean isReadOnly(String uuid) {
+        return isTrue(DiskProperties.DISK_READ_ONLY_KEY, uuid);
+    	
+    }
+
+	protected boolean isTrue(String key, String uuid) {
+		String path = getPathValue(key, uuid);
+        return pathExists(path) ? Boolean.parseBoolean(getNode(path)) : false;
+	}
 }
