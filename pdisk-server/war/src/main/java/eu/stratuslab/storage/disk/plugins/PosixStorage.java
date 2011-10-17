@@ -35,4 +35,13 @@ public final class PosixStorage implements DiskStorage {
                     "An error occcured while removing disk content " + uuid);
         }
     }
+
+	public void createCopyOnWrite(String baseUuid, String cowUuid, int size) {
+		// TODO Auto-generated method stub
+	}
+
+	public String rebase(String uuid) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
