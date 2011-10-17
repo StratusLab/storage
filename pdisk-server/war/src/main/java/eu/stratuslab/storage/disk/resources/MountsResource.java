@@ -1,5 +1,6 @@
 package eu.stratuslab.storage.disk.resources;
 
+import static eu.stratuslab.storage.disk.utils.DiskProperties.STATIC_DISK_TARGET;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
@@ -25,6 +26,7 @@ public class MountsResource extends BaseResource {
     private String diskId = null;
     private String node = null;
     private String vmId = null;
+    private boolean registerOnly = false;
 
     @Override
     public void doInit() {
@@ -64,29 +66,7 @@ public class MountsResource extends BaseResource {
     @Post("form:html")
     public Representation createDiskRequestFromHtml(Representation entity) {
 
-        extractNodeAndVmId(entity);
-
-        getLogger().info("DisksResource createDiskRequestFromHtml");
-
-        if (node != null || vmId != null) {
-
-            String target = zk.nextDiskTarget(vmId);
-
-            getLogger().info(
-                    "DiskResource mountDiskAsHtml (dynamic): " + diskId + ", "
-                            + node + ", " + vmId + ", " + target);
-
-            try {
-                attachDisk(target); // ignore return value
-            } catch (RuntimeException e) {
-                zk.deleteDiskTarget(vmId, target);
-                throw e;
-            }
-
-        } else {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "vmId and node must be defined");
-        }
+        mountDisk(entity); // IGNORE the return value!
 
         MESSAGES.push("Your disk has been mounted successfully.");
         redirectSeeOther(getBaseUrl() + "/disks/" + diskId + "/mounts/" + vmId
@@ -97,34 +77,29 @@ public class MountsResource extends BaseResource {
 
     @Post("form:json")
     public Representation mountDiskAsJson(Representation entity) {
+        return mountDisk(entity);
+    }
 
-        extractNodeAndVmId(entity);
+    // Note: Returned representation will always be JSON. This should be ignored
+    // when HTML is requested.
+    private Representation mountDisk(Representation entity) {
 
-        if (node != null || vmId != null) {
+        // Validates form values as well. The node and vmId variables will NOT
+        // be null after this call.
+        extractFormValues(entity);
 
-            String target = zk.nextDiskTarget(vmId);
+        String target = (registerOnly) ? STATIC_DISK_TARGET : zk
+                .nextDiskTarget(vmId);
 
-            getLogger().info(
-                    "DiskResource mountDiskAsJson (dynamic): " + diskId + ", "
-                            + node + ", " + vmId + ", " + target);
+        getLogger().info(
+                "DiskResource mountDisk: " + registerOnly + " " + diskId + ", "
+                        + node + ", " + vmId + ", " + target);
 
-            Representation representation = null;
-            try {
-                representation = attachDisk(target);
-            } catch (RuntimeException e) {
-                zk.deleteDiskTarget(vmId, target);
-                throw e;
-            }
-
-            return representation;
-
-        } else {
-
-            getLogger().info(
-                    "DiskResource mountDiskAsJson (static): " + diskId + ", "
-                            + DiskProperties.STATIC_DISK_TARGET);
-
-            return attachDisk(DiskProperties.STATIC_DISK_TARGET);
+        try {
+            return attachDisk(target);
+        } catch (RuntimeException e) {
+            zk.deleteDiskTarget(vmId, target);
+            throw e;
         }
 
     }
@@ -176,7 +151,7 @@ public class MountsResource extends BaseResource {
                 "attachDisk: " + node + " " + vmId + " " + diskId + " "
                         + target);
 
-        if (!target.equals(DiskProperties.STATIC_DISK_TARGET)) {
+        if (!target.equals(STATIC_DISK_TARGET)) {
             getLogger().info(
                     "hotPlugDisk: " + node + " " + vmId + " " + diskId + " "
                             + target);
@@ -193,17 +168,11 @@ public class MountsResource extends BaseResource {
         return actionResponse(diskIds, target);
     }
 
-    private void extractNodeAndVmId(Representation entity) {
+    private void extractFormValues(Representation entity) {
 
         MiscUtils.checkForNullEntity(entity);
 
         Form form = new Form(entity);
-
-        if (form.size() != 2) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "form has incorrect number of values; expected 2, received "
-                            + form.size());
-        }
 
         node = form.getFirstValue("node");
         if (node == null) {
@@ -216,6 +185,10 @@ public class MountsResource extends BaseResource {
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
                     "missing vm_id attribute");
         }
+
+        Object value = form.getFirstValue("register_only");
+        registerOnly = (value != null && "true".equalsIgnoreCase(value
+                .toString()));
 
     }
 }

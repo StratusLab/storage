@@ -23,6 +23,7 @@
         <th></th>
         <th>VM ID</th>
         <th>Node</th>
+        <th>Register Only?</th>
       </tr>
     </thead>
     <tbody>
@@ -35,6 +36,14 @@
         </td>
         <td>
           <input type="text" name="node" size="40" value="" /> 
+        </td>
+        <td>
+          <input type="option" name="register_only" value="" /> 
+          <select name="register_only">
+              <option selected="selected" value="false"></option>
+              <option value="true"></option>
+          </select>
+          
         </td>
       </tr>
     </tbody>
