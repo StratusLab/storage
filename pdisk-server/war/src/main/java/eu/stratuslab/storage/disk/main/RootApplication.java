@@ -68,10 +68,10 @@ public class RootApplication extends Application {
 			component.start();
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.err.println("\nStarting StratusLab Storage Server FAILED!\n");
+			//System.err.println("\nStarting StratusLab Storage Server FAILED!\n");
 			System.exit(1);
 		}
-		System.out.println("\nStratusLab Storage Server started!\n");
+		//System.out.println("\nStratusLab Storage Server started!\n");
 	}
     
     
