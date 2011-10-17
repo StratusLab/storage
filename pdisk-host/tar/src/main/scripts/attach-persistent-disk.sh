@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -xe
 
 UUID_URL=$1
 DEVICE_LINK=$2
