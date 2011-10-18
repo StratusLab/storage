@@ -102,8 +102,8 @@ public class DiskResource extends DiskBaseResource {
 		String baseDiskHref = String.format("<a href='%s'>basedisk<a/>", DiskProperties.getDiskPath(getDiskId()));
 		properties.put(DiskProperties.DISK_COW_BASE_KEY, baseDiskHref);
 
-		createDisk(properties);
 
+	    registerDisk(properties);
 		incrementOriginDiskUserCount();
 
 		return cowUuid;
