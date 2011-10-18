@@ -330,25 +330,20 @@ public class DiskProperties implements Closeable {
         createNode(deviceMountPath, target);
     }
 
+	public int incrementUserCount(String uuid) {
+		String path = getPathValue(DISK_USERS_KEY, uuid);
+        int count = Integer.parseInt(path);
+        deleteIfExists(path);
+        count++;
+        createNode(path, String.valueOf(count));
+        return count;
+	}
+
 	public void deleteIfExists(String path) {
 		if (pathExists(path)) {
             deleteNode(path);
         }
 	}
-
-    public String getDiskMountDevice(String vmId, String uuid, Logger logger) {
-
-        String value = "";
-
-        String deviceMountPath = getMountDevicePath(vmId, uuid);
-        if (pathExists(deviceMountPath)) {
-            value = getNode(deviceMountPath);
-        }
-
-        logger.info("Disk Mount Device: " + deviceMountPath + ", " + value);
-
-        return value;
-    }
 
     public void removeDiskMount(String node, String vmId, String uuid,
             Logger logger) {
