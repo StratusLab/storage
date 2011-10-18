@@ -77,39 +77,52 @@ public class DiskResource extends DiskBaseResource {
 	public void createCopyOnWriteOrRebase(Representation entity) {
 		boolean isCoW = new DiskProperties().isCoW(getDiskId());
 		
+		String newUuid = null;
 		if(isCoW) {
-			rebase();
+			newUuid = rebase();
 		} else {
-			createCoW();
+			newUuid = createCoW();
 		}
+		
+        redirectSeeOther(getBaseUrl() + "/disks/" + newUuid + "/");
+		
 	}
 
-	private void createCoW() {
+	private String createCoW() {
 
-        Properties cowProperties = initializeProperties();
+        Properties properties = initializeProperties();
 
-		cowProperties.put(DiskProperties.DISK_SIZE_KEY, diskProperties.getProperty(DiskProperties.DISK_SIZE_KEY));
-		cowProperties.put(DiskProperties.UUID_KEY, getDiskId());
+		properties.put(DiskProperties.DISK_SIZE_KEY, diskProperties.getProperty(DiskProperties.DISK_SIZE_KEY));
+		properties.put(DiskProperties.UUID_KEY, getDiskId());
 
-		String cowUuid = DiskUtils.createCoWDisk(cowProperties);		
+		String cowUuid = DiskUtils.createCoWDisk(properties);		
 
-		cowProperties.put(DiskProperties.UUID_KEY, cowUuid);
+		properties.put(DiskProperties.UUID_KEY, cowUuid);
 
 		String baseDiskHref = String.format("<a href='%s'>basedisk<a/>", DiskProperties.getDiskPath(getDiskId()));
-		cowProperties.put(DiskProperties.DISK_COW_BASE_KEY, baseDiskHref);
+		properties.put(DiskProperties.DISK_COW_BASE_KEY, baseDiskHref);
 
-		createDisk(cowProperties);
+		createDisk(properties);
 
+		incrementOriginDiskUserCount();
+
+		return cowUuid;
 	}
 
-	private void rebase() {
+	private void incrementOriginDiskUserCount() {
+		incrementUserCount(getDiskId());
+	}
+
+	private String rebase() {
 
 		Properties properties = getExistingProperties();
 
-		DiskUtils.rebaseDisk(properties);		
+		String newUuid = DiskUtils.rebaseDisk(properties);		
 
 		properties.put(DiskProperties.DISK_COW_BASE_KEY, false);
 		updateDisk(properties);
+		
+		return newUuid;
 	}
 
 	@Get("html")
