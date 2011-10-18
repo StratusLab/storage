@@ -158,7 +158,6 @@ public class BaseResource extends ServerResource {
         DiskVisibility currentVisibility = DiskVisibility
                 .valueOfIgnoreCase(visibility);
 
-        // Is disk public
         return (currentVisibility == DiskVisibility.PUBLIC);
     }
 

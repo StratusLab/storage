@@ -6,31 +6,65 @@ import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
+import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.ProcessUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
 
 public final class LvmStorage implements DiskStorage {
 
-    public LvmStorage() {
+	public void create(String uuid, int size) {
 
-    }
+		String lvmSize = size + "G";
+		ProcessBuilder pb = new ProcessBuilder(
+				RootApplication.CONFIGURATION.LVCREATE_CMD, "-L", lvmSize,
+				RootApplication.CONFIGURATION.LVM_GROUP_PATH, "-n", uuid);
 
-    public void create(String uuid, int size) {
-        File diskFile = new File(RootApplication.CONFIGURATION.LVM_GROUP_PATH,
-                uuid);
+		ProcessUtils.execute(pb, "Unable to recreate the LVM volume");
+	}
 
-        if (diskFile.exists()) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "A disk with the same name already exists.");
-        }
+	protected void checkDiskExists(String baseUuid) {
+		File diskFile = new File(RootApplication.CONFIGURATION.LVM_GROUP_PATH,
+				baseUuid);
+		if (!diskFile.exists()) {
+			throw new ResourceException(Status.CLIENT_ERROR_CONFLICT,
+					"Cannot create copy on write disk, since base disk "
+							+ baseUuid + " doesn't exist");
+		}
+	}
 
-        String lvmSize = size + "G";
-        ProcessBuilder pb = new ProcessBuilder(
-                RootApplication.CONFIGURATION.LVCREATE_CMD, "-L", lvmSize,
-                RootApplication.CONFIGURATION.LVM_GROUP_PATH, "-n", uuid);
+	public String rebase(String uuid) {
 
-        ProcessUtils.execute(pb, "Unable to recreate the LVM volume");
-    }
+		checkDiskExists(uuid);
+				
+		String rebasedUuid = DiskUtils.generateUUID();
+
+		String sourcePath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
+				+ uuid;
+		ProcessBuilder pb = new ProcessBuilder("xxdd", "if=" + sourcePath,
+				"of=" + rebasedUuid);
+
+		ProcessUtils.execute(pb, "Unable to rebase the LVM volume");
+
+		delete(uuid);
+
+		return rebasedUuid;
+	}
+
+	public void createCopyOnWrite(String baseUuid, String cowUuid, int size) {
+		// lvcreate --snapshot -p rw --size $PDISKID_COPY_SIZE
+		// --name $PDISKID_COPY $VGPATH/$PDISKID
+
+		checkDiskExists(baseUuid);
+
+		String lvmSize = size + "G";
+		String sourcePath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
+				+ baseUuid;
+		ProcessBuilder pb = new ProcessBuilder(
+				RootApplication.CONFIGURATION.LVCREATE_CMD, "--snapshot", "-p",
+				"rw", "--size", lvmSize, "--name", cowUuid, sourcePath);
+
+		ProcessUtils.execute(pb, "Unable to recreate the LVM volume");
+	}
 
     public void delete(String uuid) {
         String volumePath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"

@@ -22,12 +22,14 @@ package eu.stratuslab.storage.disk.main;
 import java.util.Map;
 
 import org.restlet.Application;
+import org.restlet.Component;
 import org.restlet.Context;
 import org.restlet.Request;
 import org.restlet.Response;
 import org.restlet.Restlet;
 import org.restlet.data.ChallengeScheme;
 import org.restlet.data.LocalReference;
+import org.restlet.data.Protocol;
 import org.restlet.ext.freemarker.ContextTemplateLoader;
 import org.restlet.resource.Directory;
 import org.restlet.routing.Router;
@@ -51,6 +53,28 @@ public class RootApplication extends Application {
 
     private Configuration freeMarkerConfiguration = null;
 
+	public static void main(String[] args) throws Exception {
+
+		Component component = new Component();
+
+		component.getServers().add(Protocol.HTTP, 8182);
+		component.getServers().add(Protocol.FILE);
+		component.getClients().add(Protocol.FILE);
+		component.getClients().add(Protocol.CLAP);
+		Application rootApplication = new RootApplication();
+		component.getDefaultHost().attach("", rootApplication);
+
+		try {
+			component.start();
+		} catch (Exception e) {
+			e.printStackTrace();
+			//System.err.println("\nStarting StratusLab Storage Server FAILED!\n");
+			System.exit(1);
+		}
+		//System.out.println("\nStratusLab Storage Server started!\n");
+	}
+    
+    
     public RootApplication() {
         setName("StratusLab Persistent Disk Server");
         setDescription("StratusLab server for persistent disk storage.");
@@ -92,7 +116,9 @@ public class RootApplication extends Application {
     }
 
     private static Directory createCssDirectory(Context context) {
-        Directory cssDir = new Directory(context, "war:///css");
+		String cssLocation = System.getProperty(
+				"css.content.location", "war:///css");
+        Directory cssDir = new Directory(context, cssLocation);
         cssDir.setNegotiatingContent(false);
         cssDir.setIndexName("index.html");
 

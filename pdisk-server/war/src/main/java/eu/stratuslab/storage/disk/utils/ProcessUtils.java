@@ -2,7 +2,9 @@ package eu.stratuslab.storage.disk.utils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.logging.Logger;
 
 import org.restlet.data.Status;
@@ -18,6 +20,8 @@ public final class ProcessUtils {
 
     public static void execute(ProcessBuilder pb, String errorMsg) {
         int returnCode = 1;
+        String stdout = "";
+        String stderr = "";
         Process process;
         StringBuffer outputBuf = new StringBuffer();
 
@@ -39,6 +43,8 @@ public final class ProcessUtils {
             stdOutErr.close();
 
             returnCode = process.exitValue();
+            stdout = streamToString(process.getInputStream());
+            stderr = streamToString(process.getErrorStream());
         } catch (IOException e) {
 
             String msg = "An error occurred while executing command: "
@@ -62,6 +68,8 @@ public final class ProcessUtils {
                     + ".\nReturn code was: " + String.valueOf(returnCode);
 
             LOGGER.severe(msg);
+            LOGGER.severe("Standard Output: \n" + stdout + "\n");
+            LOGGER.severe("Standard Error: \n" + stderr + "\n");
 
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL, msg);
         }
@@ -91,6 +99,7 @@ public final class ProcessUtils {
 
     }
 
+
     private static int processWaitGetStatus(Process process) {
     	int rc = -1;
     	boolean blocked = true;
@@ -103,6 +112,35 @@ public final class ProcessUtils {
     		}
     	}
     	return rc;
+    }
+
+    private static String streamToString(InputStream is) {
+
+        StringBuilder sb = new StringBuilder();
+        char[] c = new char[1024];
+
+        Reader r = null;
+
+        try {
+
+            r = new InputStreamReader(is);
+            for (int n = r.read(c); n > 0; n = r.read(c)) {
+                sb.append(c, 0, n);
+            }
+
+        } catch (IOException consumed) {
+            // Do nothing.
+        } finally {
+            if (r != null) {
+                try {
+                    r.close();
+                } catch (IOException consumed) {
+                    // Do nothing.
+                }
+            }
+        }
+
+        return sb.toString();
     }
 
 }

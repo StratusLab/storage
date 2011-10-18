@@ -63,7 +63,7 @@ public final class IscsiSharing implements DiskSharing {
 
         ProcessUtils.execute(pb, "Perhaps there is a syntax error in "
                 + RootApplication.CONFIGURATION.ISCSI_CONFIG.getAbsolutePath()
-                + " or in " + ServiceConfiguration.ISCSI_CONFIG_FILENAME);
+                + " or in " + ServiceConfiguration.DEFAULT_ISCSI_CONFIG_FILENAME);
     }
 
     private static List<String> getAllDisks() {
