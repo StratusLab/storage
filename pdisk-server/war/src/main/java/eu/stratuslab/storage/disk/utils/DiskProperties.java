@@ -539,6 +539,16 @@ public class DiskProperties implements Closeable {
 
 	protected boolean isTrue(String key, String uuid) {
 		String path = getPathValue(key, uuid);
-        return pathExists(path) ? Boolean.parseBoolean(getNode(path)) : false;
+		
+		if (pathExists(path)) {
+			String value = getNode(path);
+			if("false".equals(value)) {
+				return false;
+			} else {
+				return true;
+			}
+		} else {
+			return false;
+		}
 	}
 }
