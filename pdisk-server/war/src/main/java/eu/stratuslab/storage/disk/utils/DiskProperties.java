@@ -332,7 +332,7 @@ public class DiskProperties implements Closeable {
 
 	public int incrementUserCount(String uuid) {
 		String path = getPathValue(DISK_USERS_KEY, uuid);
-        int count = Integer.parseInt(path);
+        int count = Integer.parseInt(getNode(path));
         deleteIfExists(path);
         count++;
         createNode(path, String.valueOf(count));
