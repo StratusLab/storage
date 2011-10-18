@@ -4,6 +4,8 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -42,8 +44,18 @@ public final class MiscUtils {
         return sb.toString();
     }
 
+    public static String sub(String pattern, String replace, String string) {
+        Pattern p = Pattern.compile(pattern);
+        Matcher m = p.matcher(string);
+        StringBuffer sb = new StringBuffer();
+        while (m.find()) {
+          m.appendReplacement(sb, replace);
+        }
+        m.appendTail(sb);
+        return sb.toString();
+    }
+
     public static <T> T last(T[] array) {
         return array[array.length - 1];
     }
-
 }
