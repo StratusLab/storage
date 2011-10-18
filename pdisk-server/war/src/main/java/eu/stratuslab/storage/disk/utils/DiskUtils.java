@@ -78,7 +78,7 @@ public final class DiskUtils {
 		return cowUuid;
 	}
 
-	public static void rebaseDisk(Properties properties) {
+	public static String rebaseDisk(Properties properties) {
 		String uuid = properties.getProperty(DiskProperties.UUID_KEY)
 				.toString();
 
@@ -87,9 +87,11 @@ public final class DiskUtils {
 
 		diskSharing.preDiskRemovalActions();
 
-		diskStorage.rebase(uuid);
+		String newUuid = diskStorage.rebase(uuid);
 
 		diskSharing.postDiskRemovalActions();
+		
+		return newUuid;
 	}
 
 	protected static int getSize(Properties properties) {
