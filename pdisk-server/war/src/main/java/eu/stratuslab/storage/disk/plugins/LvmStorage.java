@@ -11,14 +11,8 @@ import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
 public final class LvmStorage implements DiskStorage {
 
-	public LvmStorage() {
-
-	}
-
 	public void create(String uuid, int size) {
 
-		checkDiskExists(uuid);
-				
 		String lvmSize = size + "G";
 		ProcessBuilder pb = new ProcessBuilder(
 				RootApplication.CONFIGURATION.LVCREATE_CMD, "-L", lvmSize,
@@ -47,7 +41,7 @@ public final class LvmStorage implements DiskStorage {
 		File diskFile = new File(RootApplication.CONFIGURATION.LVM_GROUP_PATH,
 				baseUuid);
 		if (!diskFile.exists()) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+			throw new ResourceException(Status.CLIENT_ERROR_CONFLICT,
 					"Cannot create copy on write disk, since base disk "
 							+ baseUuid + " doesn't exist");
 		}
