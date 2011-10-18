@@ -120,7 +120,8 @@ public class DiskResource extends DiskBaseResource {
 		String newUuid = DiskUtils.rebaseDisk(properties);		
 
 		properties.put(DiskProperties.DISK_COW_BASE_KEY, false);
-		updateDisk(properties);
+
+	    registerDisk(properties);
 		
 		return newUuid;
 	}
@@ -238,6 +239,7 @@ public class DiskResource extends DiskBaseResource {
 	private void deleteDisk() {
 		zk.deleteRecursively(getDiskId());
 		DiskUtils.removeDisk(getDiskId());
+		// TODO: decrement user count in parent disk...
 	}
 
 }
