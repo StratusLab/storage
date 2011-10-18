@@ -32,14 +32,14 @@ public final class LvmStorage implements DiskStorage {
 		}
 	}
 
-	public String rebase(String uuid) {
+	public String rebase(String cowUuid) {
 
-		checkDiskExists(uuid);
+		checkDiskExists(cowUuid);
 
 		String rebasedUuid = DiskUtils.generateUUID();
 
 		String sourcePath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
-				+ uuid;
+				+ cowUuid;
 		String rebasedPath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
 				+ rebasedUuid;
 		ProcessBuilder pb = new ProcessBuilder("dd", "if=" + sourcePath, "of="
@@ -47,7 +47,7 @@ public final class LvmStorage implements DiskStorage {
 
 		ProcessUtils.execute(pb, "Unable to rebase the LVM volume");
 
-		delete(uuid);
+		delete(cowUuid);
 
 		return rebasedUuid;
 	}
