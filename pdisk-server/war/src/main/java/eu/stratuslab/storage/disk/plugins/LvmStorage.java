@@ -35,13 +35,15 @@ public final class LvmStorage implements DiskStorage {
 	public String rebase(String uuid) {
 
 		checkDiskExists(uuid);
-				
+
 		String rebasedUuid = DiskUtils.generateUUID();
 
 		String sourcePath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
 				+ uuid;
-		ProcessBuilder pb = new ProcessBuilder("dd", "if=" + sourcePath,
-				"of=" + rebasedUuid);
+		String rebasedPath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
+				+ rebasedUuid;
+		ProcessBuilder pb = new ProcessBuilder("dd", "if=" + sourcePath, "of="
+				+ rebasedPath);
 
 		ProcessUtils.execute(pb, "Unable to rebase the LVM volume");
 
@@ -66,38 +68,40 @@ public final class LvmStorage implements DiskStorage {
 		ProcessUtils.execute(pb, "Unable to recreate the LVM volume");
 	}
 
-    public void delete(String uuid) {
-        String volumePath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
-                + uuid;
+	public void delete(String uuid) {
+		String volumePath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
+				+ uuid;
 
-        if (false == (new File(volumePath)).exists()) {
-        	return;
-        }
+		if (false == (new File(volumePath)).exists()) {
+			return;
+		}
 
-        ProcessBuilder lvremove = new ProcessBuilder(
-                RootApplication.CONFIGURATION.LVREMOVE_CMD, "-f", volumePath);
+		ProcessBuilder lvremove = new ProcessBuilder(
+				RootApplication.CONFIGURATION.LVREMOVE_CMD, "-f", volumePath);
 
-        if (ProcessUtils.executeGetStatus(lvremove) != 0) {
-        	ProcessBuilder lvchange = new ProcessBuilder(
-        			RootApplication.CONFIGURATION.LVCHANGE_CMD,
-        			"-a n", volumePath);
-        	ProcessUtils.executeGetStatus(lvchange);
+		if (ProcessUtils.executeGetStatus(lvremove) != 0) {
+			ProcessBuilder lvchange = new ProcessBuilder(
+					RootApplication.CONFIGURATION.LVCHANGE_CMD, "-a n",
+					volumePath);
+			ProcessUtils.executeGetStatus(lvchange);
 
-        	if (ProcessUtils.executeGetStatus(lvremove) != 0) {
-        		// dmsetup needs as input <VG name>-<UUID> sanitized with 's/-/--/g;s|/|-|g'
-        		String volumeGroupName = MiscUtils.sub("^.*/", "", RootApplication.CONFIGURATION.LVM_GROUP_PATH)
-        				.replaceAll("/", "");
-        		String uuidDm = uuid.replaceAll("-", "--");
-        		String volumePathDm = volumeGroupName + "-" + uuidDm;
+			if (ProcessUtils.executeGetStatus(lvremove) != 0) {
+				// dmsetup needs as input <VG name>-<UUID> sanitized with
+				// 's/-/--/g;s|/|-|g'
+				String volumeGroupName = MiscUtils.sub("^.*/", "",
+						RootApplication.CONFIGURATION.LVM_GROUP_PATH)
+						.replaceAll("/", "");
+				String uuidDm = uuid.replaceAll("-", "--");
+				String volumePathDm = volumeGroupName + "-" + uuidDm;
 
-        		ProcessBuilder dmsetup = new ProcessBuilder(
-        				RootApplication.CONFIGURATION.DMSETUP_CMD,
-        				"remove", volumePathDm);
-        		ProcessUtils.executeGetStatus(dmsetup);
+				ProcessBuilder dmsetup = new ProcessBuilder(
+						RootApplication.CONFIGURATION.DMSETUP_CMD, "remove",
+						volumePathDm);
+				ProcessUtils.executeGetStatus(dmsetup);
 
-		        ProcessUtils.execute(lvremove, "It's possible that the disk " + uuid
-		        		+ " is still logged on a node");
-        	}
-        }
-    }
+				ProcessUtils.execute(lvremove, "It's possible that the disk "
+						+ uuid + " is still logged on a node");
+			}
+		}
+	}
 }
