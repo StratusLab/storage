@@ -141,6 +141,10 @@ public class DiskBaseResource extends BaseResource {
         return zk.getDiskProperties(uuid);
     }
 
+    protected int incrementUserCount(String uuid) {
+        return zk.incrementUserCount(uuid);
+    }
+
 	protected void checkExistance() {
 		if (!zk.diskExists(getDiskId())) {
 	        throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
