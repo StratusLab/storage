@@ -65,6 +65,8 @@ public class DiskProperties implements Closeable {
     public static final String STATIC_DISK_TARGET = "static";
     public static final String DISK_TARGET_LIMIT = "limit";
 
+	public static final Object DISK_IDENTIFER_KEY = "Marketplace_id";
+
     public DiskProperties() {
         connect(RootApplication.CONFIGURATION.ZK_ADDRESSES, 3000);
     }

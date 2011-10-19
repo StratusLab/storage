@@ -22,6 +22,7 @@ package eu.stratuslab.storage.disk.resources;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -121,9 +122,23 @@ public class DiskResource extends DiskBaseResource {
 
 		properties.put(DiskProperties.DISK_COW_BASE_KEY, false);
 
+		properties = calculateHashes(properties);
+		
 	    registerDisk(properties);
 		
 		return newUuid;
+	}
+
+	protected Properties calculateHashes(Properties properties) {
+		String identifier;
+		try {
+			identifier = DiskUtils.calculateHash(properties.getProperty(DiskProperties.UUID_KEY));
+		} catch (FileNotFoundException e) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, e.getMessage());
+		}
+		properties.put(DiskProperties.DISK_IDENTIFER_KEY, identifier);
+		
+		return properties;
 	}
 
 	@Get("html")
