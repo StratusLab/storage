@@ -57,6 +57,10 @@ public final class DiskUtils {
 
 		diskStorage.create(uuid, getSize(properties));
 
+		properties.put(DiskProperties.UUID_KEY, uuid);
+        DiskProperties zk = new DiskProperties();
+        zk.saveDiskProperties(properties);
+        
 		diskSharing.postDiskCreationActions();
 	}
 
@@ -73,6 +77,14 @@ public final class DiskUtils {
 			
 		diskStorage.createCopyOnWrite(uuid, cowUuid, getSize(properties));
 
+		// TODO: refactor
+		properties.put(DiskProperties.UUID_KEY, cowUuid);
+		String baseDiskHref = String.format("<a href='%s'>basedisk<a/>",
+				DiskProperties.getDiskPath(uuid));
+		properties.put(DiskProperties.DISK_COW_BASE_KEY, baseDiskHref);
+        DiskProperties zk = new DiskProperties();
+        zk.saveDiskProperties(properties);
+		
 		diskSharing.postDiskCreationActions();
 		
 		return cowUuid;
@@ -92,6 +104,10 @@ public final class DiskUtils {
 		diskStorage.create(rebaseUuid, getSize(properties));
 
 		String newUuid = diskStorage.rebase(uuid, rebaseUuid);
+
+		diskSharing.preDiskRemovalActions();
+		diskStorage.delete(uuid);
+		diskSharing.postDiskRemovalActions();
 
 		return newUuid;
 	}

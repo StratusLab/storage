@@ -159,7 +159,6 @@ public class DiskBaseResource extends BaseResource {
 
 	protected void createDisk(Properties properties) {
 	    DiskUtils.createDisk(properties);
-	    registerDisk(properties);
 	}
 
 }
