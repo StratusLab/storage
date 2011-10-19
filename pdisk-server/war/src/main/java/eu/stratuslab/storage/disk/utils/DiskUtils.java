@@ -86,11 +86,13 @@ public final class DiskUtils {
 		DiskStorage diskStorage = getDiskStorage();
 
 		diskSharing.preDiskRemovalActions();
-
-		String newUuid = diskStorage.rebase(uuid);
-
-		diskSharing.postDiskRemovalActions();
 		
+		String rebaseUuid = DiskUtils.generateUUID();
+		
+		diskStorage.create(rebaseUuid, getSize(properties));
+
+		String newUuid = diskStorage.rebase(uuid, rebaseUuid);
+
 		return newUuid;
 	}
 

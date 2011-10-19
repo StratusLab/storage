@@ -219,11 +219,13 @@ public class DiskProperties implements Closeable {
         return getChildren(ZK_DISKS_PATH);
     }
 
-    public void saveDiskProperties(String uuid, Properties properties) {
+    public void saveDiskProperties(Properties properties) {
+
+        String uuid = properties.getProperty(UUID_KEY);
 
         String diskRoot = getDiskZkPath(uuid);
 
-        createNode(diskRoot, properties.get(UUID_KEY).toString());
+        createNode(diskRoot, uuid);
 
         updateDiskProperties(uuid, properties);
     }

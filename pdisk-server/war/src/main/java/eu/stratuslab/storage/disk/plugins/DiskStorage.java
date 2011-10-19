@@ -6,7 +6,7 @@ public interface DiskStorage {
 
     public void createCopyOnWrite(String baseUuid, String cowUuid, int size);
 
-    public String rebase(String uuid);
+    public String rebase(String uuid, String rebaseUuid);
 
     public void delete(String uuid);
 

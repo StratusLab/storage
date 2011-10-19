@@ -63,11 +63,11 @@ public class DiskResource extends DiskBaseResource {
 
 		checkExistance();
 
-        MiscUtils.checkForNullEntity(entity);
+		MiscUtils.checkForNullEntity(entity);
 
 		Properties properties = processWebForm(new Form(entity));
 		properties.put(UUID_KEY_NAME, getDiskId());
-		
+
 		updateDisk(properties);
 
 		MESSAGES.push("Your disk's metadata has been updated successfully.");
@@ -76,34 +76,35 @@ public class DiskResource extends DiskBaseResource {
 	@Post
 	public void createCopyOnWriteOrRebase(Representation entity) {
 		boolean isCoW = new DiskProperties().isCoW(getDiskId());
-		
+
 		String newUuid = null;
-		if(isCoW) {
+		if (isCoW) {
 			newUuid = rebase();
 		} else {
 			newUuid = createCoW();
 		}
-		
-        redirectSeeOther(getBaseUrl() + "/disks/" + newUuid + "/");
-		
+
+		redirectSeeOther(getBaseUrl() + "/disks/" + newUuid + "/");
+
 	}
 
 	private String createCoW() {
 
-        Properties properties = initializeProperties();
+		Properties properties = initializeProperties();
 
-		properties.put(DiskProperties.DISK_SIZE_KEY, diskProperties.getProperty(DiskProperties.DISK_SIZE_KEY));
+		properties.put(DiskProperties.DISK_SIZE_KEY,
+				diskProperties.getProperty(DiskProperties.DISK_SIZE_KEY));
 		properties.put(DiskProperties.UUID_KEY, getDiskId());
 
-		String cowUuid = DiskUtils.createCoWDisk(properties);		
+		String cowUuid = DiskUtils.createCoWDisk(properties);
 
 		properties.put(DiskProperties.UUID_KEY, cowUuid);
 
-		String baseDiskHref = String.format("<a href='%s'>basedisk<a/>", DiskProperties.getDiskPath(getDiskId()));
+		String baseDiskHref = String.format("<a href='%s'>basedisk<a/>",
+				DiskProperties.getDiskPath(getDiskId()));
 		properties.put(DiskProperties.DISK_COW_BASE_KEY, baseDiskHref);
 
-
-	    registerDisk(properties);
+		registerDisk(properties);
 		incrementOriginDiskUserCount();
 
 		return cowUuid;
@@ -117,12 +118,19 @@ public class DiskResource extends DiskBaseResource {
 
 		Properties properties = getExistingProperties();
 
-		String newUuid = DiskUtils.rebaseDisk(properties);		
+		String cowUuid = getDiskId();
+		String newUuid = DiskUtils.rebaseDisk(properties);
 
-		properties.put(DiskProperties.DISK_COW_BASE_KEY, false);
+		Properties newProperties = initializeProperties();
+		newProperties.put(DiskProperties.UUID_KEY, newUuid);
+		newProperties.put(DiskProperties.DISK_READ_ONLY_KEY, true);
+		newProperties.put(DiskProperties.DISK_SIZE_KEY,
+				properties.getProperty(DiskProperties.DISK_SIZE_KEY));
 
-	    registerDisk(properties);
-		
+		registerDisk(newProperties);
+
+		deleteDisk(cowUuid);
+
 		return newUuid;
 	}
 
@@ -237,8 +245,18 @@ public class DiskResource extends DiskBaseResource {
 	}
 
 	private void deleteDisk() {
-		zk.deleteRecursively(getDiskId());
-		DiskUtils.removeDisk(getDiskId());
+		deleteDisk(getDiskId());
+	}
+
+	private void deleteDisk(String uuid) {
+		Properties propreties = zk.getDiskProperties(uuid);		
+		zk.deleteRecursively(uuid);
+		try{
+			DiskUtils.removeDisk(uuid);
+		} catch(ResourceException e) {
+			registerDisk(propreties);
+			throw(e);
+		}
 		// TODO: decrement user count in parent disk...
 	}
 
