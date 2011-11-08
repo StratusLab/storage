@@ -131,8 +131,7 @@ public class DiskBaseResource extends BaseResource {
     }
 
     protected void registerDisk(Properties properties) {
-        String uuid = properties.get(DiskProperties.UUID_KEY).toString();
-        zk.saveDiskProperties(uuid, properties);
+        zk.saveDiskProperties(properties);
     }
 
     protected Properties updateDisk(Properties properties) {
@@ -160,7 +159,6 @@ public class DiskBaseResource extends BaseResource {
 
 	protected void createDisk(Properties properties) {
 	    DiskUtils.createDisk(properties);
-	    registerDisk(properties);
 	}
 
 }

@@ -40,7 +40,7 @@ public final class PosixStorage implements DiskStorage {
 		// TODO Auto-generated method stub
 	}
 
-	public String rebase(String uuid) {
+	public String rebase(String uuid, String rebaseUuid) {
 		// TODO Auto-generated method stub
 		return null;
 	}

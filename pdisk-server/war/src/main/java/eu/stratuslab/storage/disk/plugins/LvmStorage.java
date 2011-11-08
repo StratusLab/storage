@@ -7,8 +7,8 @@ import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
-import eu.stratuslab.storage.disk.utils.ProcessUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
+import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
 public final class LvmStorage implements DiskStorage {
 
@@ -32,7 +32,7 @@ public final class LvmStorage implements DiskStorage {
 		}
 	}
 
-	public String rebase(String cowUuid) {
+	public String rebase(String cowUuid, String rebaseUuid) {
 
 		checkDiskExists(cowUuid);
 
@@ -40,14 +40,13 @@ public final class LvmStorage implements DiskStorage {
 
 		String sourcePath = DiskUtils.getDevicePath() + cowUuid;
 		String rebasedPath = DiskUtils.getDevicePath() + rebasedUuid;
+
 		ProcessBuilder pb = new ProcessBuilder("dd", "if=" + sourcePath, "of="
 				+ rebasedPath);
 
 		ProcessUtils.execute(pb, "Unable to rebase the LVM volume");
 
-		delete(cowUuid);
-
-		return rebasedUuid;
+		return rebaseUuid;
 	}
 
 	public void createCopyOnWrite(String baseUuid, String cowUuid, int size) {
