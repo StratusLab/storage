@@ -71,7 +71,6 @@ public class DiskResource extends DiskBaseResource {
 
 		updateDisk(properties);
 
-		MESSAGES.push("Your disk's metadata has been updated successfully.");
 	}
 
 	@Post

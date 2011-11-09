@@ -68,7 +68,6 @@ public class MountsResource extends BaseResource {
 
         mountDisk(entity); // IGNORE the return value!
 
-        MESSAGES.push("Your disk has been mounted successfully.");
         redirectSeeOther(getBaseUrl() + "/disks/" + diskId + "/mounts/" + vmId
                 + "-" + node + "/");
 

@@ -38,7 +38,6 @@ import freemarker.template.Configuration;
 public class BaseResource extends ServerResource {
 
     protected final DiskProperties zk;
-    protected static final Messages MESSAGES = new Messages();
 
     public enum DiskVisibility {
         PRIVATE,
@@ -87,12 +86,12 @@ public class BaseResource extends ServerResource {
 
     protected Map<String, Object> createInfoStructure(String title) {
 
-        return createInfoStructure(title, getRequest(), MESSAGES.pop(),
+        return createInfoStructure(title, getRequest(),
                 getBaseUrl());
     }
 
     public static Map<String, Object> createInfoStructure(String title,
-            Request request, String msg, String baseUrl) {
+            Request request, String baseUrl) {
 
         Map<String, Object> info = new HashMap<String, Object>();
 
@@ -106,9 +105,6 @@ public class BaseResource extends ServerResource {
 
         // Add user name information
         info.put("username", getUsername(request));
-
-        // Display message if available
-        info.put("success", msg);
 
         return info;
     }

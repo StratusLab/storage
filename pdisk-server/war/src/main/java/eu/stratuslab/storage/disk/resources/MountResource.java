@@ -94,7 +94,6 @@ public class MountResource extends BaseResource {
 
         detachHotPluggedDisk();
 
-        MESSAGES.push("Your disk has been unmounted.");
         redirectSeeOther(getBaseUrl() + "/disks/" + diskId + "/mounts/");
 
         Map<String, Object> info = createInfoStructure("redirect");
