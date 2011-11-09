@@ -88,7 +88,7 @@ public class CommonStatusService extends StatusService {
             Request request) {
 
         Map<String, Object> info = BaseResource.createInfoStructure("Error",
-                request, "", BaseResource.getBaseUrl(request));
+                request, BaseResource.getBaseUrl(request));
 
         info.put("errorMsg", status.getDescription());
         info.put("errorCode", status.getCode());
