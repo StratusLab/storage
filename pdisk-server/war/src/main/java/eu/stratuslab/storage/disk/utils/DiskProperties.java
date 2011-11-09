@@ -145,7 +145,7 @@ public class DiskProperties implements Closeable {
         try {
             node = new String(zk.getData(root, false, null));
         } catch (KeeperException e) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+            throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND,
                     "ZooKeeper error: " + e.getMessage());
         } catch (InterruptedException e) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
