@@ -63,6 +63,8 @@ public class DiskResource extends DiskBaseResource {
 	public void update(Representation entity) {
 
 		checkExistance();
+		
+		checkIsSuper();
 
 		MiscUtils.checkForNullEntity(entity);
 
@@ -70,7 +72,13 @@ public class DiskResource extends DiskBaseResource {
 		properties.put(UUID_KEY_NAME, getDiskId());
 
 		updateDisk(properties);
+	}
 
+	private void checkIsSuper() {
+		if (!getUsername(getRequest()).equals("oneadmin")) {
+			throw(new ResourceException(Status.CLIENT_ERROR_FORBIDDEN, "Only super user can perform this operation"));
+		}
+		
 	}
 
 	@Post
@@ -177,7 +185,6 @@ public class DiskResource extends DiskBaseResource {
 
 		processDeleteDiskRequest();
 
-		MESSAGES.push("Your disk have been deleted successfully");
 		redirectSeeOther(getBaseUrl() + "/disks/");
 
 		Map<String, Object> info = createInfoStructure("redirect");
