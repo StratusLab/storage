@@ -97,7 +97,11 @@ public class MountsResource extends BaseResource {
         try {
             return attachDisk(target);
         } catch (RuntimeException e) {
-            zk.deleteDiskTarget(vmId, target);
+            try {
+            	zk.deleteDiskTarget(vmId, target);
+            } catch (RuntimeException e2) {
+            	
+            }
             throw e;
         }
 
