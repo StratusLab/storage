@@ -40,7 +40,7 @@ import eu.stratuslab.storage.disk.resources.DisksResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
 import eu.stratuslab.storage.disk.resources.MountResource;
 import eu.stratuslab.storage.disk.resources.MountsResource;
-import eu.stratuslab.storage.disk.utils.DumpVerifier;
+import eu.stratuslab.storage.disk.utils.DummyVerifier;
 import freemarker.template.Configuration;
 
 public class RootApplication extends Application {
@@ -133,7 +133,7 @@ public class RootApplication extends Application {
     //
     private static ChallengeAuthenticator createGuard(Context context,
             Router next) {
-        DumpVerifier verifier = new DumpVerifier();
+        DummyVerifier verifier = new DummyVerifier();
         ChallengeAuthenticator guard = new ChallengeAuthenticator(context,
                 ChallengeScheme.HTTP_BASIC,
                 "Stratuslab Persistent Disk Storage");

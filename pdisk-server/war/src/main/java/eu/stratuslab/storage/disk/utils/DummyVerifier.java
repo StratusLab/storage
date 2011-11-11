@@ -4,7 +4,7 @@ import org.restlet.Request;
 import org.restlet.Response;
 import org.restlet.security.Verifier;
 
-public class DumpVerifier implements Verifier {
+public class DummyVerifier implements Verifier {
 
 	public int verify(Request request, Response response) {
 		// As JAAS has already done all the authentication job, we just have to
