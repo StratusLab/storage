@@ -32,7 +32,6 @@ import org.restlet.resource.ServerResource;
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
-import eu.stratuslab.storage.disk.utils.Messages;
 import freemarker.template.Configuration;
 
 public class BaseResource extends ServerResource {
