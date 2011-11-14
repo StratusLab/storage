@@ -140,10 +140,10 @@ public class BaseResource extends ServerResource {
 
     protected Boolean hasSufficientRightsToView(Properties properties) {
         // Is disk owner or service user
+    	String username = getUsername(getRequest());
         if (properties.get(DiskProperties.DISK_OWNER_KEY).toString()
-                .equals(getUsername(getRequest()))
-                || RootApplication.CONFIGURATION.CLOUD_SERVICE_USER
-                        .equals(getUsername(getRequest()))) {
+                .equals(username)
+                || isSuperUser(username)) {
             return true;
         }
 
@@ -155,6 +155,11 @@ public class BaseResource extends ServerResource {
 
         return (currentVisibility == DiskVisibility.PUBLIC);
     }
+
+	protected boolean isSuperUser(String username) {
+		return RootApplication.CONFIGURATION.CLOUD_SERVICE_USER
+				.equals(username);
+	}
 
     protected Boolean hasSufficientRightsToDelete(Properties properties) {
         // Need to be the owner to delete the disk

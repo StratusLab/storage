@@ -63,7 +63,7 @@ public class DiskResource extends DiskBaseResource {
 	public void update(Representation entity) {
 
 		checkExistance();
-		
+
 		checkIsSuper();
 
 		MiscUtils.checkForNullEntity(entity);
@@ -72,13 +72,6 @@ public class DiskResource extends DiskBaseResource {
 		properties.put(UUID_KEY_NAME, getDiskId());
 
 		updateDisk(properties);
-	}
-
-	private void checkIsSuper() {
-		if (!getUsername(getRequest()).equals("oneadmin")) {
-			throw(new ResourceException(Status.CLIENT_ERROR_FORBIDDEN, "Only super user can perform this operation"));
-		}
-		
 	}
 
 	@Post
@@ -135,21 +128,23 @@ public class DiskResource extends DiskBaseResource {
 		deleteDisk(cowUuid);
 
 		properties = calculateHashes(properties);
-		
-	    registerDisk(properties);
-		
+
+		registerDisk(properties);
+
 		return newUuid;
 	}
 
 	protected Properties calculateHashes(Properties properties) {
 		String identifier;
 		try {
-			identifier = DiskUtils.calculateHash(properties.getProperty(DiskProperties.UUID_KEY));
+			identifier = DiskUtils.calculateHash(properties
+					.getProperty(DiskProperties.UUID_KEY));
 		} catch (FileNotFoundException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, e.getMessage());
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					e.getMessage());
 		}
 		properties.put(DiskProperties.DISK_IDENTIFER_KEY, identifier);
-		
+
 		return properties;
 	}
 
@@ -267,13 +262,13 @@ public class DiskResource extends DiskBaseResource {
 	}
 
 	private void deleteDisk(String uuid) {
-		Properties propreties = zk.getDiskProperties(uuid);		
+		Properties propreties = zk.getDiskProperties(uuid);
 		zk.deleteRecursively(uuid);
-		try{
+		try {
 			DiskUtils.removeDisk(uuid);
-		} catch(ResourceException e) {
+		} catch (ResourceException e) {
 			registerDisk(propreties);
-			throw(e);
+			throw (e);
 		}
 		// TODO: decrement user count in parent disk...
 	}
