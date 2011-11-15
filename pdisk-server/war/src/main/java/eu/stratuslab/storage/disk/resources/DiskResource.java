@@ -22,6 +22,7 @@ package eu.stratuslab.storage.disk.resources;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -63,14 +64,14 @@ public class DiskResource extends DiskBaseResource {
 
 		checkExistance();
 
+		checkIsSuper();
+
 		MiscUtils.checkForNullEntity(entity);
 
 		Properties properties = processWebForm(new Form(entity));
 		properties.put(UUID_KEY_NAME, getDiskId());
 
 		updateDisk(properties);
-
-		MESSAGES.push("Your disk's metadata has been updated successfully.");
 	}
 
 	@Post
@@ -123,7 +124,25 @@ public class DiskResource extends DiskBaseResource {
 
 		registerDisk(newProperties);
 
+		properties = calculateHashes(properties);
+
+		registerDisk(properties);
+
 		return newUuid;
+	}
+
+	protected Properties calculateHashes(Properties properties) {
+		String identifier;
+		try {
+			identifier = DiskUtils.calculateHash(properties
+					.getProperty(DiskProperties.UUID_KEY));
+		} catch (FileNotFoundException e) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					e.getMessage());
+		}
+		properties.put(DiskProperties.DISK_IDENTIFER_KEY, identifier);
+
+		return properties;
 	}
 
 	@Get("html")
@@ -158,7 +177,6 @@ public class DiskResource extends DiskBaseResource {
 
 		processDeleteDiskRequest();
 
-		MESSAGES.push("Your disk have been deleted successfully");
 		redirectSeeOther(getBaseUrl() + "/disks/");
 
 		Map<String, Object> info = createInfoStructure("redirect");
@@ -241,13 +259,13 @@ public class DiskResource extends DiskBaseResource {
 	}
 
 	private void deleteDisk(String uuid) {
-		Properties propreties = zk.getDiskProperties(uuid);		
+		Properties propreties = zk.getDiskProperties(uuid);
 		zk.deleteRecursively(uuid);
-		try{
+		try {
 			DiskUtils.removeDisk(uuid);
-		} catch(ResourceException e) {
+		} catch (ResourceException e) {
 			registerDisk(propreties);
-			throw(e);
+			throw (e);
 		}
 		// TODO: decrement user count in parent disk...
 	}

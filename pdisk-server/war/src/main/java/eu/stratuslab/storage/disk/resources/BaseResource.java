@@ -32,178 +32,177 @@ import org.restlet.resource.ServerResource;
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
-import eu.stratuslab.storage.disk.utils.Messages;
 import freemarker.template.Configuration;
 
 public class BaseResource extends ServerResource {
 
-    protected final DiskProperties zk;
-    protected static final Messages MESSAGES = new Messages();
+	protected final DiskProperties zk;
 
-    public enum DiskVisibility {
-        PRIVATE,
-        // RESTRICTED,
-        PUBLIC;
+	public enum DiskVisibility {
+		PRIVATE,
+		// RESTRICTED,
+		PUBLIC;
 
-        public static DiskVisibility valueOfIgnoreCase(String value) {
-            return valueOf(value.toUpperCase());
-        }
-    }
+		public static DiskVisibility valueOfIgnoreCase(String value) {
+			return valueOf(value.toUpperCase());
+		}
+	}
 
-    public BaseResource() {
-        super();
-        zk = new DiskProperties();
-    }
+	public BaseResource() {
+		super();
+		zk = new DiskProperties();
+	}
 
-    @Override
-    protected void doRelease() {
-        if (zk != null) {
-            zk.close();
-        }
-        super.doRelease();
-    }
+	@Override
+	protected void doRelease() {
+		if (zk != null) {
+			zk.close();
+		}
+		super.doRelease();
+	}
 
-    private Configuration getFreeMarkerConfiguration() {
-        return ((RootApplication) getApplication())
-                .getFreeMarkerConfiguration();
-    }
+	private Configuration getFreeMarkerConfiguration() {
+		return ((RootApplication) getApplication())
+				.getFreeMarkerConfiguration();
+	}
 
-    protected TemplateRepresentation createTemplateRepresentation(String tpl,
-            Map<String, Object> info, MediaType mediaType) {
+	protected TemplateRepresentation createTemplateRepresentation(String tpl,
+			Map<String, Object> info, MediaType mediaType) {
 
-        Configuration freeMarkerConfig = getFreeMarkerConfiguration();
-        return createTemplateRepresentation(freeMarkerConfig, tpl, info,
-                mediaType);
+		Configuration freeMarkerConfig = getFreeMarkerConfiguration();
+		return createTemplateRepresentation(freeMarkerConfig, tpl, info,
+				mediaType);
 
-    }
+	}
 
-    public static TemplateRepresentation createTemplateRepresentation(
-            Configuration freeMarkerConfig, String tpl,
-            Map<String, Object> info, MediaType mediaType) {
+	public static TemplateRepresentation createTemplateRepresentation(
+			Configuration freeMarkerConfig, String tpl,
+			Map<String, Object> info, MediaType mediaType) {
 
-        return new TemplateRepresentation(tpl, freeMarkerConfig, info,
-                mediaType);
-    }
+		return new TemplateRepresentation(tpl, freeMarkerConfig, info,
+				mediaType);
+	}
 
-    protected Map<String, Object> createInfoStructure(String title) {
+	protected Map<String, Object> createInfoStructure(String title) {
 
-        return createInfoStructure(title, getRequest(), MESSAGES.pop(),
-                getBaseUrl());
-    }
+		return createInfoStructure(title, getRequest(), getBaseUrl());
+	}
 
-    public static Map<String, Object> createInfoStructure(String title,
-            Request request, String msg, String baseUrl) {
+	public static Map<String, Object> createInfoStructure(String title,
+			Request request, String baseUrl) {
 
-        Map<String, Object> info = new HashMap<String, Object>();
+		Map<String, Object> info = new HashMap<String, Object>();
 
-        // Add the title if appropriate.
-        if (title != null && !"".equals(title)) {
-            info.put("title", title);
-        }
+		// Add the title if appropriate.
+		if (title != null && !"".equals(title)) {
+			info.put("title", title);
+		}
 
-        // Add the standard base URL declaration.
-        info.put("baseurl", baseUrl);
+		// Add the standard base URL declaration.
+		info.put("baseurl", baseUrl);
 
-        // Add user name information
-        info.put("username", getUsername(request));
+		// Add user name information
+		info.put("username", getUsername(request));
 
-        // Display message if available
-        info.put("success", msg);
+		return info;
+	}
 
-        return info;
-    }
+	public static String getUsername(Request request) {
+		ChallengeResponse cr = request.getChallengeResponse();
+		return (cr == null) ? "UNKNOWN" : cr.getIdentifier();
+	}
 
-    public static String getUsername(Request request) {
-        ChallengeResponse cr = request.getChallengeResponse();
-        return (cr == null) ? "UNKNOWN" : cr.getIdentifier();
-    }
+	protected String getBaseUrl() {
+		return getRequest().getRootRef().toString();
+	}
 
-    protected String getBaseUrl() {
-        return getRequest().getRootRef().toString();
-    }
+	public static String getBaseUrl(Request request) {
+		return request.getRootRef().toString();
+	}
 
-    public static String getBaseUrl(Request request) {
-        return request.getRootRef().toString();
-    }
+	protected String getCurrentUrl() {
+		return getCurrentUrlWithQueryString().replaceAll("\\?.*", "");
+	}
 
-    protected String getCurrentUrl() {
-        return getCurrentUrlWithQueryString().replaceAll("\\?.*", "");
-    }
+	protected String getCurrentUrlWithQueryString() {
+		return getRequest().getResourceRef().toString();
+	}
 
-    protected String getCurrentUrlWithQueryString() {
-        return getRequest().getResourceRef().toString();
-    }
+	protected String getQueryString() {
+		return getRequest().getResourceRef().getQuery();
+	}
 
-    protected String getQueryString() {
-        return getRequest().getResourceRef().getQuery();
-    }
+	protected Boolean hasQueryString(String key) {
+		String queryString = getQueryString();
+		return (queryString != null && queryString.equals(key));
+	}
 
-    protected Boolean hasQueryString(String key) {
-        String queryString = getQueryString();
-        return (queryString != null && queryString.equals(key));
-    }
+	protected Boolean hasSufficientRightsToView(Properties properties) {
+		String username = getUsername(getRequest());
+		if (properties.get(DiskProperties.DISK_OWNER_KEY).toString()
+				.equals(username)
+				|| isSuperUser(username)) {
+			return true;
+		}
 
-    protected Boolean hasSufficientRightsToView(Properties properties) {
-        // Is disk owner or service user
-        if (properties.get(DiskProperties.DISK_OWNER_KEY).toString()
-                .equals(getUsername(getRequest()))
-                || RootApplication.CONFIGURATION.CLOUD_SERVICE_USER
-                        .equals(getUsername(getRequest()))) {
-            return true;
-        }
+		String visibility = properties
+				.getProperty(DiskProperties.DISK_VISIBILITY_KEY);
 
-        String visibility = properties
-                .getProperty(DiskProperties.DISK_VISIBILITY_KEY);
+		DiskVisibility currentVisibility = DiskVisibility
+				.valueOfIgnoreCase(visibility);
 
-        DiskVisibility currentVisibility = DiskVisibility
-                .valueOfIgnoreCase(visibility);
+		return (currentVisibility == DiskVisibility.PUBLIC);
+	}
 
-        return (currentVisibility == DiskVisibility.PUBLIC);
-    }
+	protected boolean isSuperUser(String username) {
+		return RootApplication.CONFIGURATION.CLOUD_SERVICE_USER
+				.equals(username);
+	}
 
-    protected Boolean hasSufficientRightsToDelete(Properties properties) {
-        // Need to be the owner to delete the disk
-        return properties.get(DiskProperties.DISK_OWNER_KEY).toString()
-                .equals(getUsername(getRequest()));
-    }
+	protected Boolean hasSufficientRightsToDelete(Properties properties) {
+		String username = getUsername(getRequest());
+		return properties.get(DiskProperties.DISK_OWNER_KEY).toString()
+				.equals(username)
+				|| isSuperUser(username);
+	}
 
-    protected String serviceName() {
-        return getRequest().getHostRef().getHostDomain();
-    }
+	protected String serviceName() {
+		return getRequest().getHostRef().getHostDomain();
+	}
 
-    protected int servicePort() {
-        return getRequest().getHostRef().getHostPort();
-    }
+	protected int servicePort() {
+		return getRequest().getHostRef().getHostPort();
+	}
 
-    public Configuration extractFmConfiguration() {
-        Request request = getRequest();
-        return extractFmConfiguration(request);
-    }
+	public Configuration extractFmConfiguration() {
+		Request request = getRequest();
+		return extractFmConfiguration(request);
+	}
 
-    public static Configuration extractFmConfiguration(Request request) {
-        try {
-            Map<String, Object> attributes = request.getAttributes();
-            Object value = attributes.get(RootApplication.FM_CONFIGURATION_KEY);
-            return (Configuration) value;
-        } catch (ClassCastException e) {
-            return null;
-        }
-    }
+	public static Configuration extractFmConfiguration(Request request) {
+		try {
+			Map<String, Object> attributes = request.getAttributes();
+			Object value = attributes.get(RootApplication.FM_CONFIGURATION_KEY);
+			return (Configuration) value;
+		} catch (ClassCastException e) {
+			return null;
+		}
+	}
 
-    public ServiceConfiguration extractSvcConfiguration() {
-        Request request = getRequest();
-        return extractSvcConfiguration(request);
-    }
+	public ServiceConfiguration extractSvcConfiguration() {
+		Request request = getRequest();
+		return extractSvcConfiguration(request);
+	}
 
-    public static ServiceConfiguration extractSvcConfiguration(Request request) {
-        try {
-            Map<String, Object> attributes = request.getAttributes();
-            Object value = attributes
-                    .get(RootApplication.SVC_CONFIGURATION_KEY);
-            return (ServiceConfiguration) value;
-        } catch (ClassCastException e) {
-            return null;
-        }
-    }
+	public static ServiceConfiguration extractSvcConfiguration(Request request) {
+		try {
+			Map<String, Object> attributes = request.getAttributes();
+			Object value = attributes
+					.get(RootApplication.SVC_CONFIGURATION_KEY);
+			return (ServiceConfiguration) value;
+		} catch (ClassCastException e) {
+			return null;
+		}
+	}
 
 }

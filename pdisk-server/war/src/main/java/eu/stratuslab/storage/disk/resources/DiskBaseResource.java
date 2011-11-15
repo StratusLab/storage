@@ -161,4 +161,12 @@ public class DiskBaseResource extends BaseResource {
 	    DiskUtils.createDisk(properties);
 	}
 
+	protected void checkIsSuper() {
+		if (!isSuperUser(getUsername(getRequest()))) {
+			throw (new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
+					"Only super user can perform this operation"));
+		}
+	
+	}
+
 }

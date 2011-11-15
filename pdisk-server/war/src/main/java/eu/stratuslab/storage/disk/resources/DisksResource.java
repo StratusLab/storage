@@ -73,7 +73,6 @@ public class DisksResource extends DiskBaseResource {
 
         String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
 
-        MESSAGES.push("Your disk has been created successfully.");
         redirectSeeOther(getBaseUrl() + "/disks/" + uuid + "/");
 
         return null;

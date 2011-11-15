@@ -1,13 +1,19 @@
 package eu.stratuslab.storage.disk.utils;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
+import eu.stratuslab.marketplace.metadata.MetadataUtils;
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration.ShareType;
@@ -74,7 +80,7 @@ public final class DiskUtils {
 		diskSharing.preDiskCreationActions();
 
 		String cowUuid = generateUUID();
-			
+
 		diskStorage.createCopyOnWrite(uuid, cowUuid, getSize(properties));
 
 		// TODO: refactor
@@ -86,7 +92,7 @@ public final class DiskUtils {
         zk.saveDiskProperties(properties);
 		
 		diskSharing.postDiskCreationActions();
-		
+
 		return cowUuid;
 	}
 
@@ -175,6 +181,24 @@ public final class DiskUtils {
 	}
 
 	public static String generateUUID() {
-	    return UUID.randomUUID().toString();
+		return UUID.randomUUID().toString();
+	}
+
+	public static String calculateHash(String uuid) throws FileNotFoundException {
+
+		InputStream fis = new FileInputStream(getDevicePath() + uuid);
+
+		Map<String, BigInteger> info = MetadataUtils.streamInfo(fis);
+
+		BigInteger sha1Digest = info.get("SHA-1");
+
+		String identifier = MetadataUtils.sha1ToIdentifier(sha1Digest);
+		
+		return identifier;
+
+	}
+	
+	public static String getDevicePath() {
+		return RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
 	}
 }

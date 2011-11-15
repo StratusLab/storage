@@ -68,7 +68,6 @@ public class MountsResource extends BaseResource {
 
         mountDisk(entity); // IGNORE the return value!
 
-        MESSAGES.push("Your disk has been mounted successfully.");
         redirectSeeOther(getBaseUrl() + "/disks/" + diskId + "/mounts/" + vmId
                 + "-" + node + "/");
 
@@ -98,7 +97,11 @@ public class MountsResource extends BaseResource {
         try {
             return attachDisk(target);
         } catch (RuntimeException e) {
-            zk.deleteDiskTarget(vmId, target);
+            try {
+            	zk.deleteDiskTarget(vmId, target);
+            } catch (RuntimeException e2) {
+            	
+            }
             throw e;
         }
 

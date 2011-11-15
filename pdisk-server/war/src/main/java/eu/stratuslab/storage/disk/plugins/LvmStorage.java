@@ -6,8 +6,9 @@ import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
-import eu.stratuslab.storage.disk.utils.ProcessUtils;
+import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
+import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
 public final class LvmStorage implements DiskStorage {
 
@@ -35,10 +36,10 @@ public final class LvmStorage implements DiskStorage {
 
 		checkDiskExists(cowUuid);
 
-		String sourcePath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
-				+ cowUuid;
-		String rebasedPath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
-				+ rebaseUuid;
+		String rebasedUuid = DiskUtils.generateUUID();
+
+		String sourcePath = DiskUtils.getDevicePath() + cowUuid;
+		String rebasedPath = DiskUtils.getDevicePath() + rebasedUuid;
 
 		ProcessBuilder pb = new ProcessBuilder("dd", "if=" + sourcePath, "of="
 				+ rebasedPath);
@@ -55,8 +56,7 @@ public final class LvmStorage implements DiskStorage {
 		checkDiskExists(baseUuid);
 
 		String lvmSize = size + "G";
-		String sourcePath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
-				+ baseUuid;
+		String sourcePath = DiskUtils.getDevicePath() + baseUuid;
 		ProcessBuilder pb = new ProcessBuilder(
 				RootApplication.CONFIGURATION.LVCREATE_CMD, "--snapshot", "-p",
 				"rw", "--size", lvmSize, "--name", cowUuid, sourcePath);
@@ -65,8 +65,7 @@ public final class LvmStorage implements DiskStorage {
 	}
 
 	public void delete(String uuid) {
-		String volumePath = RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/"
-				+ uuid;
+		String volumePath = DiskUtils.getDevicePath() + uuid;
 
 		if (false == (new File(volumePath)).exists()) {
 			return;
