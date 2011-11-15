@@ -113,7 +113,6 @@ public class DiskResource extends DiskBaseResource {
 
 		Properties properties = getExistingProperties();
 
-		String cowUuid = getDiskId();
 		String newUuid = DiskUtils.rebaseDisk(properties);
 
 		Properties newProperties = initializeProperties();
@@ -123,8 +122,6 @@ public class DiskResource extends DiskBaseResource {
 				properties.getProperty(DiskProperties.DISK_SIZE_KEY));
 
 		registerDisk(newProperties);
-
-		deleteDisk(cowUuid);
 
 		return newUuid;
 	}

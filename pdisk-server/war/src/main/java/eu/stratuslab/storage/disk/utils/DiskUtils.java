@@ -94,20 +94,13 @@ public final class DiskUtils {
 		String uuid = properties.getProperty(DiskProperties.UUID_KEY)
 				.toString();
 
-		DiskSharing diskSharing = getDiskSharing();
 		DiskStorage diskStorage = getDiskStorage();
 
-		diskSharing.preDiskRemovalActions();
-		
 		String rebaseUuid = DiskUtils.generateUUID();
 		
 		diskStorage.create(rebaseUuid, getSize(properties));
 
 		String newUuid = diskStorage.rebase(uuid, rebaseUuid);
-
-		diskSharing.preDiskRemovalActions();
-		diskStorage.delete(uuid);
-		diskSharing.postDiskRemovalActions();
 
 		return newUuid;
 	}
