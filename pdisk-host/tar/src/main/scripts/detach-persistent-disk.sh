@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash -e
 
 VM_DIR=$1
 UUID_URL=$VM_DIR
