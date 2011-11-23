@@ -47,7 +47,7 @@ attach_iscsi() {
     if [ "x$DISCOVER_OUT" = "x" ]
     then
         echo "Unable to find disk $DISK_UUID at $PORTAL"
-        return
+        exit 2
     fi
 
     # Portal informations
