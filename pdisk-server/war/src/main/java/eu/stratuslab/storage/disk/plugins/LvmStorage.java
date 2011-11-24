@@ -2,7 +2,8 @@ package eu.stratuslab.storage.disk.plugins;
 
 import java.io.File;
 
-import javax.net.ssl.SSLEngineResult.Status;
+import org.restlet.data.Status;
+import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
