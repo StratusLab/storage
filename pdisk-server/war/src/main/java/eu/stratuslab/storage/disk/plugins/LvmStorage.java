@@ -2,8 +2,7 @@ package eu.stratuslab.storage.disk.plugins;
 
 import java.io.File;
 
-import org.restlet.data.Status;
-import org.restlet.resource.ResourceException;
+import javax.net.ssl.SSLEngineResult.Status;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
@@ -36,10 +35,8 @@ public final class LvmStorage implements DiskStorage {
 
 		checkDiskExists(cowUuid);
 
-		String rebasedUuid = DiskUtils.generateUUID();
-
 		String sourcePath = DiskUtils.getDevicePath() + cowUuid;
-		String rebasedPath = DiskUtils.getDevicePath() + rebasedUuid;
+		String rebasedPath = DiskUtils.getDevicePath() + rebaseUuid;
 
 		ProcessBuilder pb = new ProcessBuilder("dd", "if=" + sourcePath, "of="
 				+ rebasedPath);
