@@ -123,11 +123,9 @@ public class DiskResource extends DiskBaseResource {
 		newProperties.put(DiskProperties.DISK_SIZE_KEY,
 				properties.getProperty(DiskProperties.DISK_SIZE_KEY));
 
+		// TODO: implement here and remove client-side implementation
+//		newProperties = calculateHashes(newProperties);
 		registerDisk(newProperties);
-
-		properties = calculateHashes(properties);
-
-		registerDisk(properties);
 
 		return newUuid;
 	}
