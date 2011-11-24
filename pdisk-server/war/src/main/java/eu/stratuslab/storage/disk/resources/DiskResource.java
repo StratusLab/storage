@@ -49,6 +49,7 @@ public class DiskResource extends DiskBaseResource {
 	@Override
 	protected void doInit() throws ResourceException {
 
+		checkExistance();
 		diskProperties = zk.getDiskProperties(getDiskId());
 
 		if (!hasSufficientRightsToView(diskProperties)) {
@@ -150,7 +151,7 @@ public class DiskResource extends DiskBaseResource {
 
 		getLogger().info("DiskResource getAsHtml: " + getDiskId());
 
-		Map<String, Object> info = listDiskProperties();
+		Map<String, Object> info = loadDiskProperties();
 
 		addDiskUserHeader();
 
@@ -162,7 +163,7 @@ public class DiskResource extends DiskBaseResource {
 
 		getLogger().info("DiskResource getAsJson: " + getDiskId());
 
-		Map<String, Object> info = listDiskProperties();
+		Map<String, Object> info = loadDiskProperties();
 
 		addDiskUserHeader();
 
@@ -199,7 +200,7 @@ public class DiskResource extends DiskBaseResource {
 				APPLICATION_JSON);
 	}
 
-	private Map<String, Object> listDiskProperties() {
+	private Map<String, Object> loadDiskProperties() {
 		Map<String, Object> infos = createInfoStructure("Disk Information");
 
 		checkExistance();
