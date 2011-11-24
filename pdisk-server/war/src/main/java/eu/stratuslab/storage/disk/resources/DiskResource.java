@@ -49,6 +49,7 @@ public class DiskResource extends DiskBaseResource {
 	@Override
 	protected void doInit() throws ResourceException {
 
+		checkExistance();
 		diskProperties = zk.getDiskProperties(getDiskId());
 
 		if (!hasSufficientRightsToView(diskProperties)) {
