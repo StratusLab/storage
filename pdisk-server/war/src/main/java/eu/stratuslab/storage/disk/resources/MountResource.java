@@ -17,148 +17,148 @@ import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class MountResource extends BaseResource {
 
-    private String diskId = null;
-    private String mountId = null;
-    private String node = null;
-    private String vmId = null;
+	private String diskId = null;
+	private String mountId = null;
+	private String node = null;
+	private String vmId = null;
 
-    @Override
-    public void doInit() {
+	@Override
+	public void doInit() {
 
-        Map<String, Object> attributes = getRequest().getAttributes();
+		Map<String, Object> attributes = getRequest().getAttributes();
 
-        Object diskIdValue = attributes.get("uuid");
-        if (diskIdValue == null) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "disk UUID cannot be null");
-        }
-        diskId = diskIdValue.toString();
+		Object diskIdValue = attributes.get("uuid");
+		if (diskIdValue == null) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"disk UUID cannot be null");
+		}
+		diskId = diskIdValue.toString();
 
-        Object mountIdValue = attributes.get("mountid");
-        if (mountIdValue == null) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "mount ID cannot be null");
+		Object mountIdValue = attributes.get("mountid");
+		if (mountIdValue == null) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"mount ID cannot be null");
 
-        }
-        mountId = mountIdValue.toString();
+		}
+		mountId = mountIdValue.toString();
 
-        String[] fields = mountId.split("-", 2);
-        if (fields.length != 2) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "malformed mount ID");
-        }
+		String[] fields = mountId.split("-", 2);
+		if (fields.length != 2) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"malformed mount ID");
+		}
 
-        vmId = fields[0];
-        if ("".equals(vmId)) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "illegal VM identifier");
-        }
+		vmId = fields[0];
+		if ("".equals(vmId)) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"illegal VM identifier");
+		}
 
-        node = fields[1];
-        if ("".equals(node)) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "illegal node name");
-        }
+		node = fields[1];
+		if ("".equals(node)) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"illegal node name");
+		}
 
-    }
+	}
 
-    @Get("html")
-    public Representation getAsHtml() {
+	@Get("html")
+	public Representation getAsHtml() {
 
-        getLogger().info(
-                "DiskResource getAsHtml: " + diskId + ", " + mountId + ", "
-                        + node + ", " + vmId);
+		getLogger().info(
+				"DiskResource getAsHtml: " + diskId + ", " + mountId + ", "
+						+ node + ", " + vmId);
 
-        Map<String, Object> info = getMountProperties();
-        return createTemplateRepresentation("html/mount.ftl", info, TEXT_HTML);
-    }
+		Map<String, Object> info = getMountProperties();
+		return createTemplateRepresentation("html/mount.ftl", info, TEXT_HTML);
+	}
 
-    @Get("json")
-    public Representation getAsJson() {
+	@Get("json")
+	public Representation getAsJson() {
 
-        getLogger().info(
-                "DiskResource getAsJson: " + diskId + ", " + mountId + ", "
-                        + node + ", " + vmId);
+		getLogger().info(
+				"DiskResource getAsJson: " + diskId + ", " + mountId + ", "
+						+ node + ", " + vmId);
 
-        Map<String, Object> info = getMountProperties();
-        return createTemplateRepresentation("json/mount.ftl", info,
-                APPLICATION_JSON);
-    }
+		Map<String, Object> info = getMountProperties();
+		return createTemplateRepresentation("json/mount.ftl", info,
+				APPLICATION_JSON);
+	}
 
-    @Delete("html")
-    public Representation detachDiskAsHtml(Representation entity) {
+	@Delete("html")
+	public Representation detachDiskAsHtml(Representation entity) {
 
-        getLogger().info(
-                "DiskResource detachDiskAsHtml: " + diskId + ", " + mountId
-                        + ", " + node + ", " + vmId);
+		getLogger().info(
+				"DiskResource detachDiskAsHtml: " + diskId + ", " + mountId
+						+ ", " + node + ", " + vmId);
 
-        detachHotPluggedDisk();
+		detachHotPluggedDisk();
 
-        redirectSeeOther(getBaseUrl() + "/disks/" + diskId + "/mounts/");
+		redirectSeeOther(getBaseUrl() + "/disks/" + diskId + "/mounts/");
 
-        Map<String, Object> info = createInfoStructure("redirect");
-        return createTemplateRepresentation("html/redirect.ftl", info,
-                TEXT_HTML);
-    }
+		Map<String, Object> info = createInfoStructure("redirect");
+		return createTemplateRepresentation("html/redirect.ftl", info,
+				TEXT_HTML);
+	}
 
-    @Delete("json")
-    public Representation detachDiskAsJson(Representation entity) {
+	@Delete("json")
+	public Representation detachDiskAsJson(Representation entity) {
 
-        getLogger().info(
-                "DiskResource detachDiskAsJson: " + diskId + ", " + mountId
-                        + ", " + node + ", " + vmId);
+		getLogger().info(
+				"DiskResource detachDiskAsJson: " + diskId + ", " + mountId
+						+ ", " + node + ", " + vmId);
 
-        String diskTarget = detachHotPluggedDisk();
+		String diskTarget = detachHotPluggedDisk();
 
-        Map<String, Object> info = getMountProperties();
-        info.put("target", diskTarget);
-        return createTemplateRepresentation("json/mount.ftl", info,
-                APPLICATION_JSON);
-    }
+		Map<String, Object> info = getMountProperties();
+		info.put("target", diskTarget);
+		return createTemplateRepresentation("json/mount.ftl", info,
+				APPLICATION_JSON);
+	}
 
-    private Map<String, Object> getMountProperties() {
+	private Map<String, Object> getMountProperties() {
 
-        Map<String, Object> info = this
-                .createInfoStructure("Mount Information");
-        info.put("diskId", diskId);
-        info.put("mountId", mountId);
-        info.put("vmId", vmId);
-        info.put("node", node);
-        info.put("url", getCurrentUrl());
-        return info;
-    }
+		Map<String, Object> info = this
+				.createInfoStructure("Mount Information");
+		info.put("diskId", diskId);
+		info.put("mountId", mountId);
+		info.put("vmId", vmId);
+		info.put("node", node);
+		info.put("url", getCurrentUrl());
+		return info;
+	}
 
-    private String detachHotPluggedDisk() {
+	private String detachHotPluggedDisk() {
 
-        Properties diskProperties = zk.getDiskProperties(diskId);
+		Properties diskProperties = zk.getDiskProperties(diskId);
 
-        if (!hasSufficientRightsToView(diskProperties)) {
-            throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
-                    "insufficient rights to detach disk");
-        }
+		if (!hasSufficientRightsToView(diskProperties)) {
+			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
+					"insufficient rights to detach disk");
+		}
 
-        if (diskId == null || !zk.diskExists(diskId)) {
-            throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND,
-                    "unknown disk: " + diskId);
-        }
+		if (diskId == null || !zk.diskExists(diskId)) {
+			throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND,
+					"unknown disk: " + diskId);
+		}
 
-        String diskTarget = zk.diskTarget(node, vmId, diskId);
+		String diskTarget = zk.diskTarget(node, vmId, diskId);
 
-        // Only force the dismount if this was mounted through the
-        // storage service.
-        if (!diskTarget.equals(DiskProperties.STATIC_DISK_TARGET)) {
-            getLogger().info(
-                    "hotDetach: " + node + ", " + vmId + ", " + diskId + ", "
-                            + diskTarget);
-            DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node,
-                    vmId, diskId, diskTarget);
-        }
+		// Only force the dismount if this was mounted through the
+		// storage service.
+		if (!diskTarget.equals(DiskProperties.STATIC_DISK_TARGET)) {
+			getLogger().info(
+					"hotDetach: " + node + ", " + vmId + ", " + diskId + ", "
+							+ diskTarget);
+			DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node,
+					vmId, diskId, diskTarget);
+		}
 
-        // Remove the metadata ONLY if the removal was sucessful.
-        zk.removeDiskMount(node, vmId, diskId, getLogger());
+		// Remove the metadata ONLY if the removal was sucessful.
+		zk.removeDiskMount(node, vmId, diskId, getLogger());
 
-        return diskTarget;
+		return diskTarget;
 
-    }
+	}
 
 }
