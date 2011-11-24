@@ -106,9 +106,9 @@ public final class DiskUtils {
 		
 		diskStorage.create(rebaseUuid, getSize(properties));
 
-		String newUuid = diskStorage.rebase(uuid, rebaseUuid);
+		String rebasedUuid = diskStorage.rebase(uuid, rebaseUuid);
 
-		return newUuid;
+		return rebasedUuid;
 	}
 
 	protected static int getSize(Properties properties) {
