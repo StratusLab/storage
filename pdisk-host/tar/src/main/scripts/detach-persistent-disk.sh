@@ -87,8 +87,10 @@ detach_all_disks() {
 }
 
 detach_hotplug_disk() {
+    set +e 
     sudo /usr/bin/virsh detach-disk one-$VM_ID $TARGET
     detach_${SHARE_TYPE} $UUID_URL
+    set -e
 }
 
 if [ "x$TARGET" = "x" ]
