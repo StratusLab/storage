@@ -147,14 +147,21 @@ public class MountResource extends BaseResource {
 		// Only force the dismount if this was mounted through the
 		// storage service.
 		if (!diskTarget.equals(DiskProperties.STATIC_DISK_TARGET)) {
-			getLogger().info(
-					"hotDetach: " + node + ", " + vmId + ", " + diskId + ", "
-							+ diskTarget);
-			DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node,
-					vmId, diskId, diskTarget);
+			
+			try {
+				DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node,
+						vmId, diskId, diskTarget);
+				getLogger().info(
+						"hotDetach: " + node + ", " + vmId + ", " + diskId + ", "
+								+ diskTarget);
+			} catch(ResourceException e) {
+				getLogger().warning(
+						"hotDetach failed for: " + node + ", " + vmId + ", " + diskId + ", "
+								+ diskTarget);
+				
+			}
 		}
 
-		// Remove the metadata ONLY if the removal was sucessful.
 		zk.removeDiskMount(node, vmId, diskId, getLogger());
 
 		return diskTarget;
