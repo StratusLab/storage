@@ -112,10 +112,16 @@ abstraction.
   <dependencyManagement>
     <dependencies>
       <dependency>
-	<groupId>log4j</groupId>
-	<artifactId>log4j</artifactId>
-	<version>1.2.16</version>
+        <groupId>eu.stratuslab.marketplace</groupId>
+        <artifactId>marketplace-metadata</artifactId>
+        <version>1.0.1-SNAPSHOT</version>
+        <classifier>jar-with-dependencies</classifier>
       </dependency>
+      <dependency>
+		<groupId>log4j</groupId>
+		<artifactId>log4j</artifactId>
+		<version>1.2.16</version>
+	      </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-simple</artifactId>
