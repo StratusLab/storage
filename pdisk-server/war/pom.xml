@@ -14,42 +14,42 @@
 
   <dependencies>
     <dependency>  
-        <groupId>eu.stratuslab.marketplace</groupId>  
-        <artifactId>marketplace-metadata</artifactId>  
-        <version>1.0.1-SNAPSHOT</version>
+      <groupId>eu.stratuslab.marketplace</groupId>  
+      <artifactId>marketplace-metadata</artifactId>  
+      <version>1.0.1-SNAPSHOT</version>
     </dependency>  
     <dependency>  
-        <groupId>org.restlet.jee</groupId>  
-        <artifactId>org.restlet</artifactId>  
+      <groupId>org.restlet.jee</groupId>  
+      <artifactId>org.restlet</artifactId>  
     </dependency>  
     <dependency>  
-        <groupId>org.restlet.jee</groupId>  
-        <artifactId>org.restlet.ext.xml</artifactId>  
+      <groupId>org.restlet.jee</groupId>  
+      <artifactId>org.restlet.ext.xml</artifactId>  
     </dependency>
     <dependency>
-         <groupId>org.restlet.jee</groupId>
-         <artifactId>org.restlet.ext.servlet</artifactId>
+      <groupId>org.restlet.jee</groupId>
+      <artifactId>org.restlet.ext.servlet</artifactId>
     </dependency>
     <dependency>
-         <groupId>org.restlet.jee</groupId>
-         <artifactId>org.restlet.ext.freemarker</artifactId>
+      <groupId>org.restlet.jee</groupId>
+      <artifactId>org.restlet.ext.freemarker</artifactId>
     </dependency>
     <dependency>
-         <groupId>org.restlet.jee</groupId>
-         <artifactId>org.restlet.ext.fileupload</artifactId>
+      <groupId>org.restlet.jee</groupId>
+      <artifactId>org.restlet.ext.fileupload</artifactId>
     </dependency>
     <dependency>
-         <groupId>org.restlet.jee</groupId>
-         <artifactId>org.restlet.ext.jaas</artifactId>
+      <groupId>org.restlet.jee</groupId>
+      <artifactId>org.restlet.ext.jaas</artifactId>
     </dependency>
     <dependency>
-        <groupId>javax.servlet</groupId>
-        <artifactId>servlet-api</artifactId>
-        <scope>compile</scope>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <scope>compile</scope>
     </dependency>
     <dependency>
-    	<groupId>org.apache.zookeeper</groupId>
-    	<artifactId>zookeeper</artifactId>
+      <groupId>org.apache.zookeeper</groupId>
+      <artifactId>zookeeper</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
@@ -82,148 +82,148 @@
     </dependency>
 
   </dependencies>
- 
+  
 
   <build>
 
+    <plugins>
+      <plugin>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
+        <configuration>
+          <webApp>${basedir}/target/server-0.0.1-SNAPSHOT.war</webApp>
+          <!-- This is for convenience so that the src/etc/login.conf file
+               can stay unmodified when copied to $jetty.home/etc directory -->
+          <systemProperties>
+            <systemProperty>
+              <name>sSLImplementation</name>
+              <value>org.glite.security.trustmanager.tomcat.TMSSLImplementation</value>
+            </systemProperty>
+            <systemProperty>
+              <name>javax.net.debug</name>
+              <value>SSL</value>
+            </systemProperty>
+            <systemProperty>
+              <name>sslCAFiles</name>
+              <value>/etc/grid-security/certificates/*.0</value>
+            </systemProperty>
+            <systemProperty>
+              <name>crlFiles</name>
+              <value>/etc/grid-security/certificates*.r0</value>
+            </systemProperty>
+            <systemProperty>
+              <name>sslCertFile</name>
+              <value>/etc/grid-security/hostcert.pem</value>
+            </systemProperty>
+            <systemProperty>
+              <name>sslKey</name>
+              <value>/etc/grid-security/hostkey.pem</value>
+            </systemProperty>
+            <systemProperty>
+              <name>log4jConfFile</name>
+              <value>/var/log4j-trustmanager.properties</value>
+            </systemProperty>
+
+            <systemProperty>
+              <name>jetty.home</name>
+              <value>${basedir}/src/main/config</value>
+            </systemProperty>
+
+            <!-- Mandatory. This system property tells JAAS where to find
+                 the login module configuration file -->
+            <systemProperty>
+              <name>java.security.auth.login.config</name>
+              <value>${basedir}/src/main/config/etc/login.conf</value>
+            </systemProperty>
+
+          </systemProperties>
+
+          <connectors>
+            <connector implementation="eu.stratuslab.ssl.GridSslSelectChannelConnector">
+              <SslTrustManagerFactoryAlgorithm>GridTM</SslTrustManagerFactoryAlgorithm>
+              <port>8443</port>
+              <maxIdleTime>30000</maxIdleTime>
+              <keystore>${basedir}/src/main/certs/jetty.jks</keystore>
+              <password>jettycred</password>
+              <keyPassword>jettycred</keyPassword>
+              <truststore>${basedir}/src/main/certs/jetty.jks</truststore>
+              <trustPassword>jettycred</trustPassword>
+              <!-- <needClientAuth>true</needClientAuth> -->
+              <wantClientAuth>true</wantClientAuth>
+            </connector>
+          </connectors>
+        </configuration>
+        <executions>
+          <execution>
+            <id>start-jetty</id>
+            <goals>
+              <goal>deploy-war</goal>
+            </goals>
+            <configuration>
+              <daemon>true</daemon>
+              <reload>manual</reload>
+            </configuration>
+          </execution>
+          <execution>
+            <id>stop-jetty</id>
+            <goals>
+              <goal>stop</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>run-findbugs</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+
+    <pluginManagement>
       <plugins>
-         <plugin>
-               <groupId>org.mortbay.jetty</groupId>
-               <artifactId>jetty-maven-plugin</artifactId>
-               <configuration>
-                  <webApp>${basedir}/target/server-0.0.1-SNAPSHOT.war</webApp>
-		    <!-- This is for convenience so that the src/etc/login.conf file
-			 can stay unmodified when copied to $jetty.home/etc directory -->
-		  <systemProperties>
-		    <systemProperty>
-		      <name>sSLImplementation</name>
-		      <value>org.glite.security.trustmanager.tomcat.TMSSLImplementation</value>
-		    </systemProperty>
-		    <systemProperty>
-		      <name>javax.net.debug</name>
-		      <value>SSL</value>
-		    </systemProperty>
-		    <systemProperty>
-		      <name>sslCAFiles</name>
-		      <value>/etc/grid-security/certificates/*.0</value>
-		    </systemProperty>
-		    <systemProperty>
-		      <name>crlFiles</name>
-		      <value>/etc/grid-security/certificates*.r0</value>
-		    </systemProperty>
-		    <systemProperty>
-		      <name>sslCertFile</name>
-		      <value>/etc/grid-security/hostcert.pem</value>
-		    </systemProperty>
-		    <systemProperty>
-		      <name>sslKey</name>
-		      <value>/etc/grid-security/hostkey.pem</value>
-		    </systemProperty>
-		    <systemProperty>
-		      <name>log4jConfFile</name>
-		      <value>/var/log4j-trustmanager.properties</value>
-		    </systemProperty>
-
-		    <systemProperty>
-		      <name>jetty.home</name>
-		      <value>${basedir}/src/main/config</value>
-		    </systemProperty>
-
-		    <!-- Mandatory. This system property tells JAAS where to find
-			 the login module configuration file -->
-		    <systemProperty>
-		      <name>java.security.auth.login.config</name>
-		      <value>${basedir}/src/main/config/etc/login.conf</value>
-		    </systemProperty>
-
-		  </systemProperties>
-
-		  <connectors>
-		    <connector implementation="eu.stratuslab.ssl.GridSslSelectChannelConnector">
-		      <SslTrustManagerFactoryAlgorithm>GridTM</SslTrustManagerFactoryAlgorithm>
-		      <port>8443</port>
-		      <maxIdleTime>30000</maxIdleTime>
-		      <keystore>${basedir}/src/main/certs/jetty.jks</keystore>
-		      <password>jettycred</password>
-		      <keyPassword>jettycred</keyPassword>
-		      <truststore>${basedir}/src/main/certs/jetty.jks</truststore>
-		      <trustPassword>jettycred</trustPassword>
-		      <!-- <needClientAuth>true</needClientAuth> -->
-		      <wantClientAuth>true</wantClientAuth>
-		    </connector>
-		  </connectors>
-               </configuration>
-               <executions>
-               <execution>
-                   <id>start-jetty</id>
-               <goals>
-               <goal>deploy-war</goal>
-               </goals>
-                  <configuration>
-                      <daemon>true</daemon>
-                      <reload>manual</reload>
-                  </configuration>
-               </execution>
-               <execution>
-                <id>stop-jetty</id>
-               <goals>
-                    <goal>stop</goal>
-                </goals>
-                </execution>
-             </executions>
-         </plugin>
-
-         <plugin>
-           <groupId>org.codehaus.mojo</groupId>
-           <artifactId>findbugs-maven-plugin</artifactId>
-           <executions>
-	         <execution>
-	             <id>run-findbugs</id>
-	             <phase>process-classes</phase>
-	             <goals>
-	                 <goal>check</goal>
-	             </goals>
-	          </execution>
-	     </executions>
-          </plugin>
-
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>
+                      org.codehaus.mojo
+                    </groupId>
+                    <artifactId>
+                      findbugs-maven-plugin
+                    </artifactId>
+                    <versionRange>
+                      [2.3.2,)
+                    </versionRange>
+                    <goals>
+                      <goal>check</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore />
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
       </plugins>
-
-      <pluginManagement>
-      	<plugins>
-      		<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-      		<plugin>
-      			<groupId>org.eclipse.m2e</groupId>
-      			<artifactId>lifecycle-mapping</artifactId>
-      			<version>1.0.0</version>
-      			<configuration>
-      				<lifecycleMappingMetadata>
-      					<pluginExecutions>
-      						<pluginExecution>
-      							<pluginExecutionFilter>
-      								<groupId>
-      									org.codehaus.mojo
-      								</groupId>
-      								<artifactId>
-      									findbugs-maven-plugin
-      								</artifactId>
-      								<versionRange>
-      									[2.3.2,)
-      								</versionRange>
-      								<goals>
-      									<goal>check</goal>
-      								</goals>
-      							</pluginExecutionFilter>
-      							<action>
-      								<ignore />
-      							</action>
-      						</pluginExecution>
-      					</pluginExecutions>
-      				</lifecycleMappingMetadata>
-      			</configuration>
-      		</plugin>
-      	</plugins>
-      </pluginManagement>
+    </pluginManagement>
   </build>
 
 </project>
