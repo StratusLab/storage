@@ -69,7 +69,24 @@ abstraction.
       </snapshots>
       <id>StratusLabReleases</id>
       <name>StratusLab Releases</name>
-      <url>http://repo.stratuslab.eu:8081/content/repositories/fedora-14-releases/</url>
+      <url>http://repo.stratuslab.eu:8081/content/repositories/${nexus.release.repository.name}</url>
+      <layout>default</layout>
+    </repository>
+
+    <repository>
+      <releases>
+	<enabled>true</enabled>
+	<updatePolicy>always</updatePolicy>
+	<checksumPolicy>fail</checksumPolicy>
+      </releases>
+      <snapshots>
+	<enabled>true</enabled>
+	<updatePolicy>always</updatePolicy>
+	<checksumPolicy>fail</checksumPolicy>
+      </snapshots>
+      <id>StratusLabSnapshots</id>
+      <name>StratusLab Snapshots</name>
+      <url>http://repo.stratuslab.eu:8081/content/repositories/${nexus.snapshot.repository.name}</url>
       <layout>default</layout>
     </repository>
 
