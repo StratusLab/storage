@@ -9,10 +9,10 @@
   <url>http://hudson.stratuslab.eu/</url>
 
   <description>
-This repository contains the storage services used in the StratusLab
-cloud.  This currently includes persistent storage with a "disk" 
-abstraction.
-</description>
+    This repository contains the storage services used in the StratusLab
+    cloud.  This currently includes persistent storage with a "disk" 
+    abstraction.
+  </description>
 
   <packaging>pom</packaging>
 
@@ -58,14 +58,14 @@ abstraction.
   <repositories>
     <repository>
       <releases>
-	<enabled>true</enabled>
-	<updatePolicy>always</updatePolicy>
-	<checksumPolicy>fail</checksumPolicy>
+        <enabled>true</enabled>
+        <updatePolicy>always</updatePolicy>
+        <checksumPolicy>fail</checksumPolicy>
       </releases>
       <snapshots>
-	<enabled>false</enabled>
-	<updatePolicy>never</updatePolicy>
-	<checksumPolicy>fail</checksumPolicy>
+        <enabled>false</enabled>
+        <updatePolicy>never</updatePolicy>
+        <checksumPolicy>fail</checksumPolicy>
       </snapshots>
       <id>StratusLabReleases</id>
       <name>StratusLab Releases</name>
@@ -75,14 +75,14 @@ abstraction.
 
     <repository>
       <releases>
-	<enabled>true</enabled>
-	<updatePolicy>always</updatePolicy>
-	<checksumPolicy>fail</checksumPolicy>
+        <enabled>true</enabled>
+        <updatePolicy>always</updatePolicy>
+        <checksumPolicy>fail</checksumPolicy>
       </releases>
       <snapshots>
-	<enabled>true</enabled>
-	<updatePolicy>always</updatePolicy>
-	<checksumPolicy>fail</checksumPolicy>
+        <enabled>true</enabled>
+        <updatePolicy>always</updatePolicy>
+        <checksumPolicy>fail</checksumPolicy>
       </snapshots>
       <id>StratusLabSnapshots</id>
       <name>StratusLab Snapshots</name>
@@ -101,9 +101,9 @@ abstraction.
       <url>http://repo.aduna-software.org/maven2/releases</url>
     </repository>
     <repository>
-    <id>talis</id>
-    <name>Public online talis repository</name>
-    <url>http://oss.talisplatform.com/content/repositories/talis-releases</url>
+      <id>talis</id>
+      <name>Public online talis repository</name>
+      <url>http://oss.talisplatform.com/content/repositories/talis-releases</url>
     </repository>
     
   </repositories>
@@ -134,24 +134,30 @@ abstraction.
         <classifier>jar-with-dependencies</classifier>
       </dependency>
       <dependency>
-		<groupId>log4j</groupId>
-		<artifactId>log4j</artifactId>
-		<version>1.2.16</version>
-	      </dependency>
+        <groupId>eu.stratuslab.marketplace</groupId>
+        <artifactId>marketplace-metadata</artifactId>
+        <version>1.0.4-SNAPSHOT</version>
+        <classifier>jar</classifier>
+      </dependency>
+      <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>1.2.16</version>
+      </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-simple</artifactId>
         <version>1.6.4</version>
       </dependency>
       <dependency>
-	<groupId>org.eclipse.jetty</groupId>
-	<artifactId>jetty-server</artifactId>
-	<version>${jetty.version}</version>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-server</artifactId>
+        <version>${jetty.version}</version>
       </dependency>
       <dependency>
-	<groupId>org.eclipse.jetty</groupId>
-	<artifactId>jetty-plus</artifactId>
-	<version>${jetty.version}</version>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-plus</artifactId>
+        <version>${jetty.version}</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
@@ -199,19 +205,19 @@ abstraction.
         <version>1.3.2</version>
       </dependency>
       <dependency>
-    	<groupId>org.apache.zookeeper</groupId>
-    	<artifactId>zookeeper</artifactId>
-    	<version>3.3.3</version>
+        <groupId>org.apache.zookeeper</groupId>
+        <artifactId>zookeeper</artifactId>
+        <version>3.3.3</version>
       </dependency>
       <dependency>
-	<groupId>org.apache.xmlrpc</groupId>
-	<artifactId>xmlrpc-client</artifactId>
-	<version>3.1.3</version>
+        <groupId>org.apache.xmlrpc</groupId>
+        <artifactId>xmlrpc-client</artifactId>
+        <version>3.1.3</version>
       </dependency>
       <dependency>
-	<groupId>org.apache.xmlrpc</groupId>
-	<artifactId>xmlrpc-server</artifactId>
-	<version>3.1.3</version>
+        <groupId>org.apache.xmlrpc</groupId>
+        <artifactId>xmlrpc-server</artifactId>
+        <version>3.1.3</version>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
@@ -219,9 +225,9 @@ abstraction.
         <version>4.1.2</version>
       </dependency>
       <dependency>
-	<groupId>bouncycastle</groupId>
-	<artifactId>bcprov-jdk16</artifactId>
-	<version>140</version>
+        <groupId>bouncycastle</groupId>
+        <artifactId>bcprov-jdk16</artifactId>
+        <version>140</version>
       </dependency>
       <dependency>
         <groupId>eu.stratuslab.authn</groupId>
@@ -234,14 +240,14 @@ abstraction.
         <version>1.0.3-SNAPSHOT</version>
       </dependency>
       <dependency>
-	<groupId>org.glite.security</groupId>
-	<artifactId>trustmanager</artifactId>
-	<version>2.5.5</version>
+        <groupId>org.glite.security</groupId>
+        <artifactId>trustmanager</artifactId>
+        <version>2.5.5</version>
       </dependency>
       <dependency>
-	<groupId>org.glite.security</groupId>
-	<artifactId>util-java</artifactId>
-	<version>2.8.0</version>
+        <groupId>org.glite.security</groupId>
+        <artifactId>util-java</artifactId>
+        <version>2.8.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -260,8 +266,8 @@ abstraction.
         </configuration>
       </plugin>
       <plugin>
-	<groupId>org.codehaus.mojo</groupId>
-	<artifactId>jdepend-maven-plugin</artifactId>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>jdepend-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </reporting>
@@ -270,101 +276,101 @@ abstraction.
 
     <pluginManagement>
       <plugins>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-clean-plugin</artifactId>
-	  <version>2.4.1</version>
-	</plugin>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-deploy-plugin</artifactId>
-	  <version>2.6</version>
-	</plugin>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-dependency-plugin</artifactId>
-	  <version>2.3</version>
-	</plugin>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-install-plugin</artifactId>
-	  <version>2.3.1</version>
-	</plugin>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-jar-plugin</artifactId>
-	  <version>2.3.1</version>
-	</plugin>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-war-plugin</artifactId>
-	  <version>2.1.1</version>
-	</plugin>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-resources-plugin</artifactId>
-	  <version>2.5</version>
-	  <configuration>
-	    <encoding>UTF-8</encoding>
-	  </configuration>
-	</plugin>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-site-plugin</artifactId>
-	  <version>2.3</version>
-	</plugin>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-surefire-plugin</artifactId>
-	  <version>2.9</version>
-	</plugin>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-compiler-plugin</artifactId>
-	  <version>2.3.2</version>
-	  <configuration>
-	    <encoding>UTF-8</encoding>
-	    <target>1.5</target>
-	    <source>1.5</source>
-	  </configuration>
-	</plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>2.4.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.6</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>2.3</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>2.3.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>2.3.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <version>2.1.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>2.5</version>
+          <configuration>
+            <encoding>UTF-8</encoding>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>2.3</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.9</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>2.3.2</version>
+          <configuration>
+            <encoding>UTF-8</encoding>
+            <target>1.5</target>
+            <source>1.5</source>
+          </configuration>
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>2.8</version>
-	  <configuration>
-	    <encoding>UTF-8</encoding>
-	  </configuration>
+          <configuration>
+            <encoding>UTF-8</encoding>
+          </configuration>
         </plugin>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-assembly-plugin</artifactId>
-	  <version>2.2.1</version>
-	</plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>2.2.1</version>
+        </plugin>
 
-	<plugin>
-	  <groupId>org.mortbay.jetty</groupId>
-	  <artifactId>jetty-maven-plugin</artifactId>
-	  <version>${jetty.version}</version>
-	</plugin>
+        <plugin>
+          <groupId>org.mortbay.jetty</groupId>
+          <artifactId>jetty-maven-plugin</artifactId>
+          <version>${jetty.version}</version>
+        </plugin>
 
-	<plugin>
-	  <groupId>org.codehaus.mojo</groupId>
-	  <artifactId>exec-maven-plugin</artifactId>
-	  <version>1.2</version>
-	</plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>1.2</version>
+        </plugin>
 
-	<plugin>
-	  <groupId>org.codehaus.mojo</groupId>
-	  <artifactId>findbugs-maven-plugin</artifactId>
-	  <version>2.3.2</version>
-	</plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>findbugs-maven-plugin</artifactId>
+          <version>2.3.2</version>
+        </plugin>
 
-	<plugin>
-	  <groupId>org.codehaus.mojo</groupId>
-	  <artifactId>jdepend-maven-plugin</artifactId>
-	  <version>2.0-beta-2</version>
-	</plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>jdepend-maven-plugin</artifactId>
+          <version>2.0-beta-2</version>
+        </plugin>
 
       </plugins>
 
