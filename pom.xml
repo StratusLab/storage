@@ -137,7 +137,6 @@
         <groupId>eu.stratuslab.marketplace</groupId>
         <artifactId>marketplace-metadata</artifactId>
         <version>1.0.4-SNAPSHOT</version>
-        <classifier>jar</classifier>
       </dependency>
       <dependency>
         <groupId>log4j</groupId>
