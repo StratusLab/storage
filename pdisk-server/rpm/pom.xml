@@ -24,10 +24,11 @@
   <properties> 
     <installation.dir>/opt/stratuslab/storage/pdisk</installation.dir>
     <configuration.dir>/etc/stratuslab/authn</configuration.dir>
-    <persistent-disk-war>storage-pdisk-server-war-${project.version}.war</persistent-disk-war>
     <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format> 
     <RELEASE>0.${maven.build.timestamp}</RELEASE>
-    <authn-proxy-war>storage-pdisk-server-war-${project.version}.war</authn-proxy-war>
+    <!-- SHOULD THESE REALLY BE THE SAME FILE! -->
+    <persistent-disk-war>storage-pdisk-server-war.war</persistent-disk-war>
+    <authn-proxy-war>storage-pdisk-server-war.war</authn-proxy-war>
   </properties>
 
   <build>
@@ -38,48 +39,48 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
 
-	 	<executions>
-	      <execution>
-	        <id>filter-jetty-configs</id>
-	        <goals>
-	          <goal>copy-resources</goal>
-	        </goals>
-	        <phase>process-resources</phase>
-	        <configuration>
-	          <outputDirectory>${basedir}/target/jetty-config</outputDirectory>
-                  <nonFilteredFileExtensions>
-                    <nonFilteredFileExtension>jks</nonFilteredFileExtension>
-                  </nonFilteredFileExtensions>
+        <executions>
+          <execution>
+            <id>filter-jetty-configs</id>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <phase>process-resources</phase>
+            <configuration>
+              <outputDirectory>${basedir}/target/jetty-config</outputDirectory>
+              <nonFilteredFileExtensions>
+                <nonFilteredFileExtension>jks</nonFilteredFileExtension>
+              </nonFilteredFileExtensions>
               <directoryIncluded>false</directoryIncluded>
-	          <resources>
-		    <resource>
-		      <directory>${basedir}/src/main/jetty-config</directory>
-		      <filtering>true</filtering>
-		    </resource>
-	          </resources>
-	        </configuration>
-	      </execution>
+              <resources>
+                <resource>
+                  <directory>${basedir}/src/main/jetty-config</directory>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
 
-	      <execution>
-	        <id>filter-service-configs</id>
-	        <goals>
-	          <goal>copy-resources</goal>
-	        </goals>
-	        <phase>process-resources</phase>
-	        <configuration>
-	          <outputDirectory>${basedir}/target/service-config</outputDirectory>
-                  <nonFilteredFileExtensions>
-                    <nonFilteredFileExtension>jks</nonFilteredFileExtension>
-                  </nonFilteredFileExtensions>
-	          <resources>
-		    <resource>
-		      <directory>${basedir}/src/main/service-config</directory>
-		      <filtering>true</filtering>
-		    </resource>
-	          </resources>
-	        </configuration>
-	      </execution>
-	    </executions>
+          <execution>
+            <id>filter-service-configs</id>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <phase>process-resources</phase>
+            <configuration>
+              <outputDirectory>${basedir}/target/service-config</outputDirectory>
+              <nonFilteredFileExtensions>
+                <nonFilteredFileExtension>jks</nonFilteredFileExtension>
+              </nonFilteredFileExtensions>
+              <resources>
+                <resource>
+                  <directory>${basedir}/src/main/service-config</directory>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
@@ -105,41 +106,41 @@
             </configuration>
           </execution>
 
-	      <execution>
-	        <id>copy-jars</id>
-	        <goals>
-	          <goal>copy</goal>
-	        </goals>
-	        <configuration>
-	          <outputDirectory>${project.build.directory}/dependency/jars</outputDirectory>
-	          <artifactItems>
-		    <artifactItem>
-		      <groupId>bouncycastle</groupId>
-		      <artifactId>bcprov-jdk16</artifactId>
-		    </artifactItem>
-		    <artifactItem>
-		      <groupId>log4j</groupId>
-		      <artifactId>log4j</artifactId>
-		    </artifactItem>
-		    <artifactItem>
-		      <groupId>org.glite.security</groupId>
-		      <artifactId>trustmanager</artifactId>
-		    </artifactItem>
-		    <artifactItem>
-		      <groupId>org.glite.security</groupId>
-		      <artifactId>util-java</artifactId>
-		    </artifactItem>
-		    <artifactItem>
-		      <groupId>eu.stratuslab.authn</groupId>
-		      <artifactId>authn-ssl</artifactId>
-		    </artifactItem>
-		    <artifactItem>
-		      <groupId>eu.stratuslab.authn</groupId>
-		      <artifactId>authn-login-module</artifactId>
-		    </artifactItem>
-	          </artifactItems>
-	        </configuration>
-	      </execution>
+          <execution>
+            <id>copy-jars</id>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/dependency/jars</outputDirectory>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>bouncycastle</groupId>
+                  <artifactId>bcprov-jdk16</artifactId>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>log4j</groupId>
+                  <artifactId>log4j</artifactId>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.glite.security</groupId>
+                  <artifactId>trustmanager</artifactId>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.glite.security</groupId>
+                  <artifactId>util-java</artifactId>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>eu.stratuslab.authn</groupId>
+                  <artifactId>authn-ssl</artifactId>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>eu.stratuslab.authn</groupId>
+                  <artifactId>authn-login-module</artifactId>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
 
           <execution>
             <id>copy-war</id>
@@ -148,6 +149,7 @@
             </goals>
             <configuration>
               <outputDirectory>${project.build.directory}/dependency/webapps</outputDirectory>
+              <stripVersion>true</stripVersion>
               <artifactItems>
                 <artifactItem>
                   <groupId>eu.stratuslab.storage</groupId>
@@ -181,7 +183,7 @@
           </description>
           <requires>
             <require>stratuslab-authn-config</require>
-	    <require>java-1.6.0-openjdk</require>          
+            <require>java-1.6.0-openjdk</require>          
           </requires>
           <mappings>
 
@@ -201,42 +203,42 @@
               </sources>
             </mapping>
 
-	    <mapping>
-	      <directory>${installation.dir}/etc</directory>
-	      <filemode>755</filemode>
-	      <username>root</username>
-	      <groupname>root</groupname>
-	      <directoryIncluded>false</directoryIncluded>
-	      <sources>
-		<source>
-		  <location>src/main/scripts</location>
-		  <includes>
-		    <include>generate-jetty-certificate.sh</include>
-		  </includes>
-		</source>
-	      </sources>
-	    </mapping>
+            <mapping>
+              <directory>${installation.dir}/etc</directory>
+              <filemode>755</filemode>
+              <username>root</username>
+              <groupname>root</groupname>
+              <directoryIncluded>false</directoryIncluded>
+              <sources>
+                <source>
+                  <location>src/main/scripts</location>
+                  <includes>
+                    <include>generate-jetty-certificate.sh</include>
+                  </includes>
+                </source>
+              </sources>
+            </mapping>
 
-	    <mapping>
-	      <directory>${installation.dir}/</directory>
-	      <filemode>644</filemode>
-	      <username>root</username>
-	      <groupname>root</groupname>
-	      <directoryIncluded>false</directoryIncluded>
-	      <sources>
-		<source>
-		  <location>target/jetty-config</location>
-		  <includes>
-		    <include>**/*</include>
-		  </includes>
-		  <excludes>
+            <mapping>
+              <directory>${installation.dir}/</directory>
+              <filemode>644</filemode>
+              <username>root</username>
+              <groupname>root</groupname>
+              <directoryIncluded>false</directoryIncluded>
+              <sources>
+                <source>
+                  <location>target/jetty-config</location>
+                  <includes>
+                    <include>**/*</include>
+                  </includes>
+                  <excludes>
                     <exclude>*.cfg</exclude>
-		    <exclude>etc/login/*</exclude>
-		    <!--<exclude>etc/overrides/*</exclude>-->
-		  </excludes>
-		</source>
-	      </sources>
-	    </mapping>
+                    <exclude>etc/login/*</exclude>
+                    <!--<exclude>etc/overrides/*</exclude>-->
+                  </excludes>
+                </source>
+              </sources>
+            </mapping>
 
             <mapping>
               <directory>${installation.dir}/</directory>
@@ -293,21 +295,21 @@
               </sources>
             </mapping>
 
-	        <mapping>
-	          <directory>${installation.dir}/lib/ext</directory>
-	          <filemode>644</filemode>
-	          <username>root</username>
-	          <groupname>root</groupname>
-	          <directoryIncluded>false</directoryIncluded>
-	          <sources>
-		        <source>
-		          <location>target/dependency/jars/</location>
-		          <includes>
-		            <include>*.jar</include>
-		          </includes>
-		        </source>
-	          </sources>
-	        </mapping>
+            <mapping>
+              <directory>${installation.dir}/lib/ext</directory>
+              <filemode>644</filemode>
+              <username>root</username>
+              <groupname>root</groupname>
+              <directoryIncluded>false</directoryIncluded>
+              <sources>
+                <source>
+                  <location>target/dependency/jars/</location>
+                  <includes>
+                    <include>*.jar</include>
+                  </includes>
+                </source>
+              </sources>
+            </mapping>
 
             <mapping>
               <directory>/var/lib/stratuslab/storage/pdisk</directory>
