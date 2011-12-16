@@ -24,7 +24,6 @@ abstraction.
   <properties>
     <jetty.version>7.4.5.v20110725</jetty.version>
     <restlet.version>2.0.9</restlet.version>
-    <stratuslab.authn.version>1.0.0</stratuslab.authn.version>
     <nexus.release.repository.name>fedora-14-releases</nexus.release.repository.name>
     <nexus.snapshot.repository.name>fedora-14-snapshots</nexus.snapshot.repository.name>
   </properties>
@@ -114,7 +113,7 @@ abstraction.
       <dependency>
         <groupId>eu.stratuslab.marketplace</groupId>
         <artifactId>marketplace-metadata</artifactId>
-        <version>1.0.1-SNAPSHOT</version>
+        <version>1.0.4-SNAPSHOT</version>
         <classifier>jar-with-dependencies</classifier>
       </dependency>
       <dependency>
@@ -125,7 +124,7 @@ abstraction.
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-simple</artifactId>
-        <version>1.6.2</version>
+        <version>1.6.4</version>
       </dependency>
       <dependency>
 	<groupId>org.eclipse.jetty</groupId>
@@ -140,7 +139,7 @@ abstraction.
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>4.9</version>
+        <version>4.10</version>
       </dependency>
       <dependency>  
         <groupId>org.restlet.jee</groupId>  
@@ -210,12 +209,12 @@ abstraction.
       <dependency>
         <groupId>eu.stratuslab.authn</groupId>
         <artifactId>authn-ssl</artifactId>
-        <version>${stratuslab.authn.version}</version>
+        <version>1.0.3-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>eu.stratuslab.authn</groupId>
         <artifactId>authn-login-module</artifactId>
-        <version>${stratuslab.authn.version}</version>
+        <version>1.0.3-SNAPSHOT</version>
       </dependency>
       <dependency>
 	<groupId>org.glite.security</groupId>
