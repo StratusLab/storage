@@ -1,3 +1,3 @@
 { 
-  "${key}" : "${value?js_string}"
+  "${key}" : "${value?j_string}"
 }

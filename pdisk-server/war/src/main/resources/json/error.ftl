@@ -1,4 +1,4 @@
 { 
-  "message" : "${errorMsg?js_string}", 
+  "message" : "${errorMsg?j_string}", 
   "code" : ${errorCode} 
 }
