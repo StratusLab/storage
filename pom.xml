@@ -120,13 +120,13 @@
       <dependency>
         <groupId>eu.stratuslab.marketplace</groupId>
         <artifactId>marketplace-metadata</artifactId>
-        <version>1.0.4-SNAPSHOT</version>
+        <version>1.0.4</version>
         <classifier>jar-with-dependencies</classifier>
       </dependency>
       <dependency>
         <groupId>eu.stratuslab.marketplace</groupId>
         <artifactId>marketplace-metadata</artifactId>
-        <version>1.0.4-SNAPSHOT</version>
+        <version>1.0.4</version>
       </dependency>
       <dependency>
         <groupId>log4j</groupId>
@@ -221,12 +221,12 @@
       <dependency>
         <groupId>eu.stratuslab.authn</groupId>
         <artifactId>authn-ssl</artifactId>
-        <version>1.0.3-SNAPSHOT</version>
+        <version>1.0.3</version>
       </dependency>
       <dependency>
         <groupId>eu.stratuslab.authn</groupId>
         <artifactId>authn-login-module</artifactId>
-        <version>1.0.3-SNAPSHOT</version>
+        <version>1.0.3</version>
       </dependency>
       <dependency>
         <groupId>org.glite.security</groupId>
