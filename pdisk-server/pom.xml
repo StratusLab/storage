@@ -9,7 +9,7 @@
   <parent>
     <groupId>eu.stratuslab.storage</groupId>
     <artifactId>storage</artifactId>
-    <version>1.4-SNAPSHOT</version>
+    <version>1.4</version>
   </parent>
 
   <modules>
