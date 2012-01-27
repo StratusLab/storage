@@ -10,11 +10,12 @@ import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
 public final class IscsiSharing implements DiskSharing {
 
-    // Template for an iSCSI target entry.
-    private static final String TARGET_TEMPLATE = "<target iqn.2011-01.eu.stratuslab:%s>\n"
-            + "backing-store %s/%s\n" + "</target>\n";
     // Template for an iSCSI target name.
     private static final String TARGET_NAME_TEMPLATE = "iqn.2011-01.eu.stratuslab:%s";
+
+    // Template for an iSCSI target entry.
+    private static final String TARGET_TEMPLATE = "<target " + TARGET_NAME_TEMPLATE + ">\n"
+            + "backing-store %s/%s\n" + "</target>\n";
 
     public IscsiSharing() {
 
