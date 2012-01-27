@@ -9,4 +9,6 @@ public interface DiskSharing {
     public void preDiskRemovalActions();
 
     public void postDiskRemovalActions();
+    
+    public void removeDiskSharing(String uuid);
 }

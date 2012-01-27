@@ -61,6 +61,7 @@ public class DiskProperties implements Closeable {
     public static final String DISK_COW_BASE_KEY = "iscow";
 	public static final String DISK_TAG_KEY = "tag";
 	public static final String DISK_SIZE_KEY = "size";
+	public static final String DISK_QUARANTINE_KEY = "quarantine";
 
     public static final String STATIC_DISK_TARGET = "static";
     public static final String DISK_TARGET_LIMIT = "limit";

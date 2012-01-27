@@ -13,6 +13,8 @@ public final class IscsiSharing implements DiskSharing {
     // Template for an iSCSI target entry.
     private static final String TARGET_TEMPLATE = "<target iqn.2011-01.eu.stratuslab:%s>\n"
             + "backing-store %s/%s\n" + "</target>\n";
+    // Template for an iSCSI target name.
+    private static final String TARGET_NAME_TEMPLATE = "iqn.2011-01.eu.stratuslab:%s";
 
     public IscsiSharing() {
 
@@ -34,8 +36,32 @@ public final class IscsiSharing implements DiskSharing {
 
     }
 
+    public void removeDiskSharing(String removeUuid) {
+    	List<String> disks = getAllDisks();
+    	disks.remove(removeUuid);
+    	
+    	String configuration = createISCSITargetConfiguration(disks);
+    	FileUtils.writeToFile(RootApplication.CONFIGURATION.ISCSI_CONFIG,
+    			configuration);
+    	
+    	removeDiskSharingFromISCSIServer(removeUuid);
+    }
+    
+    public void addDiskSharing(String addUuid) {
+    	List<String> disks = getAllDisks();
+    	if (!disks.contains(addUuid)) {
+    		disks.add(addUuid);
+    	}
+    	
+    	String configuration = createISCSITargetConfiguration(disks);
+    	FileUtils.writeToFile(RootApplication.CONFIGURATION.ISCSI_CONFIG,
+    			configuration);
+    	
+    	addDiskSharingToISCSIServer(addUuid);
+    }
+    
     private static Boolean updateISCSIConfiguration() {
-        String configuration = createISCSITargetConfiguration();
+        String configuration = createISCSITargetConfiguration(getAllDisks());
 
         FileUtils.writeToFile(RootApplication.CONFIGURATION.ISCSI_CONFIG,
                 configuration);
@@ -45,9 +71,8 @@ public final class IscsiSharing implements DiskSharing {
         return true;
     }
 
-    private static String createISCSITargetConfiguration() {
+    private static String createISCSITargetConfiguration(List<String> disks) {
         StringBuilder sb = new StringBuilder();
-        List<String> disks = getAllDisks();
         String disksLocation = getDisksLocation();
 
         for (String uuid : disks) {
@@ -65,7 +90,25 @@ public final class IscsiSharing implements DiskSharing {
                 + RootApplication.CONFIGURATION.ISCSI_CONFIG.getAbsolutePath()
                 + " or in " + ServiceConfiguration.DEFAULT_ISCSI_CONFIG_FILENAME);
     }
+    
+    private static void removeDiskSharingFromISCSIServer(String uuid) {
+    	String iscsiTargetName = String.format(TARGET_NAME_TEMPLATE, uuid);
+    	ProcessBuilder pb = new ProcessBuilder(
+    			RootApplication.CONFIGURATION.ISCSI_ADMIN, "--delete",
+    			iscsiTargetName);
 
+    	ProcessUtils.execute(pb, "Failed to delete " + iscsiTargetName);
+    }
+
+    private static void addDiskSharingToISCSIServer(String uuid) {
+//    	String iscsiTargetName = String.format(TARGET_NAME_TEMPLATE, uuid);
+//    	ProcessBuilder pb = new ProcessBuilder(
+//    			"tgtadm", "--add", ... working on this
+//    			iscsiTargetName);
+//    	
+//    	ProcessUtils.execute(pb, "Failed to delete " + iscsiTargetName);
+    }
+    
     private static List<String> getAllDisks() {
         DiskProperties zk = new DiskProperties();
         return zk.getDisks();
@@ -79,4 +122,5 @@ public final class IscsiSharing implements DiskSharing {
             return RootApplication.CONFIGURATION.LVM_GROUP_PATH;
         }
     }
+    
 }

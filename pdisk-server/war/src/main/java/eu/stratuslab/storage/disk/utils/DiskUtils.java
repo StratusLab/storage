@@ -127,6 +127,11 @@ public final class DiskUtils {
 		diskSharing.postDiskRemovalActions();
 	}
 
+	public static void removeDiskSharing(String uuid) {
+		DiskSharing diskSharing = getDiskSharing();
+		diskSharing.removeDiskSharing(uuid);
+	}
+	
 	public static void attachHotplugDisk(String serviceName, int servicePort,
 			String node, String vmId, String diskUuid, String target) {
 

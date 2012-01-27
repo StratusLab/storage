@@ -17,4 +17,7 @@ public final class FileSystemSharing implements DiskSharing {
 
     public void postDiskRemovalActions() {
     }
+
+    public void removeDiskSharing(String uuid) {
+    };
 }
