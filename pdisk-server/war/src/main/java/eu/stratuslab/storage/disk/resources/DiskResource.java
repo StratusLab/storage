@@ -169,6 +169,13 @@ public class DiskResource extends DiskBaseResource {
 				APPLICATION_JSON);
 	}
 
+	@Get("gzip")
+	public Representation toZip() {
+
+		// TODO
+		return null;
+	}
+
 	@Delete("html")
 	public Representation deleteDiskAsHtml() {
 

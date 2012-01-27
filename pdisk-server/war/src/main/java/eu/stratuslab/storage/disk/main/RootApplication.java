@@ -29,6 +29,7 @@ import org.restlet.Response;
 import org.restlet.Restlet;
 import org.restlet.data.ChallengeScheme;
 import org.restlet.data.LocalReference;
+import org.restlet.data.MediaType;
 import org.restlet.data.Protocol;
 import org.restlet.ext.freemarker.ContextTemplateLoader;
 import org.restlet.resource.Directory;
@@ -84,6 +85,8 @@ public class RootApplication extends Application {
         setStatusService(new CommonStatusService());
 
         getTunnelService().setUserAgentTunnel(true);
+
+		getMetadataService().addExtension("gzip", MediaType.APPLICATION_GNU_ZIP, true);
     }
 
     @Override
