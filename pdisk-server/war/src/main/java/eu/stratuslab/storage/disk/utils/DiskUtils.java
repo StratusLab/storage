@@ -116,8 +116,6 @@ public final class DiskUtils {
 	}
 
 	public static void removeDisk(String uuid) {
-
-	public static void removeDisk(String uuid) {
 		DiskSharing diskSharing = getDiskSharing();
 
 		diskSharing.preDiskRemovalActions(uuid);
