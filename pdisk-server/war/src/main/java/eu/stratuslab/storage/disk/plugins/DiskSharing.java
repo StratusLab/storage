@@ -2,13 +2,11 @@ package eu.stratuslab.storage.disk.plugins;
 
 public interface DiskSharing {
 
-    public void preDiskCreationActions();
+    public void preDiskCreationActions(String uuid);
 
-    public void postDiskCreationActions();
+    public void postDiskCreationActions(String uuid);
 
-    public void preDiskRemovalActions();
+    public void preDiskRemovalActions(String uuid);
 
-    public void postDiskRemovalActions();
-    
-    public void removeDiskSharing(String uuid);
+    public void postDiskRemovalActions(String uuid);
 }

@@ -112,11 +112,11 @@ public class DisksResource extends DiskBaseResource {
 
         List<String> disks = zk.getDisks();
         for (String uuid : disks) {
-            Properties properties = zk.getDiskProperties(uuid);
+            Properties disk = zk.getDiskProperties(uuid);
 
             // List only disk of the user
-            if (hasSufficientRightsToView(properties)) {
-                diskInfoList.add(properties);
+            if (hasSufficientRightsToView(disk)) {
+                diskInfoList.add(disk);
             }
         }
 

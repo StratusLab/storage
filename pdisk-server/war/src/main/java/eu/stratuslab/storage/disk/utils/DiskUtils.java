@@ -59,15 +59,15 @@ public final class DiskUtils {
 		DiskSharing diskSharing = getDiskSharing();
 		DiskStorage diskStorage = getDiskStorage();
 
-		diskSharing.preDiskCreationActions();
+		diskSharing.preDiskCreationActions(uuid);
 
 		diskStorage.create(uuid, getSize(properties));
 
 		properties.put(DiskProperties.UUID_KEY, uuid);
-        DiskProperties zk = new DiskProperties();
-        zk.saveDiskProperties(properties);
-        
-		diskSharing.postDiskCreationActions();
+		DiskProperties zk = new DiskProperties();
+		zk.saveDiskProperties(properties);
+
+		diskSharing.postDiskCreationActions(uuid);
 	}
 
 	public static String createCoWDisk(Properties properties) {
@@ -77,9 +77,9 @@ public final class DiskUtils {
 		DiskSharing diskSharing = getDiskSharing();
 		DiskStorage diskStorage = getDiskStorage();
 
-		diskSharing.preDiskCreationActions();
-
 		String cowUuid = generateUUID();
+
+		diskSharing.preDiskCreationActions(cowUuid);
 
 		diskStorage.createCopyOnWrite(uuid, cowUuid, getSize(properties));
 
@@ -88,10 +88,10 @@ public final class DiskUtils {
 		String baseDiskHref = String.format("<a href='%s'>basedisk<a/>",
 				DiskProperties.getDiskPath(uuid));
 		properties.put(DiskProperties.DISK_COW_BASE_KEY, baseDiskHref);
-        DiskProperties zk = new DiskProperties();
-        zk.saveDiskProperties(properties);
-		
-		diskSharing.postDiskCreationActions();
+		DiskProperties zk = new DiskProperties();
+		zk.saveDiskProperties(properties);
+
+		diskSharing.postDiskCreationActions(cowUuid);
 
 		return cowUuid;
 	}
@@ -117,21 +117,22 @@ public final class DiskUtils {
 
 	public static void removeDisk(String uuid) {
 
+	public static void removeDisk(String uuid) {
 		DiskSharing diskSharing = getDiskSharing();
-		DiskStorage diskStorage = getDiskStorage();
 
-		diskSharing.preDiskRemovalActions();
+		diskSharing.preDiskRemovalActions(uuid);
 
-		diskStorage.delete(uuid);
+		getDiskStorage().delete(uuid);
 
-		diskSharing.postDiskRemovalActions();
+		diskSharing.postDiskRemovalActions(uuid);
 	}
 
 	public static void removeDiskSharing(String uuid) {
 		DiskSharing diskSharing = getDiskSharing();
-		diskSharing.removeDiskSharing(uuid);
+		diskSharing.preDiskRemovalActions(uuid);
+		diskSharing.postDiskRemovalActions(uuid);
 	}
-	
+
 	public static void attachHotplugDisk(String serviceName, int servicePort,
 			String node, String vmId, String diskUuid, String target) {
 
@@ -189,7 +190,8 @@ public final class DiskUtils {
 		return UUID.randomUUID().toString();
 	}
 
-	public static String calculateHash(String uuid) throws FileNotFoundException {
+	public static String calculateHash(String uuid)
+			throws FileNotFoundException {
 
 		InputStream fis = new FileInputStream(getDevicePath() + uuid);
 
@@ -198,11 +200,11 @@ public final class DiskUtils {
 		BigInteger sha1Digest = info.get("SHA-1");
 
 		String identifier = MetadataUtils.sha1ToIdentifier(sha1Digest);
-		
+
 		return identifier;
 
 	}
-	
+
 	public static String getDevicePath() {
 		return RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
 	}
