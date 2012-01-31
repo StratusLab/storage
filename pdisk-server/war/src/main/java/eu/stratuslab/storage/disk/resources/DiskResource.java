@@ -27,8 +27,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.restlet.data.Disposition;
 import org.restlet.data.Form;
+import org.restlet.data.MediaType;
 import org.restlet.data.Status;
+import org.restlet.representation.FileRepresentation;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
@@ -171,9 +174,13 @@ public class DiskResource extends DiskBaseResource {
 
 	@Get("gzip")
 	public Representation toZip() {
-
-		// TODO
-		return null;
+		
+		getLogger().info("DiskResource getAsGZip: " + getDiskId());
+		
+		FileRepresentation image = new FileRepresentation("/tmp/img.gz", MediaType.APPLICATION_GNU_ZIP);
+		image.getDisposition().setType(Disposition.TYPE_ATTACHMENT);
+		
+		return image;
 	}
 
 	@Delete("html")
