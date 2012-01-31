@@ -3,7 +3,7 @@
   
   <groupId>eu.stratuslab.storage</groupId>
   <artifactId>storage</artifactId>
-  <version>1.7-SNAPSHOT</version>
+  <version>1.7</version>
   <name>StratusLab Storage</name>
 
   <url>http://hudson.stratuslab.eu/</url>
