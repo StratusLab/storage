@@ -25,6 +25,18 @@ register_disk() {
     # We assume here that the disk can be mounted by the user (permission and remaining places)
     local NODE=$(host $(hostname) | awk '{print $4}')
     local REGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/disks/${DISK_UUID}/mounts/ -d node=${NODE}&vm_id=${VM_ID}&register_only=true"
+    set +e
+    output=$($REGISTER_CMD 2>&1)
+    if [ "$?" != "0" ]; then
+        if ( echo $output | grep -q "client certificate not found" ); then 
+            set -e
+            $REGISTER_CMD
+        else
+            echo $output
+            exit 1
+        fi
+    fi
+    set -e
     $REGISTER_CMD
 }
 
