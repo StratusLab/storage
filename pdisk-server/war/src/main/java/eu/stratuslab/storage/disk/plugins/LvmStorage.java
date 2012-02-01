@@ -96,9 +96,8 @@ public final class LvmStorage implements DiskStorage {
 		}
 	}
 
-	public String zip(String uuid) {
-		// TODO Check disk exists
-		
-		return uuid;
+	public String getDiskLocation(String uuid) {
+		return RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/" + uuid;
 	}
+	
 }
