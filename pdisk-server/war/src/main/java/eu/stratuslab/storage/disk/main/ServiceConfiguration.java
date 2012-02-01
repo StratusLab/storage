@@ -109,7 +109,7 @@ public class ServiceConfiguration {
 		CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
 		CLOUD_SERVICE_USER = getConfigValue("disk.store.cloud.service.user");
 		
-		CACHE_LOCATION = getConfigValue("disk.store.cache.location");
+		CACHE_LOCATION = getCacheLocation();
 
 	}
 
@@ -211,6 +211,28 @@ public class ServiceConfiguration {
 		}
 
 		return diskStoreHandler;
+	}
+	
+	private String getCacheLocation() {
+		String cache = getConfigValue("disk.store.cache.location");
+		File cacheDir = new File(cache);
+		
+		if (cacheDir.exists()) {
+			if (!cacheDir.isDirectory()) {
+				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+						"Cache location " + cacheDir.getAbsolutePath() + " already in use");
+			} else if (!cacheDir.canWrite()) {
+				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+						"Cannot write cache location " + cacheDir.getAbsolutePath());
+			}
+		} else {
+			if (!cacheDir.mkdirs()) {
+				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+						"Unable to create cache location " + cacheDir.getAbsolutePath());
+			}
+		}
+		
+		return cache;
 	}
 
 	private String getCommand(String configName) {
