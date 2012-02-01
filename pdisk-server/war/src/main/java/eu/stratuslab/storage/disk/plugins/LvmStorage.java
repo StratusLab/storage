@@ -97,4 +97,10 @@ public final class LvmStorage implements DiskStorage {
 			}
 		}
 	}
+
+	public String zip(String uuid) {
+		// TODO Auto-generated method stub
+		
+		return uuid;
+	}
 }

@@ -126,6 +126,14 @@ public final class DiskUtils {
 
 		diskSharing.postDiskRemovalActions();
 	}
+	
+	public static String zipDisk(String uuid) {
+		DiskStorage diskStorage = getDiskStorage();
+		
+		String zipPath = diskStorage.zip(uuid);
+		
+		return zipPath;
+	}
 
 	public static void attachHotplugDisk(String serviceName, int servicePort,
 			String node, String vmId, String diskUuid, String target) {

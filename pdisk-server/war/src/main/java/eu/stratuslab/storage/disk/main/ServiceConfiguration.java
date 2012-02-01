@@ -77,6 +77,8 @@ public class ServiceConfiguration {
 	public final String CLOUD_NODE_ADMIN;
 	public final String CLOUD_NODE_VM_DIR;
 	public final String CLOUD_SERVICE_USER;
+	
+	public final String CACHE_LOCATION;
 
 	private ServiceConfiguration() {
 
@@ -106,6 +108,8 @@ public class ServiceConfiguration {
 		CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
 		CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
 		CLOUD_SERVICE_USER = getConfigValue("disk.store.cloud.service.user");
+		
+		CACHE_LOCATION = getConfigValue("disk.store.cache.location");
 
 	}
 

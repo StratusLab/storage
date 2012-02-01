@@ -175,9 +175,11 @@ public class DiskResource extends DiskBaseResource {
 	@Get("gzip")
 	public Representation toZip() {
 		
-		getLogger().info("DiskResource getAsGZip: " + getDiskId());
+		getLogger().info("DiskResource toZip: " + getDiskId());
+	
+		String zip = DiskUtils.zipDisk(getDiskId());
 		
-		FileRepresentation image = new FileRepresentation("/tmp/img.gz", MediaType.APPLICATION_GNU_ZIP);
+		FileRepresentation image = new FileRepresentation(zip, MediaType.APPLICATION_GNU_ZIP);
 		image.getDisposition().setType(Disposition.TYPE_ATTACHMENT);
 		
 		return image;

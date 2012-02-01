@@ -9,5 +9,7 @@ public interface DiskStorage {
     public String rebase(String uuid, String rebaseUuid);
 
     public void delete(String uuid);
+    
+    public String zip(String uuid);
 
 }
