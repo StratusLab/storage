@@ -151,4 +151,12 @@ public final class FileUtils {
 
         return isPresent;
     }
+    
+    public static void copyFile(String src, String dst) {
+    	ProcessBuilder pb = new ProcessBuilder("dd", "if=" + src, "of="
+				+ dst);
+
+		ProcessUtils.execute(pb, "Unable to copy file " + src + " to " + dst);
+    }
+    
 }

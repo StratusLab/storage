@@ -7,6 +7,7 @@ import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
 import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
@@ -39,11 +40,8 @@ public final class LvmStorage implements DiskStorage {
 		String sourcePath = DiskUtils.getDevicePath() + cowUuid;
 		String rebasedPath = DiskUtils.getDevicePath() + rebaseUuid;
 
-		ProcessBuilder pb = new ProcessBuilder("dd", "if=" + sourcePath, "of="
-				+ rebasedPath);
-
-		ProcessUtils.execute(pb, "Unable to rebase the LVM volume");
-
+		FileUtils.copyFile(sourcePath, rebasedPath);
+		
 		return rebaseUuid;
 	}
 
@@ -99,7 +97,7 @@ public final class LvmStorage implements DiskStorage {
 	}
 
 	public String zip(String uuid) {
-		// TODO Auto-generated method stub
+		// TODO Check disk exists
 		
 		return uuid;
 	}
