@@ -1,12 +1,6 @@
 package eu.stratuslab.storage.disk.plugins;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,12 +49,21 @@ public final class PosixStorage implements DiskStorage {
 	}
 
 	public String zip(String uuid) {
+		File disk = new File(
+				RootApplication.CONFIGURATION.STORAGE_LOCATION
+						.getAbsolutePath() + "/" + uuid);
+
+		if (!disk.isFile()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, "Disk "
+					+ uuid + " does not exists");
+		}
+
 		String cachedDisk = RootApplication.CONFIGURATION.CACHE_LOCATION + "/"
 				+ uuid;
 
-		copyfile(
-				RootApplication.CONFIGURATION.STORAGE_LOCATION.getAbsolutePath()
-						+ "/" + uuid, cachedDisk);
+		FileUtils.copyFile(
+				RootApplication.CONFIGURATION.STORAGE_LOCATION
+						.getAbsolutePath() + "/" + uuid, cachedDisk);
 
 		List<String> zipCmd = new ArrayList<String>();
 		zipCmd.add("gzip");
@@ -72,29 +75,5 @@ public final class PosixStorage implements DiskStorage {
 
 		return cachedDisk + ".gz";
 	}
-
-	private static void copyfile(String srFile, String dtFile) {
-		try {
-			File src = new File(srFile);
-			File dst = new File(dtFile);
-
-			InputStream in = new FileInputStream(src);
-			OutputStream out = new FileOutputStream(dst);
-
-			byte[] buf = new byte[1024];
-			int len;
-			while ((len = in.read(buf)) > 0) {
-				out.write(buf, 0, len);
-			}
-
-			in.close();
-			out.close();
-		} catch (FileNotFoundException ex) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Error while copying disk");
-		} catch (IOException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Error while copying disk");
-		}
-	}
+	
 }
