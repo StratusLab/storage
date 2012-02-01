@@ -65,9 +65,8 @@ public class ServiceConfiguration {
 	public final String VGDISPLAY_CMD;
 	public final String LVCREATE_CMD;
 	public final String LVREMOVE_CMD;
-    public final String LVCHANGE_CMD;
-    public final String DMSETUP_CMD;
-
+	public final String LVCHANGE_CMD;
+	public final String DMSETUP_CMD;
 
 	public final File STORAGE_LOCATION;
 
@@ -77,7 +76,7 @@ public class ServiceConfiguration {
 	public final String CLOUD_NODE_ADMIN;
 	public final String CLOUD_NODE_VM_DIR;
 	public final String CLOUD_SERVICE_USER;
-	
+
 	public final String CACHE_LOCATION;
 
 	private ServiceConfiguration() {
@@ -88,17 +87,16 @@ public class ServiceConfiguration {
 
 		ZK_ADDRESSES = getConfigValue("disk.store.zookeeper.address");
 
-		VGDISPLAY_CMD = getCommand("disk.store.lvm.vgdisplay");
-		LVCREATE_CMD = getCommand("disk.store.lvm.create");
-		LVREMOVE_CMD = getCommand("disk.store.lvm.remove");
-		LVM_GROUP_PATH = getLVMGroup();
-        LVCHANGE_CMD = getCommand("disk.store.lvm.lvchange");
-        DMSETUP_CMD = getCommand("disk.store.lvm.dmsetup");
-
-
 		ISCSI_DISK_TYPE = getDiskType();
 		ISCSI_CONFIG = getISCSIConfig();
 		ISCSI_ADMIN = getCommand("disk.store.iscsi.admin");
+
+		VGDISPLAY_CMD = getLVMCommand("disk.store.lvm.vgdisplay");
+		LVCREATE_CMD = getLVMCommand("disk.store.lvm.create");
+		LVREMOVE_CMD = getLVMCommand("disk.store.lvm.remove");
+		LVM_GROUP_PATH = getLVMGroup();
+		LVCHANGE_CMD = getLVMCommand("disk.store.lvm.lvchange");
+		DMSETUP_CMD = getLVMCommand("disk.store.lvm.dmsetup");
 
 		STORAGE_LOCATION = getDiskLocation();
 
@@ -108,7 +106,7 @@ public class ServiceConfiguration {
 		CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
 		CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
 		CLOUD_SERVICE_USER = getConfigValue("disk.store.cloud.service.user");
-		
+
 		CACHE_LOCATION = getCacheLocation();
 
 	}
@@ -171,7 +169,7 @@ public class ServiceConfiguration {
 					"Unable to find ISCSI configuration file.");
 		}
 
-		// Add include instruction in conf file in not
+		// Add include instruction in conf file if not present
 		if (!FileUtils
 				.fileHasLine(confHandler, includeConfig.replace("\n", ""))) {
 			FileUtils.appendToFile(confHandler, includeConfig);
@@ -212,26 +210,29 @@ public class ServiceConfiguration {
 
 		return diskStoreHandler;
 	}
-	
+
 	private String getCacheLocation() {
 		String cache = getConfigValue("disk.store.cache.location");
 		File cacheDir = new File(cache);
-		
+
 		if (cacheDir.exists()) {
 			if (!cacheDir.isDirectory()) {
 				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-						"Cache location " + cacheDir.getAbsolutePath() + " already in use");
+						"Cache location " + cacheDir.getAbsolutePath()
+								+ " already in use");
 			} else if (!cacheDir.canWrite()) {
 				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-						"Cannot write cache location " + cacheDir.getAbsolutePath());
+						"Cannot write cache location "
+								+ cacheDir.getAbsolutePath());
 			}
 		} else {
 			if (!cacheDir.mkdirs()) {
 				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-						"Unable to create cache location " + cacheDir.getAbsolutePath());
+						"Unable to create cache location "
+								+ cacheDir.getAbsolutePath());
 			}
 		}
-		
+
 		return cache;
 	}
 
@@ -248,10 +249,22 @@ public class ServiceConfiguration {
 		return configValue;
 	}
 
+	private String getLVMCommand(String configName) {
+		// Require command only if used
+		if (SHARE_TYPE == ShareType.ISCSI && ISCSI_DISK_TYPE == DiskType.LVM) {
+			return getCommand(configName);
+		} else {
+			return "/bin/echo";
+		}
+	}
+
 	private String getLVMGroup() {
 		String lvmGroup = getConfigValue("disk.store.lvm.device");
 
-		checkLVMGroupExists(lvmGroup);
+		// Check group only if necessary
+		if (SHARE_TYPE == ShareType.ISCSI && ISCSI_DISK_TYPE == DiskType.LVM) {
+			checkLVMGroupExists(lvmGroup);
+		}
 
 		return lvmGroup;
 	}
