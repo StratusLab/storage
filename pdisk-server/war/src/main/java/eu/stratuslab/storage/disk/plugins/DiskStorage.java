@@ -10,6 +10,6 @@ public interface DiskStorage {
 
     public void delete(String uuid);
     
-    public String zip(String uuid);
+    public String getDiskLocation(String uuid);
 
 }

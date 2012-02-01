@@ -64,9 +64,9 @@ public final class DiskUtils {
 		diskStorage.create(uuid, getSize(properties));
 
 		properties.put(DiskProperties.UUID_KEY, uuid);
-        DiskProperties zk = new DiskProperties();
-        zk.saveDiskProperties(properties);
-        
+		DiskProperties zk = new DiskProperties();
+		zk.saveDiskProperties(properties);
+
 		diskSharing.postDiskCreationActions();
 	}
 
@@ -88,9 +88,9 @@ public final class DiskUtils {
 		String baseDiskHref = String.format("<a href='%s'>basedisk<a/>",
 				DiskProperties.getDiskPath(uuid));
 		properties.put(DiskProperties.DISK_COW_BASE_KEY, baseDiskHref);
-        DiskProperties zk = new DiskProperties();
-        zk.saveDiskProperties(properties);
-		
+		DiskProperties zk = new DiskProperties();
+		zk.saveDiskProperties(properties);
+
 		diskSharing.postDiskCreationActions();
 
 		return cowUuid;
@@ -103,7 +103,7 @@ public final class DiskUtils {
 		DiskStorage diskStorage = getDiskStorage();
 
 		String rebaseUuid = DiskUtils.generateUUID();
-		
+
 		diskStorage.create(rebaseUuid, getSize(properties));
 
 		String rebasedUuid = diskStorage.rebase(uuid, rebaseUuid);
@@ -125,14 +125,6 @@ public final class DiskUtils {
 		diskStorage.delete(uuid);
 
 		diskSharing.postDiskRemovalActions();
-	}
-	
-	public static String zipDisk(String uuid) {
-		DiskStorage diskStorage = getDiskStorage();
-		
-		String zipPath = diskStorage.zip(uuid);
-		
-		return zipPath;
 	}
 
 	public static void attachHotplugDisk(String serviceName, int servicePort,
@@ -192,7 +184,8 @@ public final class DiskUtils {
 		return UUID.randomUUID().toString();
 	}
 
-	public static String calculateHash(String uuid) throws FileNotFoundException {
+	public static String calculateHash(String uuid)
+			throws FileNotFoundException {
 
 		InputStream fis = new FileInputStream(getDevicePath() + uuid);
 
@@ -201,12 +194,27 @@ public final class DiskUtils {
 		BigInteger sha1Digest = info.get("SHA-1");
 
 		String identifier = MetadataUtils.sha1ToIdentifier(sha1Digest);
-		
+
 		return identifier;
 
 	}
-	
+
 	public static String getDevicePath() {
 		return RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
+	}
+
+	public static String zip(String uuid) {
+		DiskStorage diskStorage = getDiskStorage();
+		String diskLocation = diskStorage.getDiskLocation(uuid);
+
+		String cachedDisk = RootApplication.CONFIGURATION.CACHE_LOCATION + "/"
+				+ uuid;
+
+		FileUtils.copyFile(diskLocation, cachedDisk);
+
+		ProcessBuilder pb = new ProcessBuilder("/bin/gzip", "-f", cachedDisk);
+		ProcessUtils.execute(pb, "Unable Zip disk " + uuid);
+
+		return cachedDisk + ".gz";
 	}
 }

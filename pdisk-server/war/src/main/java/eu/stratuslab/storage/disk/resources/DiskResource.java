@@ -176,10 +176,18 @@ public class DiskResource extends DiskBaseResource {
 	public Representation toZip() {
 		
 		getLogger().info("DiskResource toZip: " + getDiskId());
-	
-		String zip = DiskUtils.zipDisk(getDiskId());
 		
-		FileRepresentation image = new FileRepresentation(zip, MediaType.APPLICATION_GNU_ZIP);
+		checkExistance();
+
+		Properties diskProperties = zk.getDiskProperties(getDiskId());
+		if (!hasSufficientRightsToView(diskProperties)) {
+			throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
+	                + getDiskId() + ") does not exist");
+		}
+	
+		String zipfile = DiskUtils.zip(getDiskId());
+		
+		FileRepresentation image = new FileRepresentation(zipfile, MediaType.APPLICATION_GNU_ZIP);
 		image.getDisposition().setType(Disposition.TYPE_ATTACHMENT);
 		
 		return image;
