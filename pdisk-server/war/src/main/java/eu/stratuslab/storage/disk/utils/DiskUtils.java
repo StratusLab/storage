@@ -203,7 +203,7 @@ public final class DiskUtils {
 		return RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
 	}
 
-	public static String zip(String uuid) {
+	public static void zip(String uuid) {
 		DiskStorage diskStorage = getDiskStorage();
 		String diskLocation = diskStorage.getDiskLocation(uuid);
 
@@ -212,9 +212,24 @@ public final class DiskUtils {
 
 		FileUtils.copyFile(diskLocation, cachedDisk);
 
-		ProcessBuilder pb = new ProcessBuilder("/bin/gzip", "-f", cachedDisk);
+		ProcessBuilder pb = new ProcessBuilder(RootApplication.CONFIGURATION.GZIP_CMD, "-f", cachedDisk);
 		ProcessUtils.execute(pb, "Unable Zip disk " + uuid);
+	}
 
-		return cachedDisk + ".gz";
+	public static String getDiskZipFilename(String uuid) {
+		return RootApplication.CONFIGURATION.CACHE_LOCATION + "/" + uuid
+				+ ".gz";
+	}
+
+	public static String streamZip(String uuid) {
+		DiskStorage diskStorage = getDiskStorage();
+		String diskLocation = diskStorage.getDiskLocation(uuid);
+		String zipStream;
+		
+		ProcessBuilder pb = new ProcessBuilder(RootApplication.CONFIGURATION.GZIP_CMD, "-c", diskLocation);
+		
+		zipStream = ProcessUtils.executeAndGetOutput(pb);
+		
+		return zipStream;
 	}
 }

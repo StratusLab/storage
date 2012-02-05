@@ -78,6 +78,8 @@ public class ServiceConfiguration {
 	public final String CLOUD_SERVICE_USER;
 
 	public final String CACHE_LOCATION;
+	
+	public final String GZIP_CMD;
 
 	private ServiceConfiguration() {
 
@@ -108,6 +110,8 @@ public class ServiceConfiguration {
 		CLOUD_SERVICE_USER = getConfigValue("disk.store.cloud.service.user");
 
 		CACHE_LOCATION = getCacheLocation();
+		
+		GZIP_CMD = getCommand("disk.store.utils.gzip");
 
 	}
 

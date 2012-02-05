@@ -22,6 +22,7 @@ package eu.stratuslab.storage.disk.resources;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +34,7 @@ import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.representation.FileRepresentation;
 import org.restlet.representation.Representation;
+import org.restlet.representation.StringRepresentation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
@@ -127,7 +129,7 @@ public class DiskResource extends DiskBaseResource {
 				properties.getProperty(DiskProperties.DISK_SIZE_KEY));
 
 		// TODO: implement here and remove client-side implementation
-//		newProperties = calculateHashes(newProperties);
+		// newProperties = calculateHashes(newProperties);
 		registerDisk(newProperties);
 
 		return newUuid;
@@ -174,24 +176,42 @@ public class DiskResource extends DiskBaseResource {
 
 	@Get("gzip")
 	public Representation toZip() {
-		
-		getLogger().info("DiskResource toZip: " + getDiskId());
-		
-		checkExistance();
+		Representation image = null;
+		String uuid = getDiskId();
 
-		Properties diskProperties = zk.getDiskProperties(getDiskId());
-		if (!hasSufficientRightsToView(diskProperties)) {
-			throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
-	                + getDiskId() + ") does not exist");
+		getLogger().info("DiskResource toZip: " + uuid);
+
+		checkExistance();
+		checkViewRightsOrError(uuid);
+
+		if (zk.isReadOnly(uuid)) {
+			String zipFilename = DiskUtils.getDiskZipFilename(uuid);
+			File zip = new File(zipFilename);
+			
+			if (!zip.exists()) {
+				DiskUtils.zip(getDiskId());
+			}
+			
+			image = new FileRepresentation(zipFilename,
+					MediaType.APPLICATION_GNU_ZIP);
+			
+			image.getDisposition().setType(Disposition.TYPE_ATTACHMENT);
+		} else {
+			String stream = DiskUtils.streamZip(uuid);
+			image = new StringRepresentation(stream, MediaType.APPLICATION_GNU_ZIP);
 		}
-	
-		String zipfile = DiskUtils.zip(getDiskId());
-		
-		FileRepresentation image = new FileRepresentation(zipfile, MediaType.APPLICATION_GNU_ZIP);
-		image.getDisposition().setType(Disposition.TYPE_ATTACHMENT);
-		
+
 		return image;
 	}
+
+	private void checkViewRightsOrError(String uuid) {
+		Properties diskProperties = zk.getDiskProperties(uuid);
+		if (!hasSufficientRightsToView(diskProperties)) {
+			throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
+					+ uuid + ") does not exist");
+		}
+	}
+	
 
 	@Delete("html")
 	public Representation deleteDiskAsHtml() {
