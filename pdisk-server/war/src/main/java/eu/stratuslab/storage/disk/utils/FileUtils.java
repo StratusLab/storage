@@ -11,9 +11,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Writer;
-
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
+
+import eu.stratuslab.storage.disk.main.RootApplication;
 
 public final class FileUtils {
 
@@ -156,5 +157,27 @@ public final class FileUtils {
 		ProcessBuilder pb = new ProcessBuilder("dd", "if=" + src, "of=" + dst);
 		ProcessUtils.execute(pb, "Unable to copy file " + src + " to " + dst);
 	}
+	
+	public static String getCachedDiskLocation(String uuid) {
+		return RootApplication.CONFIGURATION.CACHE_LOCATION + "/"
+				+ uuid;
+	}
 
+	public static String getCompressedDiskLocation(String uuid) {
+		return getCachedDiskLocation(uuid) + ".gz";
+	}
+
+	public static Boolean isCachedDiskExists(String uuid) {
+		File cachedDisk = new File(getCachedDiskLocation(uuid));
+		
+		return true && cachedDisk.exists() && cachedDisk.canRead();
+	}
+	
+	public static Boolean isCompressedDiskExists(String uuid) {
+		File cachedDisk = new File(getCompressedDiskLocation(uuid));
+		
+		return true && cachedDisk.exists() && cachedDisk.canRead();
+	}
+	
+	
 }

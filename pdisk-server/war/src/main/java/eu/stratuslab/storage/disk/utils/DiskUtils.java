@@ -1,10 +1,12 @@
 package eu.stratuslab.storage.disk.utils;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -203,33 +205,34 @@ public final class DiskUtils {
 		return RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
 	}
 
-	public static void zip(String uuid) {
+	public static void createCompressedDisk(String uuid) {
 		DiskStorage diskStorage = getDiskStorage();
 		String diskLocation = diskStorage.getDiskLocation(uuid);
-
-		String cachedDisk = RootApplication.CONFIGURATION.CACHE_LOCATION + "/"
-				+ uuid;
+		String cachedDisk = FileUtils.getCachedDiskLocation(uuid);
 
 		FileUtils.copyFile(diskLocation, cachedDisk);
 
 		ProcessBuilder pb = new ProcessBuilder(RootApplication.CONFIGURATION.GZIP_CMD, "-f", cachedDisk);
-		ProcessUtils.execute(pb, "Unable Zip disk " + uuid);
+		ProcessUtils.execute(pb, "Unable to compress disk " + uuid);
 	}
 
-	public static String getDiskZipFilename(String uuid) {
+	public static String getCompressedDiskLocation(String uuid) {
 		return RootApplication.CONFIGURATION.CACHE_LOCATION + "/" + uuid
 				+ ".gz";
 	}
 
-	public static String streamZip(String uuid) {
-		DiskStorage diskStorage = getDiskStorage();
-		String diskLocation = diskStorage.getDiskLocation(uuid);
-		String zipStream;
-		
-		ProcessBuilder pb = new ProcessBuilder(RootApplication.CONFIGURATION.GZIP_CMD, "-c", diskLocation);
-		
-		zipStream = ProcessUtils.executeAndGetOutput(pb);
-		
-		return zipStream;
+	public static Boolean isCompressedDiskBuilding(String uuid) {
+		return FileUtils.isCachedDiskExists(uuid);
 	}
+
+	public static Boolean hasCompressedDiskExpire(String uuid) {
+		File zip = new File(FileUtils.getCachedDiskLocation(uuid));
+		return hasCompressedDiskExpire(zip);
+	}
+	
+	public static Boolean hasCompressedDiskExpire(File disk) {
+		Calendar cal = Calendar.getInstance();
+		return (cal.getTimeInMillis() > (disk.lastModified() + ServiceConfiguration.CACHE_EXPIRATION_DURATION));
+	}
+	
 }

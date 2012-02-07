@@ -22,7 +22,6 @@ package eu.stratuslab.storage.disk.resources;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +33,6 @@ import org.restlet.data.MediaType;
 import org.restlet.data.Status;
 import org.restlet.representation.FileRepresentation;
 import org.restlet.representation.Representation;
-import org.restlet.representation.StringRepresentation;
 import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
@@ -42,8 +40,10 @@ import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
+import eu.stratuslab.storage.disk.utils.CompressedDiskRemoval;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
 
 public class DiskResource extends DiskBaseResource {
@@ -178,32 +178,33 @@ public class DiskResource extends DiskBaseResource {
 	public Representation toZip() {
 		Representation image = null;
 		String uuid = getDiskId();
+		CompressedDiskRemoval deleteDisk = new CompressedDiskRemoval(uuid);
 
 		getLogger().info("DiskResource toZip: " + uuid);
 
 		checkExistance();
 		checkViewRightsOrError(uuid);
 
-		if (zk.isReadOnly(uuid)) {
-			String zipFilename = DiskUtils.getDiskZipFilename(uuid);
-			File zip = new File(zipFilename);
-			
-			if (!zip.exists()) {
-				DiskUtils.zip(getDiskId());
+		deleteDisk.run();
+		
+		if (DiskUtils.isCompressedDiskBuilding(uuid)) {
+			while (DiskUtils.isCompressedDiskBuilding(uuid)) {
+				getLogger().info("Waiting for zip to be build....");
+				MiscUtils.sleep(5000);
 			}
-			
-			image = new FileRepresentation(zipFilename,
-					MediaType.APPLICATION_GNU_ZIP);
-			
-			image.getDisposition().setType(Disposition.TYPE_ATTACHMENT);
-		} else {
-			String stream = DiskUtils.streamZip(uuid);
-			image = new StringRepresentation(stream, MediaType.APPLICATION_GNU_ZIP);
+		} else if (!FileUtils.isCompressedDiskExists(uuid) || DiskUtils.hasCompressedDiskExpire(uuid)) {
+			getLogger().info("Creating compressed disk");
+			DiskUtils.createCompressedDisk(getDiskId());
 		}
 
+		image = new FileRepresentation(DiskUtils.getCompressedDiskLocation(uuid),
+				MediaType.APPLICATION_GNU_ZIP);
+		image.getDisposition().setType(Disposition.TYPE_ATTACHMENT);
+
+		getLogger().info("Sending compressed disk");
 		return image;
 	}
-
+	
 	private void checkViewRightsOrError(String uuid) {
 		Properties diskProperties = zk.getDiskProperties(uuid);
 		if (!hasSufficientRightsToView(diskProperties)) {
@@ -211,7 +212,6 @@ public class DiskResource extends DiskBaseResource {
 					+ uuid + ") does not exist");
 		}
 	}
-	
 
 	@Delete("html")
 	public Representation deleteDiskAsHtml() {
