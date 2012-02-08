@@ -37,7 +37,6 @@ register_disk() {
         fi
     fi
     set -e
-    $REGISTER_CMD
 }
 
 attach_nfs() {
@@ -79,6 +78,11 @@ attach_iscsi() {
 
     # Get the real device name behind the alias and link to it.
     local REAL_DEV=`readlink -e -n $DISK_PATH`
+    if [ -z $REAL_DEV ]; then
+        sleep 2
+        REAL_DEV=`readlink -e -n $DISK_PATH`
+        [ -z $REAL_DEV ] && { echo "Couldn't not get real device name behind the alias."; exit 1; }
+    fi
     local LINK_CMD="ln -fs $REAL_DEV $DEVICE_LINK"
     $LINK_CMD
 }
