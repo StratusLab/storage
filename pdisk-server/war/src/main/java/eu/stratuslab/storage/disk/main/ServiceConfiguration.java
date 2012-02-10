@@ -43,6 +43,7 @@ public class ServiceConfiguration {
 	}
 
 	// Configuration file
+	public static final String SYSTEM_PROPERTY_CONFIG_FILENAME = "pdisk.config.filename";		
 	public static final String DEFAULT_CFG_FILENAME = "/etc/stratuslab/pdisk.cfg";
 	public static final String DEFAULT_ISCSI_CONFIG_FILENAME = "/etc/stratuslab/iscsi.conf";
 	public static final String ISCSI_CONFIG_FILENAME_SYS_PARAM_NAME = "iscsi.config.filename";
@@ -122,7 +123,7 @@ public class ServiceConfiguration {
 	}
 
 	private static Properties readConfigFile() {
-		File cfgFile = new File(DEFAULT_CFG_FILENAME);
+		File cfgFile = new File(System.getProperty(SYSTEM_PROPERTY_CONFIG_FILENAME, DEFAULT_CFG_FILENAME));
 		Properties properties = new Properties();
 
 		if (!cfgFile.exists()) {
