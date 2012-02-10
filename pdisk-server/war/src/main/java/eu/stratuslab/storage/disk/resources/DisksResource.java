@@ -22,121 +22,259 @@ package eu.stratuslab.storage.disk.resources;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.restlet.data.Form;
 import org.restlet.data.Status;
+import org.restlet.ext.fileupload.RestletFileUpload;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
+import org.restlet.resource.ResourceException;
 
+import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
+import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.disk.utils.FileUtils;
 
 public class DisksResource extends DiskBaseResource {
 
-    @Get("html")
-    public Representation getAsHtml() {
+	@Get("html")
+	public Representation getAsHtml() {
 
-        getLogger().info("DisksResource getAsHtml");
+		getLogger().info("DisksResource getAsHtml");
 
-        Map<String, Object> info = listDisks();
+		Map<String, Object> info = listDisks();
 
-        return createTemplateRepresentation("html/disks.ftl", info, TEXT_HTML);
-    }
+		return createTemplateRepresentation("html/disks.ftl", info, TEXT_HTML);
+	}
 
-    @Get("json")
-    public Representation getAsJson() {
+	@Get("json")
+	public Representation getAsJson() {
 
-        getLogger().info("DisksResource getAsJson");
+		getLogger().info("DisksResource getAsJson");
 
-        Map<String, Object> info = listDisks();
+		Map<String, Object> info = listDisks();
 
-        return createTemplateRepresentation("json/disks.ftl", info,
-                APPLICATION_JSON);
+		return createTemplateRepresentation("json/disks.ftl", info,
+				APPLICATION_JSON);
 
-    }
+	}
 
-    @Post("form:html")
-    public Representation createDiskRequestFromHtml(Representation entity) {
+	@Post("form:html")
+	public Representation createDiskRequestFromHtml(Representation entity) {
 
-        getLogger().info("DisksResource createDiskRequestFromHtml");
+		getLogger().info("DisksResource createDiskRequestFromHtml");
 
-        Properties diskProperties = getDiskProperties(new Form(entity));
+		Properties diskProperties = getDiskProperties(new Form(entity));
 
-        validateDiskProperties(diskProperties);
-        
-        createDisk(diskProperties);
+		validateDiskProperties(diskProperties);
 
-        String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
+		createDisk(diskProperties);
 
-        redirectSeeOther(getBaseUrl() + "/disks/" + uuid + "/");
+		String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
 
-        return null;
-    }
+		redirectSeeOther(getBaseUrl() + "/disks/" + uuid + "/");
 
-    @Post("form:json")
-    public Representation createDiskRequestFromJson(Representation entity) {
+		return null;
+	}
 
-        getLogger().info("DisksResource createDiskRequestFromJson");
+	@Post("form:json")
+	public Representation createDiskRequestFromJson(Representation entity) {
 
-        Properties diskProperties = getDiskProperties(new Form(entity));
+		getLogger().info("DisksResource createDiskRequestFromJson");
 
-        validateDiskProperties(diskProperties);
-        
-        createDisk(diskProperties);
+		Properties diskProperties = getDiskProperties(new Form(entity));
 
-        String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
+		validateDiskProperties(diskProperties);
 
-        setStatus(Status.SUCCESS_CREATED);
+		createDisk(diskProperties);
 
-        Map<String, Object> info = new HashMap<String, Object>();
-        info.put("key", DiskProperties.UUID_KEY);
-        info.put("value", uuid);
+		String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
 
-        return createTemplateRepresentation("json/keyvalue.ftl", info,
-                APPLICATION_JSON);
+		setStatus(Status.SUCCESS_CREATED);
 
-    }
+		Map<String, Object> info = new HashMap<String, Object>();
+		info.put("key", DiskProperties.UUID_KEY);
+		info.put("value", uuid);
 
-    private Map<String, Object> listDisks() {
-        Map<String, Object> info = createInfoStructure("Disks list");
+		return createTemplateRepresentation("json/keyvalue.ftl", info,
+				APPLICATION_JSON);
 
-        addCreateFormDefaults(info);
+	}
 
-        List<Properties> diskInfoList = new LinkedList<Properties>();
-        info.put("disks", diskInfoList);
+	@Post("multipart")
+	public void upload(Representation entity) {
 
-        List<String> disks = zk.getDisks();
-        for (String uuid : disks) {
-            Properties properties = zk.getDiskProperties(uuid);
+		getLogger().info("DisksResource upload");
 
-            // List only disk of the user
-            if (hasSufficientRightsToView(properties)) {
-                diskInfoList.add(properties);
-            }
-        }
+		if (entity == null) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"post with null entity");
+		}
 
-        return info;
-    }
+		Properties diskProperties = saveAndInflateFiles();
 
-    private void addCreateFormDefaults(Map<String, Object> info) {
-        Map<String, Object> defaults = new HashMap<String, Object>();
-        defaults.put(DiskProperties.DISK_SIZE_KEY, "1");
-        defaults.put(DiskProperties.DISK_TAG_KEY, "");
-        defaults.put(DiskProperties.DISK_VISIBILITY_KEY, DiskVisibility.PRIVATE.toString());
+		DiskUtils.createReadOnlyDisk(diskProperties);
 
-        info.put("values", defaults);
+		validateDiskProperties(diskProperties);
 
-        List<String> visibilities = new LinkedList<String>();
-        for (DiskVisibility visibility : DiskVisibility.values()) {
-            visibilities.add(visibility.toString());
-        }
+		createDisk(diskProperties);
+		
+		redirectSeeOther(getBaseUrl() + "/disks/"
+				+ diskProperties.getProperty(DiskProperties.UUID_KEY) + "/");
 
-        info.put("visibilities", visibilities);
-    }
+	}
+
+	private Properties saveAndInflateFiles() {
+
+		int fileSizeLimit = ServiceConfiguration.getInstance().UPLOAD_COMPRESSED_IMAGE_MAX_BYTES;
+
+		DiskFileItemFactory factory = new DiskFileItemFactory();
+		factory.setSizeThreshold(fileSizeLimit);
+
+		RestletFileUpload upload = new RestletFileUpload(factory);
+
+		List<FileItem> items;
+
+		try {
+			items = upload.parseRequest(getRequest());
+		} catch (FileUploadException e) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					e.getMessage());
+		}
+
+		Properties diskProperties = null;
+		for (FileItem fi : items) {
+			if (fi.getName() != null) {
+				diskProperties = getDiskProperties(new Form());
+				String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
+				String compressedFilename = FileUtils
+						.getCompressedDiskLocation(uuid);
+
+				File file = new File(compressedFilename);
+
+				try {
+					fi.write(file);
+				} catch (Exception ex) {
+					throw new ResourceException(
+							Status.CLIENT_ERROR_BAD_REQUEST,
+							"no valid file uploaded");
+				}
+				long size = inflateFile(file,
+						FileUtils.getCachedDiskLocation(uuid));
+				diskProperties.put(DiskProperties.DISK_SIZE_KEY, size);
+				validateDiskProperties(diskProperties);
+
+			}
+		}
+		if (diskProperties == null) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"empty file uploaded");
+		}
+
+		// Return only the last uuid
+		return diskProperties;
+	}
+
+	private long inflateFile(File file, String inflatedName) {
+		ZipFile z = constructZipFile(file);
+
+		ZipEntry entry = z.entries().nextElement();
+		try {
+			copyInputStream(z.getInputStream(entry), new BufferedOutputStream(
+					new FileOutputStream(inflatedName)));
+		} catch (FileNotFoundException e) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					e.getMessage());
+		} catch (IOException e) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					e.getMessage());
+		}
+		return new File(inflatedName).length();
+	}
+
+	private OutputStream copyInputStream(InputStream in, OutputStream out)
+			throws IOException {
+		byte[] buffer = new byte[1024];
+		int len;
+		while ((len = in.read(buffer)) >= 0)
+			out.write(buffer, 0, len);
+		in.close();
+		out.close();
+		return out;
+	}
+
+	protected ZipFile constructZipFile(File file) {
+		ZipFile z;
+		try {
+			z = new ZipFile(file);
+		} catch (IOException e) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					e.getMessage());
+		}
+		if (z.size() < 1) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"empty zip file");
+		} else if (z.size() > 1) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"zip file should only contain one raw image");
+		}
+		return z;
+	}
+
+	private Map<String, Object> listDisks() {
+		Map<String, Object> info = createInfoStructure("Disks list");
+
+		addCreateFormDefaults(info);
+
+		List<Properties> diskInfoList = new LinkedList<Properties>();
+		info.put("disks", diskInfoList);
+
+		List<String> disks = zk.getDisks();
+		for (String uuid : disks) {
+			Properties properties = zk.getDiskProperties(uuid);
+
+			// List only disk of the user
+			if (hasSufficientRightsToView(properties)) {
+				diskInfoList.add(properties);
+			}
+		}
+
+		return info;
+	}
+
+	private void addCreateFormDefaults(Map<String, Object> info) {
+		Map<String, Object> defaults = new HashMap<String, Object>();
+		defaults.put(DiskProperties.DISK_SIZE_KEY, 1);
+		defaults.put(DiskProperties.DISK_TAG_KEY, "");
+		defaults.put(DiskProperties.DISK_VISIBILITY_KEY,
+				DiskVisibility.PRIVATE.toString());
+
+		info.put("values", defaults);
+
+		List<String> visibilities = new LinkedList<String>();
+		for (DiskVisibility visibility : DiskVisibility.values()) {
+			visibilities.add(visibility.toString());
+		}
+
+		info.put("visibilities", visibilities);
+	}
 
 }
