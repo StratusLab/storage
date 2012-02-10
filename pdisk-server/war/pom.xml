@@ -79,6 +79,10 @@
       <artifactId>jetty-server</artifactId>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
 
   </dependencies>
   
