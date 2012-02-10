@@ -20,6 +20,7 @@
 package eu.stratuslab.storage.disk.main;
 
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.restlet.Application;
 import org.restlet.Component;
@@ -46,6 +47,8 @@ import freemarker.template.Configuration;
 
 public class RootApplication extends Application {
 
+	private static final Logger logger = Logger.getLogger("org.restlet");
+	
     public static final String SVC_CONFIGURATION_KEY = "PDISK_SVC_CONFIG";
     public static final String FM_CONFIGURATION_KEY = "PDISK_FM_CONFIG";
 
@@ -69,10 +72,10 @@ public class RootApplication extends Application {
 			component.start();
 		} catch (Exception e) {
 			e.printStackTrace();
-			//System.err.println("\nStarting StratusLab Storage Server FAILED!\n");
+			logger.severe("Starting StratusLab Storage Server FAILED!");
 			System.exit(1);
 		}
-		//System.out.println("\nStratusLab Storage Server started!\n");
+		logger.info("StratusLab Storage Server started!");
 	}
     
     
