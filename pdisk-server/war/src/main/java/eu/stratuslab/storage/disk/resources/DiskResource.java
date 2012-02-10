@@ -176,35 +176,60 @@ public class DiskResource extends DiskBaseResource {
 
 	@Get("gzip")
 	public Representation toZip() {
-		Representation image = null;
+
 		String uuid = getDiskId();
-		CompressedDiskRemoval deleteDisk = new CompressedDiskRemoval(uuid);
 
-		getLogger().info("DiskResource toZip: " + uuid);
-
-		checkExistance();
-		checkViewRightsOrError(uuid);
-
-		deleteDisk.run();
+		cleanCache(uuid);
 		
-		if (DiskUtils.isCompressedDiskBuilding(uuid)) {
-			while (DiskUtils.isCompressedDiskBuilding(uuid)) {
-				getLogger().info("Waiting for zip to be build....");
-				MiscUtils.sleep(5000);
-			}
-		} else if (!FileUtils.isCompressedDiskExists(uuid) || DiskUtils.hasCompressedDiskExpire(uuid)) {
-			getLogger().info("Creating compressed disk");
-			DiskUtils.createCompressedDisk(getDiskId());
+		if (isImageBeingCompressed(uuid)) {
+			waitWhileImageCompressed(uuid);
+		} else if (needToCompressImage(uuid)) {
+			compressImage();
 		}
 
-		image = new FileRepresentation(DiskUtils.getCompressedDiskLocation(uuid),
+		Representation image = new FileRepresentation(DiskUtils.getCompressedDiskLocation(uuid),
 				MediaType.APPLICATION_GNU_ZIP);
 		image.getDisposition().setType(Disposition.TYPE_ATTACHMENT);
 
-		getLogger().info("Sending compressed disk");
 		return image;
 	}
+
+	protected void cleanCache(String uuid) {
+		CompressedDiskRemoval deleteDisk = new CompressedDiskRemoval(uuid);
 	
+		getLogger().info("DiskResource toZip: " + uuid);
+	
+		checkExistance();
+		checkViewRightsOrError(uuid);
+	
+		deleteDisk.run();
+	}
+
+	/**
+	 * The compression logic removes the original file after compression
+	 * therefore, if the raw file exists means that the compression
+	 * is ongoing
+	 */
+	protected Boolean isImageBeingCompressed(String uuid) {
+		return DiskUtils.isCompressedDiskBuilding(uuid);
+	}
+
+	protected void waitWhileImageCompressed(String uuid) {
+		while (isImageBeingCompressed(uuid)) {
+			getLogger().info("Waiting for file to be compressed...");
+			MiscUtils.sleep(5000);
+		}
+	}
+
+	protected boolean needToCompressImage(String uuid) {
+		return !FileUtils.isCompressedDiskExists(uuid) || DiskUtils.hasCompressedDiskExpire(uuid);
+	}
+
+	protected void compressImage() {
+		getLogger().info("Creating compressed disk");
+		DiskUtils.createCompressedDisk(getDiskId());
+	}
+
 	private void checkViewRightsOrError(String uuid) {
 		Properties diskProperties = zk.getDiskProperties(uuid);
 		if (!hasSufficientRightsToView(diskProperties)) {
