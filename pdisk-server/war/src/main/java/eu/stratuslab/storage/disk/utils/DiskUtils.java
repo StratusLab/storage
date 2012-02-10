@@ -206,6 +206,23 @@ public final class DiskUtils {
 		return RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
 	}
 
+	public static void createReadOnlyDisk(Properties diskProperties) {
+		DiskStorage diskStorage = getDiskStorage();
+		String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
+		String diskLocation = diskStorage.getDiskLocation(uuid);
+		String cachedDisk = FileUtils.getCachedDiskLocation(uuid);
+
+		FileUtils.copyFile(cachedDisk, diskLocation);
+
+		File cachedDiskFile = new File(cachedDisk);
+		boolean success = cachedDiskFile.delete();
+		if (!success) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Failed deleting inflated file: " + cachedDisk);
+		}
+		diskProperties.put(DiskProperties.DISK_READ_ONLY_KEY, true);
+	}
+
 	public static void createCompressedDisk(String uuid) {
 		DiskStorage diskStorage = getDiskStorage();
 		String diskLocation = diskStorage.getDiskLocation(uuid);
@@ -213,7 +230,8 @@ public final class DiskUtils {
 
 		FileUtils.copyFile(diskLocation, cachedDisk);
 
-		ProcessBuilder pb = new ProcessBuilder(RootApplication.CONFIGURATION.GZIP_CMD, "-f", cachedDisk);
+		ProcessBuilder pb = new ProcessBuilder(
+				RootApplication.CONFIGURATION.GZIP_CMD, "-f", cachedDisk);
 		ProcessUtils.execute(pb, "Unable to compress disk " + uuid);
 	}
 
@@ -230,10 +248,10 @@ public final class DiskUtils {
 		File zip = new File(FileUtils.getCachedDiskLocation(uuid));
 		return hasCompressedDiskExpire(zip);
 	}
-	
+
 	public static Boolean hasCompressedDiskExpire(File disk) {
 		Calendar cal = Calendar.getInstance();
 		return (cal.getTimeInMillis() > (disk.lastModified() + ServiceConfiguration.CACHE_EXPIRATION_DURATION));
 	}
-	
+
 }
