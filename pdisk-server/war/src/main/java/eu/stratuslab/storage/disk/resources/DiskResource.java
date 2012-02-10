@@ -40,7 +40,6 @@ import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
-import eu.stratuslab.storage.disk.utils.CompressedDiskRemoval;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.FileUtils;
@@ -194,17 +193,6 @@ public class DiskResource extends DiskBaseResource {
 		return image;
 	}
 
-	protected void cleanCache(String uuid) {
-		CompressedDiskRemoval deleteDisk = new CompressedDiskRemoval(uuid);
-	
-		getLogger().info("DiskResource toZip: " + uuid);
-	
-		checkExistance();
-		checkViewRightsOrError(uuid);
-	
-		deleteDisk.run();
-	}
-
 	/**
 	 * The compression logic removes the original file after compression
 	 * therefore, if the raw file exists means that the compression
@@ -228,14 +216,6 @@ public class DiskResource extends DiskBaseResource {
 	protected void compressImage() {
 		getLogger().info("Creating compressed disk");
 		DiskUtils.createCompressedDisk(getDiskId());
-	}
-
-	private void checkViewRightsOrError(String uuid) {
-		Properties diskProperties = zk.getDiskProperties(uuid);
-		if (!hasSufficientRightsToView(diskProperties)) {
-			throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
-					+ uuid + ") does not exist");
-		}
 	}
 
 	@Delete("html")

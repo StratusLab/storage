@@ -29,6 +29,7 @@ import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
+import eu.stratuslab.storage.disk.utils.CompressedDiskRemoval;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
@@ -166,6 +167,25 @@ public class DiskBaseResource extends BaseResource {
 					"Only super user can perform this operation"));
 		}
 	
+	}
+
+	protected void cleanCache(String uuid) {
+		CompressedDiskRemoval deleteDisk = new CompressedDiskRemoval(uuid);
+	
+		getLogger().info("DiskResource toZip: " + uuid);
+	
+		checkExistance();
+		checkViewRightsOrError(uuid);
+	
+		deleteDisk.run();
+	}
+
+	private void checkViewRightsOrError(String uuid) {
+		Properties diskProperties = zk.getDiskProperties(uuid);
+		if (!hasSufficientRightsToView(diskProperties)) {
+			throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
+					+ uuid + ") does not exist");
+		}
 	}
 
 }
