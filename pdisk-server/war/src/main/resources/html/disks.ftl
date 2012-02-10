@@ -16,6 +16,8 @@
   </ul>
 </#if>
 
+<h2>Create disk</h2>
+
 <form action="${baseurl}/disks/" enctype="application/x-www-form-urlencoded" method="POST">
   <table>
     <thead>
@@ -50,6 +52,15 @@
       </tr>
     </tbody>
   </table>
+</form>
+
+<hr/>
+
+<h2>Upload existing disk</h2>
+
+<form action="${baseurl}/disks/" enctype="multipart/form-data" method="POST">
+  <input type="file" name="Image File" size="40" />
+  <input type="submit" value="Upload" />
 </form>
 
 <hr/>
