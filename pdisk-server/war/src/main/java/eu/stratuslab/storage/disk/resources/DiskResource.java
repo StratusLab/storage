@@ -37,7 +37,6 @@ import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
-import eu.stratuslab.storage.disk.resources.BaseResource.DiskVisibility;
 import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
