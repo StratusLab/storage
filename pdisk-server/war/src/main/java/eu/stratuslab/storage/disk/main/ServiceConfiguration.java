@@ -53,7 +53,7 @@ public class ServiceConfiguration {
 	public static final int DISK_SIZE_MAX = 1024;
 	
 	public static final long CACHE_EXPIRATION_DURATION = 2000;
-
+	
 	public final Properties CONFIGURATION;
 
 	public final ShareType SHARE_TYPE;
@@ -83,7 +83,11 @@ public class ServiceConfiguration {
 	public final String CACHE_LOCATION;
 	
 	public final String GZIP_CMD;
+	public final String GUNZIP_CMD;
 
+	public final int UPLOAD_COMPRESSED_IMAGE_MAX_BYTES;
+
+	
 	private ServiceConfiguration() {
 
 		CONFIGURATION = readConfigFile();
@@ -115,7 +119,9 @@ public class ServiceConfiguration {
 		CACHE_LOCATION = getCacheLocation();
 		
 		GZIP_CMD = getCommand("disk.store.utils.gzip");
-
+		GUNZIP_CMD = getCommand("disk.store.utils.gunzip");
+		
+		UPLOAD_COMPRESSED_IMAGE_MAX_BYTES = 10240000;
 	}
 
 	public static ServiceConfiguration getInstance() {
