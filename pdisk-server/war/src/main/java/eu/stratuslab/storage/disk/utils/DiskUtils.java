@@ -113,8 +113,9 @@ public final class DiskUtils {
 		return rebasedUuid;
 	}
 
-	protected static int getSize(Properties properties) {
-		return Integer.parseInt(properties.getProperty("size"));
+	protected static long getSize(Properties properties) {
+		Long bytes = (Long) properties.get(DiskProperties.DISK_SIZE_KEY);
+		return bytes;
 	}
 
 	public static void removeDisk(String uuid) {

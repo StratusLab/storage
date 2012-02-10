@@ -13,7 +13,7 @@ import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
 public final class LvmStorage implements DiskStorage {
 
-	public void create(String uuid, int size) {
+	public void create(String uuid, long size) {
 
 		String lvmSize = size + "G";
 		ProcessBuilder pb = new ProcessBuilder(
@@ -45,7 +45,7 @@ public final class LvmStorage implements DiskStorage {
 		return rebaseUuid;
 	}
 
-	public void createCopyOnWrite(String baseUuid, String cowUuid, int size) {
+	public void createCopyOnWrite(String baseUuid, String cowUuid, long size) {
 		// lvcreate --snapshot -p rw --size $PDISKID_COPY_SIZE
 		// --name $PDISKID_COPY $VGPATH/$PDISKID
 

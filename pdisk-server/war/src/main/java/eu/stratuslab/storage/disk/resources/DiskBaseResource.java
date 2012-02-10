@@ -56,7 +56,7 @@ public class DiskBaseResource extends BaseResource {
     private Properties getEmptyFormProperties() {
         Properties properties = new Properties();
 
-        properties.put(DiskProperties.DISK_SIZE_KEY, "");
+        properties.put(DiskProperties.DISK_SIZE_KEY, -1); // invalid
         properties.put(DiskProperties.DISK_TAG_KEY, "");
         properties.put(DiskProperties.DISK_VISIBILITY_KEY, "private");
         properties.put(DiskProperties.DISK_READ_ONLY_KEY, false);
@@ -111,8 +111,7 @@ public class DiskBaseResource extends BaseResource {
         }
 
         try {
-            String size = diskProperties.getProperty("size", "None");
-            int gigabytes = Integer.parseInt(size);
+            int gigabytes = Integer.parseInt(diskProperties.getProperty(DiskProperties.DISK_SIZE_KEY, "1"));
 
             if (gigabytes < ServiceConfiguration.DISK_SIZE_MIN
                     || gigabytes > ServiceConfiguration.DISK_SIZE_MAX) {

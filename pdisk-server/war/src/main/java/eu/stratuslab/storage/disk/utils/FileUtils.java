@@ -78,7 +78,7 @@ public final class FileUtils {
 		}
 	}
 
-	public static void createZeroFile(File file, int sizeInGB) {
+	public static void createZeroFile(File file, long sizeInGB) {
 		OutputStream ostream = null;
 
 		try {

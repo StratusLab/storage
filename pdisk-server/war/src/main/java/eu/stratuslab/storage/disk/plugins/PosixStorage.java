@@ -13,7 +13,7 @@ public final class PosixStorage implements DiskStorage {
 
 	}
 
-	public void create(String uuid, int size) {
+	public void create(String uuid, long size) {
 		File diskFile = new File(
 				RootApplication.CONFIGURATION.STORAGE_LOCATION, uuid);
 
@@ -35,12 +35,10 @@ public final class PosixStorage implements DiskStorage {
 		}
 	}
 
-	public void createCopyOnWrite(String baseUuid, String cowUuid, int size) {
-		// TODO Auto-generated method stub
+	public void createCopyOnWrite(String baseUuid, String cowUuid, long size) {
 	}
 
 	public String rebase(String uuid, String rebaseUuid) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
