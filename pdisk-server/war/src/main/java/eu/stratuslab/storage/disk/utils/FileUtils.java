@@ -170,13 +170,13 @@ public final class FileUtils {
 	public static Boolean isCachedDiskExists(String uuid) {
 		File cachedDisk = new File(getCachedDiskLocation(uuid));
 		
-		return true && cachedDisk.exists() && cachedDisk.canRead();
+		return cachedDisk.exists() && cachedDisk.canRead();
 	}
 	
 	public static Boolean isCompressedDiskExists(String uuid) {
 		File cachedDisk = new File(getCompressedDiskLocation(uuid));
 		
-		return true && cachedDisk.exists() && cachedDisk.canRead();
+		return cachedDisk.exists() && cachedDisk.canRead();
 	}
 	
 	
