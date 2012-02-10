@@ -21,56 +21,36 @@ public final class IscsiSharing implements DiskSharing {
 
     }
 
-    public void preDiskCreationActions() {
+    public void preDiskCreationActions(String uuid) {
 
     }
 
-    public void postDiskCreationActions() {
-        updateISCSIConfiguration();
+    public void postDiskCreationActions(String uuid) {
+        updateISCSIConfiguration(uuid);
     }
 
-    public void preDiskRemovalActions() {
-        updateISCSIConfiguration();
+    public void preDiskRemovalActions(String uuid) {
+        updateISCSIConfiguration(uuid);
     }
 
-    public void postDiskRemovalActions() {
+    public void postDiskRemovalActions(String uuid) {
 
     }
 
-    public void removeDiskSharing(String removeUuid) {
-    	List<String> disks = getAllDisks();
-    	disks.remove(removeUuid);
-    	
-    	String configuration = createISCSITargetConfiguration(disks);
-    	FileUtils.writeToFile(RootApplication.CONFIGURATION.ISCSI_CONFIG,
-    			configuration);
-    	
-    	removeDiskSharingFromISCSIServer(removeUuid);
-    }
-    
-    public void addDiskSharing(String addUuid) {
-    	List<String> disks = getAllDisks();
-    	if (!disks.contains(addUuid)) {
-    		disks.add(addUuid);
-    	}
-    	
-    	String configuration = createISCSITargetConfiguration(disks);
-    	FileUtils.writeToFile(RootApplication.CONFIGURATION.ISCSI_CONFIG,
-    			configuration);
-    	
-    	addDiskSharingToISCSIServer(addUuid);
-    }
-    
-    private static Boolean updateISCSIConfiguration() {
-        String configuration = createISCSITargetConfiguration(getAllDisks());
+    private static Boolean updateISCSIConfiguration(String uuid) {
+        updateIscsiConfigurationFile();
 
-        FileUtils.writeToFile(RootApplication.CONFIGURATION.ISCSI_CONFIG,
-                configuration);
-
-        updateISCSIServer();
+        updateISCSIServer(uuid);
 
         return true;
     }
+
+	private synchronized static void updateIscsiConfigurationFile() {
+		String configuration = createISCSITargetConfiguration(getAllDisks());
+
+        FileUtils.writeToFile(RootApplication.CONFIGURATION.ISCSI_CONFIG,
+                configuration);
+	}
 
     private static String createISCSITargetConfiguration(List<String> disks) {
         StringBuilder sb = new StringBuilder();
@@ -83,31 +63,14 @@ public final class IscsiSharing implements DiskSharing {
         return sb.toString();
     }
 
-    private static void updateISCSIServer() {
+    private static void updateISCSIServer(String uuid) {
         ProcessBuilder pb = new ProcessBuilder(
-                RootApplication.CONFIGURATION.ISCSI_ADMIN, "--update", "ALL");
+                RootApplication.CONFIGURATION.ISCSI_ADMIN, "--update",
+                String.format(TARGET_NAME_TEMPLATE, uuid));
 
         ProcessUtils.execute(pb, "Perhaps there is a syntax error in "
                 + RootApplication.CONFIGURATION.ISCSI_CONFIG.getAbsolutePath()
                 + " or in " + ServiceConfiguration.DEFAULT_ISCSI_CONFIG_FILENAME);
-    }
-    
-    private static void removeDiskSharingFromISCSIServer(String uuid) {
-    	String iscsiTargetName = String.format(TARGET_NAME_TEMPLATE, uuid);
-    	ProcessBuilder pb = new ProcessBuilder(
-    			RootApplication.CONFIGURATION.ISCSI_ADMIN, "--delete",
-    			iscsiTargetName);
-
-    	ProcessUtils.execute(pb, "Failed to delete " + iscsiTargetName);
-    }
-
-    private static void addDiskSharingToISCSIServer(String uuid) {
-//    	String iscsiTargetName = String.format(TARGET_NAME_TEMPLATE, uuid);
-//    	ProcessBuilder pb = new ProcessBuilder(
-//    			"tgtadm", "--add", ... working on this
-//    			iscsiTargetName);
-//    	
-//    	ProcessUtils.execute(pb, "Failed to delete " + iscsiTargetName);
     }
     
     private static List<String> getAllDisks() {

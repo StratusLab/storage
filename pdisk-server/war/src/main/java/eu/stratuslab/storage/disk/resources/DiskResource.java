@@ -75,7 +75,6 @@ public class DiskResource extends DiskBaseResource {
 		updateDisk(properties);
 		
     	if (properties.containsKey(DiskProperties.DISK_QUARANTINE_KEY)) {
-        	// remove the sharing of the disk
     		DiskUtils.removeDiskSharing(
     				properties.getProperty(DiskProperties.UUID_KEY));
     	}
