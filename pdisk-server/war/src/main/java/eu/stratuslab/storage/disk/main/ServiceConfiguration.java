@@ -179,16 +179,20 @@ public class ServiceConfiguration {
 
 		if (!confHandler.isFile()) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Unable to find ISCSI configuration file.");
+					"Unable to find ISCSI configuration file " + confHandler.getAbsolutePath());
 		}
 
-		// Add include instruction in conf file if not present
-		if (!FileUtils
-				.fileHasLine(confHandler, includeConfig.replace("\n", ""))) {
+		if (!isPdiskIscsiConfigInGlobalIscsiConfig(confHandler, includeConfig)) {
 			FileUtils.appendToFile(confHandler, includeConfig);
 		}
 
 		return stratusConf;
+	}
+
+	private Boolean isPdiskIscsiConfigInGlobalIscsiConfig(File confHandler,
+			String includeConfig) {
+		return FileUtils
+				.fileHasLine(confHandler, includeConfig.replace("\n", ""));
 	}
 
 	private String getConfigValue(String key) {
