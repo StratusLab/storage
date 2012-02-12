@@ -245,7 +245,7 @@ public final class DiskUtils {
 	}
 
 	public static Boolean hasCompressedDiskExpire(String uuid) {
-		File zip = new File(FileUtils.getCachedDiskLocation(uuid));
+		File zip = new File(FileUtils.getCompressedDiskLocation(uuid));
 		return hasCompressedDiskExpire(zip);
 	}
 
