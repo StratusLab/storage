@@ -7,11 +7,16 @@ import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.FileUtils;
+import eu.stratuslab.storage.disk.utils.MiscUtils;
 
 
 public class GZipRequestTest {
+
+	String uuid = "junitTest";
 
 	@Before
 	public void setupConfigFileLocation() {
@@ -22,7 +27,6 @@ public class GZipRequestTest {
 	
 	@Test
 	public void testImageBuldingDetection() throws IOException {
-		String uuid = "junitTest";
 		
 		createFakeImageFile(uuid);
 		
@@ -64,8 +68,30 @@ public class GZipRequestTest {
 	}
 	
 	private void removeCompressedFakeImageFile(String uuid) {
-		String fakeCompressedImagePath = FileUtils.getCachedDiskLocation(uuid);
+		String fakeCompressedImagePath = FileUtils.getCompressedDiskLocation(uuid);
 		File fakeCompressedImage = new File(fakeCompressedImagePath);
 		fakeCompressedImage.delete();
+	}
+	
+	@Test
+	public void testCacheExpiration() throws IOException {
+		
+		createFakeCompressedImageFile(uuid);
+		
+		if (DiskUtils.hasCompressedDiskExpire(uuid)) {
+			fail("Image should not have expire yet");
+		}
+
+		waitCacheToExpire();
+		
+		if (!DiskUtils.hasCompressedDiskExpire(uuid)) {
+			fail("Image should have expire");
+		}
+
+		removeCompressedFakeImageFile(uuid);
+	}
+
+	private void waitCacheToExpire() {
+		MiscUtils.sleep(2*ServiceConfiguration.CACHE_EXPIRATION_DURATION);
 	}
 }
