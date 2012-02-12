@@ -52,7 +52,7 @@ public class ServiceConfiguration {
 	public static final int DISK_SIZE_MIN = 1;
 	public static final int DISK_SIZE_MAX = 1024;
 	
-	public static final long CACHE_EXPIRATION_DURATION = 2000;
+	public static final int CACHE_EXPIRATION_DURATION = 2000;
 	
 	public final Properties CONFIGURATION;
 
