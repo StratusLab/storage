@@ -21,9 +21,9 @@ public class GZipRequestTest {
 
 	@Before
 	public void setupConfigFileLocation() {
-		// PDisk config have to be valid.
 		URL configFile = this.getClass().getResource("/pdisk.test.cfg");
 		System.setProperty("pdisk.config.filename", configFile.getFile());
+
 		System.setProperty("iscsi.config.filename", "/dev/null");
 	}
 	
