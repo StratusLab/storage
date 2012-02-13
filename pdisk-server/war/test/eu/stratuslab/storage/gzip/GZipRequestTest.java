@@ -1,9 +1,10 @@
 package eu.stratuslab.storage.gzip;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -21,7 +22,8 @@ public class GZipRequestTest {
 	@Before
 	public void setupConfigFileLocation() {
 		// PDisk config have to be valid.
-		System.setProperty("pdisk.config.filename", "/tmp/pdisk.cfg");
+		URL configFile = this.getClass().getResource("/pdisk.test.cfg");
+		System.setProperty("pdisk.config.filename", configFile.getFile());
 		System.setProperty("iscsi.config.filename", "/dev/null");
 	}
 	

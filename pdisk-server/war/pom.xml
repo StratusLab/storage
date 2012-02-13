@@ -89,6 +89,13 @@
 
   <build>
 
+    <resources>
+      <resource>
+        <directory>test/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+
     <plugins>
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
