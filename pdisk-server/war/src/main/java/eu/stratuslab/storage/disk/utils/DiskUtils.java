@@ -26,6 +26,10 @@ import eu.stratuslab.storage.disk.plugins.IscsiSharing;
 import eu.stratuslab.storage.disk.plugins.LvmStorage;
 import eu.stratuslab.storage.disk.plugins.PosixStorage;
 
+/**
+ * For unit tests see {@link DiskUtilsTest}
+ *
+ */
 public final class DiskUtils {
 
 	private DiskUtils() {
@@ -191,6 +195,14 @@ public final class DiskUtils {
 			throws FileNotFoundException {
 
 		InputStream fis = new FileInputStream(getDevicePath() + uuid);
+
+		return calculateHash(fis);
+
+	}
+
+	public static String calculateHash(File file) throws FileNotFoundException {
+
+		InputStream fis = new FileInputStream(file);
 
 		return calculateHash(fis);
 
