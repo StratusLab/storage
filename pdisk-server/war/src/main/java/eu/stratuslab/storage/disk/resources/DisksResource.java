@@ -129,9 +129,9 @@ public class DisksResource extends DiskBaseResource {
 
 		Properties diskProperties = saveAndInflateFiles();
 
-		DiskUtils.createReadOnlyDisk(diskProperties);
-
 		validateDiskProperties(diskProperties);
+
+		DiskUtils.createReadOnlyDisk(diskProperties);
 
 		createDisk(diskProperties);
 

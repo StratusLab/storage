@@ -532,6 +532,29 @@ public class DiskProperties implements Closeable {
         return children;
     }
     
+    public List<String> getDiskTags() {
+
+        List<String> tags = new ArrayList<String>();
+
+        List<String> disks = getDisks();
+        
+        for(String uuid : disks) {
+        	try {
+        		Properties disk = getDiskProperties(uuid);
+				String property = disk.getProperty(DiskProperties.DISK_TAG_KEY);
+				if(!property.equals("")) {
+					tags.add(property);
+				}
+        	} catch(ResourceException e) {
+        		// It's ok not to have a tag
+        	} catch(IndexOutOfBoundsException e) {
+        		// It's ok not to have a tag
+        	}
+        }
+        
+        return tags;
+    }
+    
     public boolean isCoW(String uuid) {
         return isTrue(DiskProperties.DISK_COW_BASE_KEY, uuid);
     }

@@ -103,6 +103,10 @@ public class DiskBaseResource extends BaseResource {
     protected void validateDiskProperties(Properties diskProperties) {
         List<String> errors = new LinkedList<String>();
 
+        if(tagExists(diskProperties)) {
+            errors.add("image already registered");
+        }
+        
         String visibility = "none";
         try {
             visibility = diskProperties.getProperty("visibility", "none");
@@ -130,7 +134,12 @@ public class DiskBaseResource extends BaseResource {
         }
     }
 
-    protected void registerDisk(Properties properties) {
+    private boolean tagExists(Properties diskProperties) {
+    	List<String> tags = new DiskProperties().getDiskTags();
+    	return tags.contains(diskProperties.get(DiskProperties.DISK_TAG_KEY));
+	}
+
+	protected void registerDisk(Properties properties) {
         zk.saveDiskProperties(properties);
     }
 
