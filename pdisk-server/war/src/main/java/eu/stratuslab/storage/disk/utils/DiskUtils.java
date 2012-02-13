@@ -192,6 +192,13 @@ public final class DiskUtils {
 
 		InputStream fis = new FileInputStream(getDevicePath() + uuid);
 
+		return calculateHash(fis);
+
+	}
+
+	public static String calculateHash(InputStream fis)
+			throws FileNotFoundException {
+
 		Map<String, BigInteger> info = MetadataUtils.streamInfo(fis);
 
 		BigInteger sha1Digest = info.get("SHA-1");
