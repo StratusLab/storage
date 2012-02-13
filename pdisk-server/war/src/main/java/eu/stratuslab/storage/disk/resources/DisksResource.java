@@ -136,7 +136,7 @@ public class DisksResource extends DiskBaseResource {
 		validateDiskProperties(diskProperties);
 
 		createDisk(diskProperties);
-		
+
 		redirectSeeOther(getBaseUrl() + "/disks/"
 				+ diskProperties.getProperty(DiskProperties.UUID_KEY) + "/");
 
@@ -163,24 +163,7 @@ public class DisksResource extends DiskBaseResource {
 		Properties diskProperties = null;
 		for (FileItem fi : items) {
 			if (fi.getName() != null) {
-				diskProperties = getDiskProperties(new Form());
-				String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
-				String compressedFilename = FileUtils
-						.getCompressedDiskLocation(uuid);
-
-				File file = new File(compressedFilename);
-
-				try {
-					fi.write(file);
-				} catch (Exception ex) {
-					throw new ResourceException(
-							Status.CLIENT_ERROR_BAD_REQUEST,
-							"no valid file uploaded");
-				}
-				long size = inflateFile(file,
-						FileUtils.getCachedDiskLocation(uuid));
-				diskProperties.put(DiskProperties.DISK_SIZE_KEY, size);
-				validateDiskProperties(diskProperties);
+				diskProperties = inflateAndProcessImage(fi);
 
 			}
 		}
@@ -193,16 +176,43 @@ public class DisksResource extends DiskBaseResource {
 		return diskProperties;
 	}
 
+	protected Properties inflateAndProcessImage(FileItem fi) {
+		Properties diskProperties;
+		diskProperties = getDiskProperties(new Form());
+		String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
+		String compressedFilename = FileUtils.getCompressedDiskLocation(uuid);
+
+		File file = new File(compressedFilename);
+
+		try {
+			fi.write(file);
+		} catch (Exception ex) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"no valid file uploaded");
+		}
+		String cachedDiskLocation = FileUtils.getCachedDiskLocation(uuid);
+		long size = inflateFile(file, cachedDiskLocation);
+		diskProperties.put(DiskProperties.DISK_SIZE_KEY, size);
+		try {
+			diskProperties.put(DiskProperties.DISK_TAG_KEY,
+					DiskUtils.calculateHash(new File(cachedDiskLocation)));
+		} catch (FileNotFoundException e) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					e.getMessage());
+		}
+		validateDiskProperties(diskProperties);
+		return diskProperties;
+	}
+
 	private long inflateFile(File file, String inflatedName) {
 		ZipFile z = constructZipFile(file);
 
 		ZipEntry entry = z.entries().nextElement();
 		try {
+
 			copyInputStream(z.getInputStream(entry), new BufferedOutputStream(
 					new FileOutputStream(inflatedName)));
-		} catch (FileNotFoundException e) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					e.getMessage());
+
 		} catch (IOException e) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					e.getMessage());
