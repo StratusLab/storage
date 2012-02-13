@@ -22,20 +22,18 @@ package eu.stratuslab.storage.disk.resources;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
@@ -205,48 +203,23 @@ public class DisksResource extends DiskBaseResource {
 	}
 
 	private long inflateFile(File file, String inflatedName) {
-		ZipFile z = constructZipFile(file);
-
-		ZipEntry entry = z.entries().nextElement();
+		GZIPInputStream in;
 		try {
+			in = new GZIPInputStream(new FileInputStream(file));
 
-			copyInputStream(z.getInputStream(entry), new BufferedOutputStream(
-					new FileOutputStream(inflatedName)));
+			OutputStream out = new FileOutputStream(inflatedName);
+
+			byte[] buf = new byte[1024];
+			int len;
+			while ((len = in.read(buf)) > 0) {
+				out.write(buf, 0, len);
+			}
 
 		} catch (IOException e) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					e.getMessage());
 		}
 		return new File(inflatedName).length();
-	}
-
-	private OutputStream copyInputStream(InputStream in, OutputStream out)
-			throws IOException {
-		byte[] buffer = new byte[1024];
-		int len;
-		while ((len = in.read(buffer)) >= 0)
-			out.write(buffer, 0, len);
-		in.close();
-		out.close();
-		return out;
-	}
-
-	protected ZipFile constructZipFile(File file) {
-		ZipFile z;
-		try {
-			z = new ZipFile(file);
-		} catch (IOException e) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					e.getMessage());
-		}
-		if (z.size() < 1) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"empty zip file");
-		} else if (z.size() > 1) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"zip file should only contain one raw image");
-		}
-		return z;
 	}
 
 	private Map<String, Object> listDisks() {
