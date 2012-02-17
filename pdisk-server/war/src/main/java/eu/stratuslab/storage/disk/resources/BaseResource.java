@@ -21,7 +21,6 @@ package eu.stratuslab.storage.disk.resources;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 import org.restlet.Request;
 import org.restlet.data.ChallengeResponse;
@@ -31,12 +30,10 @@ import org.restlet.resource.ServerResource;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
-import eu.stratuslab.storage.disk.utils.DiskProperties;
+import eu.stratuslab.storage.persistence.Disk;
 import freemarker.template.Configuration;
 
 public class BaseResource extends ServerResource {
-
-	protected final DiskProperties zk;
 
 	public enum DiskVisibility {
 		PRIVATE,
@@ -46,19 +43,6 @@ public class BaseResource extends ServerResource {
 		public static DiskVisibility valueOfIgnoreCase(String value) {
 			return valueOf(value.toUpperCase());
 		}
-	}
-
-	public BaseResource() {
-		super();
-		zk = new DiskProperties();
-	}
-
-	@Override
-	protected void doRelease() {
-		if (zk != null) {
-			zk.close();
-		}
-		super.doRelease();
 	}
 
 	private Configuration getFreeMarkerConfiguration() {
@@ -78,7 +62,6 @@ public class BaseResource extends ServerResource {
 	public static TemplateRepresentation createTemplateRepresentation(
 			Configuration freeMarkerConfig, String tpl,
 			Map<String, Object> info, MediaType mediaType) {
-
 		return new TemplateRepresentation(tpl, freeMarkerConfig, info,
 				mediaType);
 	}
@@ -93,15 +76,12 @@ public class BaseResource extends ServerResource {
 
 		Map<String, Object> info = new HashMap<String, Object>();
 
-		// Add the title if appropriate.
 		if (title != null && !"".equals(title)) {
 			info.put("title", title);
 		}
 
-		// Add the standard base URL declaration.
 		info.put("baseurl", baseUrl);
 
-		// Add user name information
 		info.put("username", getUsername(request));
 
 		return info;
@@ -121,7 +101,11 @@ public class BaseResource extends ServerResource {
 	}
 
 	protected String getCurrentUrl() {
-		return getCurrentUrlWithQueryString().replaceAll("\\?.*", "");
+		String url = getCurrentUrlWithQueryString().replaceAll("\\?.*", "");
+		if(url.endsWith("/")) {
+			url = url.substring(0, url.length() - 1);
+		}
+		return url;
 	}
 
 	protected String getCurrentUrlWithQueryString() {
@@ -137,21 +121,15 @@ public class BaseResource extends ServerResource {
 		return (queryString != null && queryString.equals(key));
 	}
 
-	protected Boolean hasSufficientRightsToView(Properties properties) {
+	protected Boolean hasSufficientRightsToView(Disk disk) {
 		String username = getUsername(getRequest());
-		if (properties.get(DiskProperties.DISK_OWNER_KEY).toString()
-				.equals(username)
-				|| isSuperUser(username)) {
+		if (username.equals(disk.getOwner()) || isSuperUser(username)) {
 			return true;
 		}
 
-		String visibility = properties
-				.getProperty(DiskProperties.DISK_VISIBILITY_KEY);
+		DiskVisibility visibility = disk.getVisibility();
 
-		DiskVisibility currentVisibility = DiskVisibility
-				.valueOfIgnoreCase(visibility);
-
-		return (currentVisibility == DiskVisibility.PUBLIC);
+		return visibility == DiskVisibility.PUBLIC;
 	}
 
 	protected boolean isSuperUser(String username) {
@@ -159,11 +137,9 @@ public class BaseResource extends ServerResource {
 				.equals(username);
 	}
 
-	protected Boolean hasSufficientRightsToDelete(Properties properties) {
+	protected Boolean hasSufficientRightsToDelete(Disk disk) {
 		String username = getUsername(getRequest());
-		return properties.get(DiskProperties.DISK_OWNER_KEY).toString()
-				.equals(username)
-				|| isSuperUser(username);
+		return disk.getOwner().equals(username) || isSuperUser(username);
 	}
 
 	protected String serviceName() {

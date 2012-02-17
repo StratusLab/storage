@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.fileupload.FileItem;
@@ -47,12 +46,15 @@ import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
-import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.FileUtils;
+import eu.stratuslab.storage.persistence.Disk;
+import eu.stratuslab.storage.persistence.DiskView;
 
 public class DisksResource extends DiskBaseResource {
 
+	private Form form = null;
+	
 	@Get("html")
 	public Representation getAsHtml() {
 
@@ -78,17 +80,15 @@ public class DisksResource extends DiskBaseResource {
 	@Post("form:html")
 	public Representation createDiskRequestFromHtml(Representation entity) {
 
-		getLogger().info("DisksResource createDiskRequestFromHtml");
+		form = new Form(getRequestEntity());
 
-		Properties diskProperties = getDiskProperties(new Form(entity));
+		Disk disk = getDisk(form);
 
-		validateDiskProperties(diskProperties);
+		validateDisk(disk);
 
-		createDisk(diskProperties);
+		createDisk(disk);
 
-		String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
-
-		redirectSeeOther(getBaseUrl() + "/disks/" + uuid + "/");
+		redirectSeeOther(getBaseUrl() + "/disks/" + disk.getUuid() + "/");
 
 		return null;
 	}
@@ -96,21 +96,19 @@ public class DisksResource extends DiskBaseResource {
 	@Post("form:json")
 	public Representation createDiskRequestFromJson(Representation entity) {
 
-		getLogger().info("DisksResource createDiskRequestFromJson");
+		form = new Form(getRequestEntity());
 
-		Properties diskProperties = getDiskProperties(new Form(entity));
+		Disk disk = getDisk(form);
 
-		validateDiskProperties(diskProperties);
+		validateDisk(disk);
 
-		createDisk(diskProperties);
-
-		String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
+		createDisk(disk);
 
 		setStatus(Status.SUCCESS_CREATED);
 
 		Map<String, Object> info = new HashMap<String, Object>();
-		info.put("key", DiskProperties.UUID_KEY);
-		info.put("value", uuid);
+		info.put("key", Disk.UUID_KEY);
+		info.put("value", disk.getUuid());
 
 		return createTemplateRepresentation("json/keyvalue.ftl", info,
 				APPLICATION_JSON);
@@ -120,27 +118,25 @@ public class DisksResource extends DiskBaseResource {
 	@Post("multipart")
 	public void upload(Representation entity) {
 
-		getLogger().info("DisksResource upload");
-
 		if (entity == null) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					"post with null entity");
 		}
 
-		Properties diskProperties = saveAndInflateFiles();
+		Disk disk = saveAndInflateFiles();
 
-		validateDiskProperties(diskProperties);
+		validateDisk(disk);
 
-		DiskUtils.createReadOnlyDisk(diskProperties);
+		DiskUtils.createReadOnlyDisk(disk);
 
-		createDisk(diskProperties);
+		createDisk(disk);
 
 		redirectSeeOther(getBaseUrl() + "/disks/"
-				+ diskProperties.getProperty(DiskProperties.UUID_KEY) + "/");
+				+ disk.getUuid() + "/");
 
 	}
 
-	private Properties saveAndInflateFiles() {
+	private Disk saveAndInflateFiles() {
 
 		int fileSizeLimit = ServiceConfiguration.getInstance().UPLOAD_COMPRESSED_IMAGE_MAX_BYTES;
 
@@ -150,7 +146,7 @@ public class DisksResource extends DiskBaseResource {
 		RestletFileUpload upload = new RestletFileUpload(factory);
 
 		List<FileItem> items;
-
+		
 		try {
 			items = upload.parseRequest(getRequest());
 		} catch (FileUploadException e) {
@@ -158,27 +154,24 @@ public class DisksResource extends DiskBaseResource {
 					e.getMessage());
 		}
 
-		Properties diskProperties = null;
+		Disk disk = null;
 		for (FileItem fi : items) {
 			if (fi.getName() != null) {
-				diskProperties = inflateAndProcessImage(fi);
-
+				disk = inflateAndProcessImage(fi);
 			}
 		}
-		if (diskProperties == null) {
+		if (disk == null) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					"empty file uploaded");
 		}
-
+		
 		// Return only the last uuid
-		return diskProperties;
+		return disk;
 	}
 
-	protected Properties inflateAndProcessImage(FileItem fi) {
-		Properties diskProperties;
-		diskProperties = getDiskProperties(new Form());
-		String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
-		String compressedFilename = FileUtils.getCompressedDiskLocation(uuid);
+	protected Disk inflateAndProcessImage(FileItem fi) {
+		Disk disk = initializeDisk();
+		String compressedFilename = FileUtils.getCompressedDiskLocation(disk.getUuid());
 
 		File file = new File(compressedFilename);
 
@@ -188,26 +181,26 @@ public class DisksResource extends DiskBaseResource {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					"no valid file uploaded");
 		}
-		String cachedDiskLocation = FileUtils.getCachedDiskLocation(uuid);
+		String cachedDiskLocation = FileUtils.getCachedDiskLocation(disk.getUuid());
 		long size = inflateFile(file, cachedDiskLocation);
-		diskProperties.put(DiskProperties.DISK_SIZE_KEY, size);
+		disk.setSize(size);
 		try {
-			diskProperties.put(DiskProperties.DISK_TAG_KEY,
-					DiskUtils.calculateHash(new File(cachedDiskLocation)));
+			disk.setIdentifier(DiskUtils.calculateHash(new File(cachedDiskLocation)));
 		} catch (FileNotFoundException e) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					e.getMessage());
 		}
-		validateDiskProperties(diskProperties);
-		return diskProperties;
+		validateDisk(disk);
+		return disk;
 	}
 
 	private long inflateFile(File file, String inflatedName) {
-		GZIPInputStream in;
+		GZIPInputStream in = null;
+		OutputStream out = null;
 		try {
 			in = new GZIPInputStream(new FileInputStream(file));
 
-			OutputStream out = new FileOutputStream(inflatedName);
+			out = new FileOutputStream(inflatedName);
 
 			byte[] buf = new byte[1024];
 			int len;
@@ -218,6 +211,21 @@ public class DisksResource extends DiskBaseResource {
 		} catch (IOException e) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					e.getMessage());
+		} finally {
+			try {
+				if(in != null) {
+					in.close();					
+				}
+			} catch (IOException e) {
+				// it's ok
+			}
+			try {
+				if(out != null) {
+					out.close();					
+				}
+			} catch (IOException e) {
+				// it's ok
+			}
 		}
 		return new File(inflatedName).length();
 	}
@@ -227,27 +235,17 @@ public class DisksResource extends DiskBaseResource {
 
 		addCreateFormDefaults(info);
 
-		List<Properties> diskInfoList = new LinkedList<Properties>();
-		info.put("disks", diskInfoList);
-
-		List<String> disks = zk.getDisks();
-		for (String uuid : disks) {
-			Properties properties = zk.getDiskProperties(uuid);
-
-			// List only disk of the user
-			if (hasSufficientRightsToView(properties)) {
-				diskInfoList.add(properties);
-			}
-		}
+		String username = getUsername(getRequest());
+		List<DiskView> disks = Disk.viewAll(username);
+		info.put("disks", disks);
 
 		return info;
 	}
 
 	private void addCreateFormDefaults(Map<String, Object> info) {
 		Map<String, Object> defaults = new HashMap<String, Object>();
-		defaults.put(DiskProperties.DISK_SIZE_KEY, 1);
-		defaults.put(DiskProperties.DISK_TAG_KEY, "");
-		defaults.put(DiskProperties.DISK_VISIBILITY_KEY,
+		defaults.put(Disk.DISK_SIZE_KEY, 1);
+		defaults.put(Disk.DISK_VISIBILITY_KEY,
 				DiskVisibility.PRIVATE.toString());
 
 		info.put("values", defaults);

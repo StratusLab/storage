@@ -16,6 +16,8 @@
   </ul>
 </#if>
 
+<p>Disk: <a href="${baseurl}/disks/${uuid}">${uuid}</a></p>
+
 <form action="${baseurl}/disks/${uuid}/mounts/" enctype="application/x-www-form-urlencoded" method="POST">
   <table>
     <thead>
@@ -53,24 +55,22 @@
 <br/>
     
 <#if mounts?has_content>
-  <#escape x as x?html>
-    <table class="display">  
-      <thead>
-        <tr>
-          <th>Mount ID</th>
-          <th>Device</th>
-        </tr>
-      </thead>
-      <tbody>
-        <#list mounts as mount>
-          <tr class="${zebra(mount_index)}">
-            <td><a href="${baseurl}/disks/${mount.uuid}/mounts/${mount.mountid}/">${mount.mountid}</a></td>
-            <td class="center">${mount.device}</td>
-          </tr>
-        </#list>
-      </tbody>
-    </table>
-  </#escape>
+	<table class="display">  
+	  <thead>
+	    <tr>
+	      <th>VM ID</th>
+	      <th>Device</th>
+	    </tr>
+	  </thead>
+	  <tbody>
+	    <#list mounts as mount>
+	      <tr class="${zebra(mount_index)}">
+	        <td><a href="${baseurl}/disks/${uuid}/mounts/${mount.id}/">${mount.vmId}</a></td>
+	        <td class="center">${mount.device}</td>
+	      </tr>
+	    </#list>
+	  </tbody>
+	</table>
 <#else> 
   <p>No mounts.</p>
 </#if>

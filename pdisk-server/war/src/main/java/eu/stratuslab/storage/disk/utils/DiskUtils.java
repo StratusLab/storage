@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 
 import org.restlet.data.Status;
@@ -25,6 +24,7 @@ import eu.stratuslab.storage.disk.plugins.FileSystemSharing;
 import eu.stratuslab.storage.disk.plugins.IscsiSharing;
 import eu.stratuslab.storage.disk.plugins.LvmStorage;
 import eu.stratuslab.storage.disk.plugins.PosixStorage;
+import eu.stratuslab.storage.persistence.Disk;
 
 /**
  * For unit tests see {@link DiskUtilsTest}
@@ -58,68 +58,52 @@ public final class DiskUtils {
 		}
 	}
 
-	public static void createDisk(Properties properties) {
-		String uuid = properties.getProperty(DiskProperties.UUID_KEY)
-				.toString();
+	public static void createDisk(Disk disk) {
 
 		DiskSharing diskSharing = getDiskSharing();
 		DiskStorage diskStorage = getDiskStorage();
 
 		diskSharing.preDiskCreationActions();
 
-		diskStorage.create(uuid, getSize(properties));
+		diskStorage.create(disk.getUuid(), disk.getSize());
 
-		properties.put(DiskProperties.UUID_KEY, uuid);
-		DiskProperties zk = new DiskProperties();
-		zk.saveDiskProperties(properties);
-
+		disk.store();
+		
 		diskSharing.postDiskCreationActions();
 	}
 
-	public static String createCoWDisk(Properties properties) {
-		String uuid = properties.getProperty(DiskProperties.UUID_KEY)
-				.toString();
+	public static String createCoWDisk(Disk disk) {
+		String uuid = disk.getUuid();
 
 		DiskSharing diskSharing = getDiskSharing();
 		DiskStorage diskStorage = getDiskStorage();
 
 		diskSharing.preDiskCreationActions();
 
-		String cowUuid = generateUUID();
+		Disk cowDisk = new Disk();
 
-		diskStorage.createCopyOnWrite(uuid, cowUuid, getSize(properties));
+		diskStorage.createCopyOnWrite(uuid, cowDisk.getUuid(), disk.getSize());
 
-		// TODO: refactor
-		properties.put(DiskProperties.UUID_KEY, cowUuid);
-		String baseDiskHref = String.format("<a href='%s'>basedisk<a/>",
-				DiskProperties.getDiskPath(uuid));
-		properties.put(DiskProperties.DISK_COW_BASE_KEY, baseDiskHref);
-		DiskProperties zk = new DiskProperties();
-		zk.saveDiskProperties(properties);
+		cowDisk.setBaseDiskUuid(uuid);
+		cowDisk.store();
 
 		diskSharing.postDiskCreationActions();
 
-		return cowUuid;
+		return cowDisk.getUuid();
 	}
 
-	public static String rebaseDisk(Properties properties) {
-		String uuid = properties.getProperty(DiskProperties.UUID_KEY)
-				.toString();
+	public static String rebaseDisk(Disk disk) {
+		String uuid = disk.getUuid();
 
 		DiskStorage diskStorage = getDiskStorage();
 
 		String rebaseUuid = DiskUtils.generateUUID();
 
-		diskStorage.create(rebaseUuid, getSize(properties));
+		diskStorage.create(rebaseUuid, disk.getSize());
 
-		String rebasedUuid = diskStorage.rebase(uuid, rebaseUuid);
+		diskStorage.rebase(uuid, rebaseUuid);
 
-		return rebasedUuid;
-	}
-
-	protected static long getSize(Properties properties) {
-		Long bytes = (Long) properties.get(DiskProperties.DISK_SIZE_KEY);
-		return bytes;
+		return rebaseUuid;
 	}
 
 	public static void removeDisk(String uuid) {
@@ -225,9 +209,9 @@ public final class DiskUtils {
 		return RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
 	}
 
-	public static void createReadOnlyDisk(Properties diskProperties) {
+	public static void createReadOnlyDisk(Disk disk) {
 		DiskStorage diskStorage = getDiskStorage();
-		String uuid = diskProperties.getProperty(DiskProperties.UUID_KEY);
+		String uuid = disk.getUuid();
 		String diskLocation = diskStorage.getDiskLocation(uuid);
 		String cachedDisk = FileUtils.getCachedDiskLocation(uuid);
 
@@ -239,7 +223,7 @@ public final class DiskUtils {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"Failed deleting inflated file: " + cachedDisk);
 		}
-		diskProperties.put(DiskProperties.DISK_READ_ONLY_KEY, true);
+		disk.setIsreadonly(true);
 	}
 
 	public static void createCompressedDisk(String uuid) {

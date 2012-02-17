@@ -1,21 +1,58 @@
 <#include "/html/header.ftl">
 
-<p><a href="${url}mounts">View mounts</a> for this disk.</p>
-
+<p><a href="${currenturl}/mounts">View mounts</a> for this disk.</p>
+<table>
+      <tr>
+        <td><strong>UUID</strong></td>
+        <td>${disk.uuid}</td>
+      </tr>
+      <tr>
+        <td><strong>Size</strong></td>
+        <td>${disk.size}</td>
+      </tr>
+      <#if disk.tag?has_content>
+	      <tr>
+	        <td><strong>Tag</strong></td>
+	        <td>${disk.tag}</td>
+	      </tr>
+      </#if>
+      <#if disk.identifier?has_content>
+        <tr>
+          <td><strong>Id</strong></td>
+          <td>${disk.identifier}</td>
+        </tr>
+      </#if>
+      <#if disk.userscount?has_content>
+        <tr>
+          <td><strong>User's count</strong></td>
+          <td>${disk.userscount}</td>
+        </tr>
+      </#if>
+      <#if disk.owner?has_content>
+        <tr>
+          <td><strong>Owner</strong></td>
+          <td>${disk.owner}</td>
+        </tr>
+      </#if>
+      <#if disk.visibility?has_content>
+        <tr>
+          <td><strong>Visibility</strong></td>
+          <td>${disk.visibility}</td>
+        </tr>
+      </#if>
 <#escape x as x?html>
-  <#assign keys=properties?keys>
-  <table>
+  <#assign keys=disk.properties?keys>
     <#list keys as key>
       <tr>
         <td><strong>${key?capitalize}</strong></td>
-        <td>${properties[key]}</td>
+        <td>${disk.properties[key]}</td>
       </tr>
     </#list>
 
 <#if can_delete == true>
   <tr>
     <td>
-      <form action="${url}?method=delete" 
+      <form action="${currenturl}?method=delete" 
             enctype="application/x-www-form-urlencoded" 
             method="POST">
         <input type="submit" value="Delete">

@@ -4,7 +4,6 @@ import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
 import java.util.Map;
-import java.util.Properties;
 
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
@@ -12,15 +11,16 @@ import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.persistence.Disk;
+import eu.stratuslab.storage.persistence.Mount;
 
 public class MountResource extends BaseResource {
 
 	private String diskId = null;
 	private String mountId = null;
 	private String node = null;
-	private String vmId = null;
+	private Mount mount = null;
 
 	@Override
 	public void doInit() {
@@ -41,24 +41,8 @@ public class MountResource extends BaseResource {
 
 		}
 		mountId = mountIdValue.toString();
-
-		String[] fields = mountId.split("-", 2);
-		if (fields.length != 2) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"malformed mount ID");
-		}
-
-		vmId = fields[0];
-		if ("".equals(vmId)) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"illegal VM identifier");
-		}
-
-		node = fields[1];
-		if ("".equals(node)) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"illegal node name");
-		}
+		
+		mount  = Mount.load(mountId);
 
 	}
 
@@ -67,7 +51,7 @@ public class MountResource extends BaseResource {
 
 		getLogger().info(
 				"DiskResource getAsHtml: " + diskId + ", " + mountId + ", "
-						+ node + ", " + vmId);
+						+ node + ", " + mount.getVmId());
 
 		Map<String, Object> info = getMountProperties();
 		return createTemplateRepresentation("html/mount.ftl", info, TEXT_HTML);
@@ -78,7 +62,7 @@ public class MountResource extends BaseResource {
 
 		getLogger().info(
 				"DiskResource getAsJson: " + diskId + ", " + mountId + ", "
-						+ node + ", " + vmId);
+						+ node + ", " + mount.getVmId());
 
 		Map<String, Object> info = getMountProperties();
 		return createTemplateRepresentation("json/mount.ftl", info,
@@ -90,7 +74,7 @@ public class MountResource extends BaseResource {
 
 		getLogger().info(
 				"DiskResource detachDiskAsHtml: " + diskId + ", " + mountId
-						+ ", " + node + ", " + vmId);
+						+ ", " + node + ", " + mount.getVmId());
 
 		detachHotPluggedDisk();
 
@@ -106,7 +90,7 @@ public class MountResource extends BaseResource {
 
 		getLogger().info(
 				"DiskResource detachDiskAsJson: " + diskId + ", " + mountId
-						+ ", " + node + ", " + vmId);
+						+ ", " + node + ", " + mount.getVmId());
 
 		String diskTarget = detachHotPluggedDisk();
 
@@ -122,48 +106,47 @@ public class MountResource extends BaseResource {
 				.createInfoStructure("Mount Information");
 		info.put("diskId", diskId);
 		info.put("mountId", mountId);
-		info.put("vmId", vmId);
-		info.put("node", node);
-		info.put("url", getCurrentUrl());
+		info.put("vmId", mount.getVmId());
+		info.put("device", mount.getDevice());
+		info.put("currenturl", getCurrentUrl());
 		return info;
 	}
 
 	private String detachHotPluggedDisk() {
 
-		Properties diskProperties = zk.getDiskProperties(diskId);
-
-		if (!hasSufficientRightsToView(diskProperties)) {
-			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
-					"insufficient rights to detach disk");
-		}
-
-		if (diskId == null || !zk.diskExists(diskId)) {
+		Disk disk = Disk.load(diskId);
+		if (disk == null) {
 			throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND,
 					"unknown disk: " + diskId);
 		}
 
-		String diskTarget = zk.diskTarget(node, vmId, diskId);
+		if (!hasSufficientRightsToView(disk)) {
+			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
+					"insufficient rights to detach disk");
+		}
+
+		String diskTarget = disk.diskTarget(mount.getId());
 
 		// Only force the dismount if this was mounted through the
 		// storage service.
-		if (!diskTarget.equals(DiskProperties.STATIC_DISK_TARGET)) {
+		if (!diskTarget.equals(Disk.STATIC_DISK_TARGET)) {
 			
 			try {
 				DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node,
-						vmId, diskId, diskTarget);
+						mount.getVmId(), diskId, diskTarget);
 				getLogger().info(
-						"hotDetach: " + node + ", " + vmId + ", " + diskId + ", "
+						"hotDetach: " + node + ", " + mount.getVmId() + ", " + diskId + ", "
 								+ diskTarget);
 			} catch(ResourceException e) {
 				getLogger().warning(
-						"hotDetach failed for: " + node + ", " + vmId + ", " + diskId + ", "
+						"hotDetach failed for: " + node + ", " + mount.getVmId() + ", " + diskId + ", "
 								+ diskTarget);
 				
 			}
 		}
 
-		zk.removeDiskMount(node, vmId, diskId, getLogger());
-
+		mount.remove();
+		
 		return diskTarget;
 
 	}

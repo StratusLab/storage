@@ -1,6 +1,5 @@
 package eu.stratuslab.storage.disk.resources;
 
-import static eu.stratuslab.storage.disk.utils.DiskProperties.STATIC_DISK_TARGET;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
@@ -8,7 +7,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import org.restlet.data.Form;
 import org.restlet.data.Status;
@@ -17,181 +15,194 @@ import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
+import eu.stratuslab.storage.persistence.Disk;
+import eu.stratuslab.storage.persistence.Instance;
+import eu.stratuslab.storage.persistence.Mount;
 
 public class MountsResource extends BaseResource {
 
-    private String diskId = null;
-    private String node = null;
-    private String vmId = null;
-    private boolean registerOnly = false;
+	private String node = null;
+	private String vmId = null;
+	private boolean registerOnly = false;
+	private Disk disk = null;
+	private Instance instance = null;
+	private String mountId = null;
 
-    @Override
-    public void doInit() {
+	@Override
+	public void doInit() {
 
-        Map<String, Object> attributes = getRequest().getAttributes();
+		Map<String, Object> attributes = getRequest().getAttributes();
 
-        Object diskIdValue = attributes.get("uuid");
-        if (diskIdValue == null) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "disk UUID cannot be null");
-        }
-        diskId = diskIdValue.toString();
+		Object diskIdValue = attributes.get("uuid");
+		if (diskIdValue == null) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"missing UUID value");
+		}
+		String uuid = diskIdValue.toString();
+		disk = Disk.load(uuid);
+		if (disk == null) {
+			throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "Unknown disk: " + uuid);
+		}
 
-    }
+	}
 
-    @Get("html")
-    public Representation getAsHtml() {
+	@Get("html")
+	public Representation getAsHtml() {
 
-        getLogger().info("DiskResource getAsHtml: " + diskId);
+		Map<String, Object> info = getMounts();
 
-        Map<String, Object> info = getMountProperties(diskId);
+		return createTemplateRepresentation("html/mounts.ftl", info, TEXT_HTML);
+	}
 
-        return createTemplateRepresentation("html/mounts.ftl", info, TEXT_HTML);
-    }
+	@Get("json")
+	public Representation getAsJson() {
 
-    @Get("json")
-    public Representation getAsJson() {
+		Map<String, Object> info = getMounts();
 
-        getLogger().info("DiskResource getAsJson: " + diskId);
+		return createTemplateRepresentation("json/mounts.ftl", info,
+				APPLICATION_JSON);
+	}
 
-        Map<String, Object> info = getMountProperties(diskId);
+	@Post("form:html")
+	public Representation createDiskRequestFromHtml(Representation entity) {
 
-        return createTemplateRepresentation("json/mounts.ftl", info,
-                APPLICATION_JSON);
-    }
+		mountDisk(entity);
 
-    @Post("form:html")
-    public Representation createDiskRequestFromHtml(Representation entity) {
+		redirectSeeOther(getBaseUrl() + "/disks/" + disk.getUuid() + "/mounts/" + mountId);
 
-        mountDisk(entity); // IGNORE the return value!
+		return null;
+	}
 
-        redirectSeeOther(getBaseUrl() + "/disks/" + diskId + "/mounts/" + vmId
-                + "-" + node + "/");
+	@Post("form:json")
+	public Representation mountDiskAsJson(Representation entity) {
+		return mountDisk(entity);
+	}
 
-        return null;
-    }
+	// Note: Returned representation will always be JSON. This should be ignored
+	// when HTML is requested.
+	private Representation mountDisk(Representation entity) {
 
-    @Post("form:json")
-    public Representation mountDiskAsJson(Representation entity) {
-        return mountDisk(entity);
-    }
+		// Validates form values as well. The node and vmId variables will NOT
+		// be null after this call.
+		extractFormValues(entity);
 
-    // Note: Returned representation will always be JSON. This should be ignored
-    // when HTML is requested.
-    private Representation mountDisk(Representation entity) {
+		instance = Instance.load(vmId);
+		if(instance == null) {
+			instance = new Instance(vmId);
+		}
 
-        // Validates form values as well. The node and vmId variables will NOT
-        // be null after this call.
-        extractFormValues(entity);
+		String target = registerOnly ? Disk.STATIC_DISK_TARGET : instance
+				.nextDiskTarget(vmId);
 
-        String target = (registerOnly) ? STATIC_DISK_TARGET : zk
-                .nextDiskTarget(vmId);
+		getLogger().info(
+				"DiskResource mountDisk: " + registerOnly + " " + disk.getUuid() + ", "
+						+ node + ", " + vmId + ", " + target);
 
-        getLogger().info(
-                "DiskResource mountDisk: " + registerOnly + " " + diskId + ", "
-                        + node + ", " + vmId + ", " + target);
+		try {
+			return attachDisk(target);
+		} catch (RuntimeException e) {
+			try {
+				instance.getMounts().remove(target);
+			} catch (RuntimeException e2) {
+				// it's ok
+			}
+			throw e;
+		}
 
-        try {
-            return attachDisk(target);
-        } catch (RuntimeException e) {
-            try {
-            	zk.deleteDiskTarget(vmId, target);
-            } catch (RuntimeException e2) {
-            	
-            }
-            throw e;
-        }
+	}
 
-    }
+	private Map<String, Object> getMounts() {
+		Map<String, Object> info = this
+				.createInfoStructure("Mount Information");
+		info.put("uuid", disk.getUuid());
+		info.put("mounts", Mount.getMounts(disk.getUuid()));
+		return info;
+	}
 
-    private Map<String, Object> getMountProperties(String uuid) {
-        Map<String, Object> info = this
-                .createInfoStructure("Mount Information");
-        info.put("uuid", diskId);
-        info.put("mounts", zk.getDiskMounts(uuid));
-        return info;
-    }
+	private Representation actionResponse(List<String> diskUuids,
+			String diskTarget) {
+		Map<String, Object> info = new HashMap<String, Object>();
 
-    private Representation actionResponse(List<String> diskUuids,
-            String diskTarget) {
-        Map<String, Object> info = new HashMap<String, Object>();
+		info.put("uuids", diskUuids);
+		info.put("node", node);
+		info.put("vm_id", vmId);
 
-        info.put("uuids", diskUuids);
-        info.put("node", node);
-        info.put("vm_id", vmId);
+		if (diskTarget != null) {
+			info.put("target", diskTarget);
+		}
 
-        if (diskTarget != null) {
-            info.put("target", diskTarget);
-        }
+		return createTemplateRepresentation("json/action.ftl", info,
+				APPLICATION_JSON);
+	}
 
-        return createTemplateRepresentation("json/action.ftl", info,
-                APPLICATION_JSON);
-    }
+	private Representation attachDisk(String target) {
 
-    private Representation attachDisk(String target) {
+		if (!hasSufficientRightsToView(disk)) {
+			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
+					"Not enough rights to attach disk");
+		}
 
-        if (diskId == null) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "Disk UUID not provided");
-        } else if (!zk.diskExists(diskId)) {
-            throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND,
-                    "unknown disk UUID");
-        } else if (target.equals(DiskProperties.DISK_TARGET_LIMIT)) {
-            throw new ResourceException(Status.CLIENT_ERROR_CONFLICT,
-                    "Target limit reached. Restart instance to attach new disk");
-        }
+		getLogger().info(
+				"attachDisk: " + node + " " + vmId + " " + disk.getUuid() + " "
+						+ target);
 
-        Properties diskProperties = zk.getDiskProperties(diskId);
-        if (!hasSufficientRightsToView(diskProperties)) {
-            throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
-                    "Not enough rights to attach disk");
-        }
+		if (!target.equals(Disk.STATIC_DISK_TARGET)) {
+			getLogger().info(
+					"hotPlugDisk: " + node + " " + vmId + " " + disk.getUuid() + " "
+							+ target);
+			DiskUtils.attachHotplugDisk(serviceName(), servicePort(), node,
+					vmId, disk.getUuid(), target);
+		}
 
-        getLogger().info(
-                "attachDisk: " + node + " " + vmId + " " + diskId + " "
-                        + target);
+		// Add this metadata only AFTER the device has been successfully added.
+		instance.setNode(node);
 
-        if (!target.equals(STATIC_DISK_TARGET)) {
-            getLogger().info(
-                    "hotPlugDisk: " + node + " " + vmId + " " + diskId + " "
-                            + target);
-            DiskUtils.attachHotplugDisk(serviceName(), servicePort(), node,
-                    vmId, diskId, target);
-        }
+		disk.store();
+		instance.store();
+		
+		
+		Mount mount = new Mount();
+//		mount.store();
+		mount.setDevice(target);
+		mount.setDisk(disk);
+		mount.setInstance(instance);
+		
 
-        // Add this metadata only AFTER the device has been successfully added.
-        zk.addDiskMount(node, vmId, diskId, target, getLogger());
-        zk.addDiskMountDevice(vmId, diskId, target, getLogger());
+		disk.getMounts().put(vmId, mount);
+		instance.getMounts().put(disk.getUuid(), mount);
 
-        List<String> diskIds = new LinkedList<String>();
-        diskIds.add(diskId);
-        return actionResponse(diskIds, target);
-    }
+		mount.store();
+		mountId  = mount.getId();
 
-    private void extractFormValues(Representation entity) {
+		List<String> diskIds = new LinkedList<String>();
+		diskIds.add(disk.getUuid());
 
-        MiscUtils.checkForNullEntity(entity);
+		return actionResponse(diskIds, target);
+	}
 
-        Form form = new Form(entity);
+	private void extractFormValues(Representation entity) {
 
-        node = form.getFirstValue("node");
-        if (node == null) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "missing node attribute");
-        }
+		MiscUtils.checkForNullEntity(entity);
 
-        vmId = form.getFirstValue("vm_id");
-        if (vmId == null) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "missing vm_id attribute");
-        }
+		Form form = new Form(entity);
 
-        Object value = form.getFirstValue("register_only");
-        registerOnly = (value != null && "true".equalsIgnoreCase(value
-                .toString()));
+		node = form.getFirstValue("node");
+		if (node == null || "".equals(node)) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"missing node attribute");
+		}
 
-    }
+		vmId = form.getFirstValue("vm_id");
+		if (vmId == null || "".equals(vmId)) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"missing vm_id attribute");
+		}
+
+		Object value = form.getFirstValue("register_only");
+		registerOnly = (value != null && "true".equalsIgnoreCase(value
+				.toString()));
+
+	}
 }

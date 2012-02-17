@@ -39,24 +39,22 @@ import org.restlet.resource.Post;
 import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.main.RootApplication;
-import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
+import eu.stratuslab.storage.persistence.Disk;
 
 public class DiskResource extends DiskBaseResource {
 
-	private static final String UUID_KEY_NAME = DiskProperties.UUID_KEY;
-	private Properties diskProperties = null;
+	private static final String UUID_KEY_NAME = Disk.UUID_KEY;
+	private Disk disk = null;
 
 	@Override
 	protected void doInit() throws ResourceException {
 
-		checkExistance();
-		diskProperties = zk.getDiskProperties(getDiskId());
-
-		if (!hasSufficientRightsToView(diskProperties)) {
+		Disk disk = loadExistingDisk();
+		
+		if (!hasSufficientRightsToView(disk)) {
 			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
 					"insuffient access rights to view disk (" + getDiskId()
 							+ ")");
@@ -67,24 +65,29 @@ public class DiskResource extends DiskBaseResource {
 	@Put
 	public void update(Representation entity) {
 
-		checkExistance();
+		loadExistingDisk();
 
 		checkIsSuper();
 
 		MiscUtils.checkForNullEntity(entity);
 
-		Properties properties = processWebForm(new Form(entity));
-		properties.put(UUID_KEY_NAME, getDiskId());
+		Disk disk = processWebForm(new Form(entity));
+		disk.setUuid(getDiskId());
 
-		updateDisk(properties);
+		updateDisk(disk);
 	}
 
 	@Post
 	public void createCopyOnWriteOrRebase(Representation entity) {
-		boolean isCoW = new DiskProperties().isCoW(getDiskId());
+
+		Disk disk = Disk.load(getDiskId());
+		
+		if(disk == null) {
+			throw(new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "Disk " + getDiskId() + " doesn't exists"));
+		}
 
 		String newUuid = null;
-		if (isCoW) {
+		if (disk.getIscow()) {
 			newUuid = rebase();
 		} else {
 			newUuid = createCoW();
@@ -96,19 +99,16 @@ public class DiskResource extends DiskBaseResource {
 
 	private String createCoW() {
 
-		Properties properties = initializeProperties();
+		Disk disk = initializeDisk();
 
-		properties.put(DiskProperties.DISK_SIZE_KEY,
-				diskProperties.getProperty(DiskProperties.DISK_SIZE_KEY));
-		properties.put(DiskProperties.UUID_KEY, getDiskId());
+		disk.setSize(this.disk.getSize());
+		disk.setUuid(getDiskId());
 
-		String cowUuid = DiskUtils.createCoWDisk(properties);
-
-		properties.put(DiskProperties.UUID_KEY, cowUuid);
+		DiskUtils.createCoWDisk(disk);
 
 		incrementOriginDiskUserCount();
 
-		return cowUuid;
+		return disk.getUuid();
 	}
 
 	private void incrementOriginDiskUserCount() {
@@ -117,19 +117,18 @@ public class DiskResource extends DiskBaseResource {
 
 	private String rebase() {
 
-		Properties properties = getExistingProperties();
+		Disk disk = Disk.load(getDiskId());
 
-		String newUuid = DiskUtils.rebaseDisk(properties);
+		String newUuid = DiskUtils.rebaseDisk(disk);
 
-		Properties newProperties = initializeProperties();
-		newProperties.put(DiskProperties.UUID_KEY, newUuid);
-		newProperties.put(DiskProperties.DISK_READ_ONLY_KEY, true);
-		newProperties.put(DiskProperties.DISK_SIZE_KEY,
-				properties.getProperty(DiskProperties.DISK_SIZE_KEY));
+		Disk newDisk = initializeDisk();
+		newDisk.setUuid(newUuid);
+		newDisk.setIsreadonly(true);
+		newDisk.setSize(disk.getSize());
 
 		// TODO: implement here and remove client-side implementation
 		// newProperties = calculateHashes(newProperties);
-		registerDisk(newProperties);
+		registerDisk(newDisk);
 
 		return newUuid;
 	}
@@ -138,12 +137,12 @@ public class DiskResource extends DiskBaseResource {
 		String identifier;
 		try {
 			identifier = DiskUtils.calculateHash(properties
-					.getProperty(DiskProperties.UUID_KEY));
+					.getProperty(Disk.UUID_KEY));
 		} catch (FileNotFoundException e) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					e.getMessage());
 		}
-		properties.put(DiskProperties.DISK_IDENTIFER_KEY, identifier);
+		properties.put(Disk.DISK_IDENTIFER_KEY, identifier);
 
 		return properties;
 	}
@@ -250,13 +249,13 @@ public class DiskResource extends DiskBaseResource {
 	private Map<String, Object> loadDiskProperties() {
 		Map<String, Object> infos = createInfoStructure("Disk Information");
 
-		checkExistance();
+		loadExistingDisk();
 
-		Properties diskProperties = zk.getDiskProperties(getDiskId());
+		Disk disk = Disk.load(getDiskId());
 
-		infos.put("properties", diskProperties);
-		infos.put("url", getCurrentUrl());
-		infos.put("can_delete", hasSufficientRightsToDelete(diskProperties));
+		infos.put("disk", disk);
+		infos.put("currenturl", getCurrentUrl());
+		infos.put("can_delete", hasSufficientRightsToDelete(disk));
 
 		return infos;
 
@@ -272,31 +271,28 @@ public class DiskResource extends DiskBaseResource {
 					diskUserHeaders);
 		}
 
-		diskUserHeaders.add("X-DiskUser-Limit",
-				String.valueOf(RootApplication.CONFIGURATION.USERS_PER_DISK));
-		diskUserHeaders.add("X-DiskUser-Remaining",
-				String.valueOf(zk.remainingFreeUser(getDiskId())));
+//		diskUserHeaders.add("X-DiskUser-Limit",
+//				String.valueOf(RootApplication.CONFIGURATION.USERS_PER_DISK));
+//		diskUserHeaders.add("X-DiskUser-Remaining",
+//				String.valueOf(zk.remainingFreeUser(getDiskId())));
 	}
 
 	private void processDeleteDiskRequest() {
 
-		String diskId = getDiskId();
-
-		if (!zk.diskExists(diskId)) {
+		Disk disk = Disk.load(getDiskId());
+		if (disk == null) {
 			throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
-					+ diskId + ") does not exist");
+					+ getDiskId() + ") does not exist");
 		}
 
-		Properties diskProperties = zk.getDiskProperties(diskId);
-
-		if (!hasSufficientRightsToDelete(diskProperties)) {
+		if (!hasSufficientRightsToDelete(disk)) {
 			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
-					"insufficient rights to delete disk (" + diskId + ")");
+					"insufficient rights to delete disk (" + disk.getUuid() + ")");
 		}
 
-		if (zk.getNumberOfMounts(diskId) > 0) {
+		if (disk.getMountsCount() > 0) {
 			throw new ResourceException(Status.CLIENT_ERROR_CONFLICT, "disk ("
-					+ diskId + ") is in use and can't be deleted");
+					+ disk.getUuid() + ") is in use and can't be deleted");
 		}
 
 		deleteDisk();
@@ -307,15 +303,13 @@ public class DiskResource extends DiskBaseResource {
 	}
 
 	private void deleteDisk(String uuid) {
-		Properties propreties = zk.getDiskProperties(uuid);
-		zk.deleteRecursively(uuid);
-		try {
-			DiskUtils.removeDisk(uuid);
-		} catch (ResourceException e) {
-			registerDisk(propreties);
-			throw (e);
+		Disk disk = Disk.load(uuid);
+		String parentUuid = disk.getBaseDiskUuid();
+		if(parentUuid != null) {
+			Disk parent = Disk.load(parentUuid);
+			parent.decrementUserCount();
 		}
-		// TODO: decrement user count in parent disk...
+		disk.remove();
 	}
 
 }

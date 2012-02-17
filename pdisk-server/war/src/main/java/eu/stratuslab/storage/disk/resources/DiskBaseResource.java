@@ -22,7 +22,6 @@ package eu.stratuslab.storage.disk.resources;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import org.restlet.data.Form;
 import org.restlet.data.Status;
@@ -30,144 +29,101 @@ import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.CompressedDiskRemoval;
-import eu.stratuslab.storage.disk.utils.DiskProperties;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
+import eu.stratuslab.storage.persistence.Disk;
 
 public class DiskBaseResource extends BaseResource {
 
-	protected Properties getExistingProperties() {
-		return zk.getDiskProperties(getDiskId());
-	}
-	
-    protected Properties getDiskProperties(Form form) {
+	protected Disk getDisk(Form form) {
 
-        Properties diskProperties = processWebFormWithDefaults(form);
-
-        return diskProperties;
-    }
-
-    protected Properties getDiskProperties(Form form, Properties initialProperties) {
-
-        Properties diskProperties = processWebForm(initialProperties, form);
-
-        return diskProperties;
-    }
-
-    private Properties getEmptyFormProperties() {
-        Properties properties = new Properties();
-
-        properties.put(DiskProperties.DISK_SIZE_KEY, -1); // invalid
-        properties.put(DiskProperties.DISK_TAG_KEY, "");
-        properties.put(DiskProperties.DISK_VISIBILITY_KEY, "private");
-        properties.put(DiskProperties.DISK_READ_ONLY_KEY, false);
-        properties.put(DiskProperties.DISK_COW_BASE_KEY, false);
-
-        return properties;
-    }
-
-    private Properties processWebFormWithDefaults(Form form) {
-        Properties initialProperties = initializeProperties();
-        return processWebForm(initialProperties, form);
-    }
-
-    protected Properties processWebForm(Form form) {
-    	return processWebForm(new Properties(), form);
-    }
-    
-    private Properties processWebForm(Properties initialProperties, Form form) {
-    	Properties properties = initialProperties;
-
-        for (String name : form.getNames()) {
-            String value = form.getFirstValue(name);
-            if (value != null) {
-                properties.put(name, value);
-            }
-        }
-
-        return properties;
-    }
-
-    protected Properties initializeProperties() {
-        Properties properties = getEmptyFormProperties();
-        properties.put(DiskProperties.UUID_KEY, DiskUtils.generateUUID());
-        properties
-                .put(DiskProperties.DISK_OWNER_KEY, getUsername(getRequest()));
-        properties.put(DiskProperties.DISK_CREATION_DATE_KEY,
-                MiscUtils.getTimestamp());
-        properties.put(DiskProperties.DISK_USERS_KEY, "0");
-
-        return properties;
-    }
-
-    protected void validateDiskProperties(Properties diskProperties) {
-        List<String> errors = new LinkedList<String>();
-
-        if(tagExists(diskProperties)) {
-            errors.add("image already registered");
-        }
-        
-        String visibility = "none";
-        try {
-            visibility = diskProperties.getProperty("visibility", "none");
-            DiskVisibility.valueOfIgnoreCase(visibility);
-        } catch (IllegalArgumentException e) {
-            errors.add("invalid disk visibility: " + visibility);
-        }
-
-        try {
-            int gigabytes = Integer.parseInt(diskProperties.getProperty(DiskProperties.DISK_SIZE_KEY, "1"));
-
-            if (gigabytes < ServiceConfiguration.DISK_SIZE_MIN
-                    || gigabytes > ServiceConfiguration.DISK_SIZE_MAX) {
-                errors.add("Size must be an integer between "
-                        + ServiceConfiguration.DISK_SIZE_MIN + " and "
-                        + ServiceConfiguration.DISK_SIZE_MAX);
-            }
-        } catch (NumberFormatException e) {
-            errors.add("Size must be a valid positive integer");
-        }
-
-        if (errors.size() > 0) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    MiscUtils.join(errors, "\", \""));
-        }
-    }
-
-    private boolean tagExists(Properties diskProperties) {
-    	List<String> tags = new DiskProperties().getDiskTags();
-    	return tags.contains(diskProperties.get(DiskProperties.DISK_TAG_KEY));
+		return processWebForm(form);
 	}
 
-	protected void registerDisk(Properties properties) {
-        zk.saveDiskProperties(properties);
-    }
+	protected Disk processWebForm(Form form) {
+		Disk disk = initializeDisk();
+		return processWebForm(disk, form);
+	}
 
-    protected Properties updateDisk(Properties properties) {
-        String uuid = properties.get(DiskProperties.UUID_KEY).toString();
-        zk.updateDiskProperties(uuid, properties);
-        return zk.getDiskProperties(uuid);
-    }
+	private Disk processWebForm(Disk disk, Form form) {
 
-    protected int incrementUserCount(String uuid) {
-        return zk.incrementUserCount(uuid);
-    }
+		long size = Long.parseLong(form.getFirstValue("size", "-1"));
+		try {
+			disk.setSize(size);
+		} catch (NumberFormatException e) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"Error parsing size: " + e.getMessage());
+		}
 
-	protected void checkExistance() {
-		if (!zk.diskExists(getDiskId())) {
-	        throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
-	                + getDiskId() + ") does not exist");
-	    }
+		disk.setVisibility(DiskVisibility.valueOf(form.getFirstValue(
+				"visibility", disk.getVisibility().toString())));
+
+		disk.setTag(form.getFirstValue("tag", ""));
+
+		return disk;
+	}
+
+	protected Disk initializeDisk() {
+		Disk disk = new Disk();
+		disk.setOwner(getUsername(getRequest()));
+		disk.setCreated(MiscUtils.getTimestamp());
+		disk.setUsersCount(0);
+
+		return disk;
+	}
+
+	protected void validateDisk(Disk disk) {
+		List<String> errors = new LinkedList<String>();
+
+		if (Disk.identifierExists(disk.getIdentifier(), disk.getOwner())) {
+			errors.add("image already registered");
+		}
+
+		long gigabytes = disk.getSize();
+
+		if (gigabytes < ServiceConfiguration.DISK_SIZE_MIN
+				|| gigabytes > ServiceConfiguration.DISK_SIZE_MAX) {
+			errors.add("Size must be an integer between "
+					+ ServiceConfiguration.DISK_SIZE_MIN + " and "
+					+ ServiceConfiguration.DISK_SIZE_MAX);
+		}
+
+		if (errors.size() > 0) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					MiscUtils.join(errors, "\", \""));
+		}
+	}
+
+	protected void registerDisk(Disk disk) {
+		disk.store();
+	}
+
+	protected Disk updateDisk(Disk disk) {
+		disk.store();
+		return disk;
+	}
+
+	protected int incrementUserCount(String uuid) {
+		return Disk.load(uuid).incrementUserCount();
+	}
+
+	protected Disk loadExistingDisk() {
+		Disk disk = Disk.load(getDiskId());
+		if (disk == null) {
+			throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
+					+ getDiskId() + ") does not exist");
+		}
+		return disk;
 	}
 
 	protected String getDiskId() {
-	    Map<String, Object> attributes = getRequest().getAttributes();
-	
-	    return attributes.get("uuid").toString();
+		Map<String, Object> attributes = getRequest().getAttributes();
+
+		return attributes.get("uuid").toString();
 	}
 
-	protected void createDisk(Properties properties) {
-	    DiskUtils.createDisk(properties);
+	protected void createDisk(Disk disk) {
+		DiskUtils.createDisk(disk);
 	}
 
 	protected void checkIsSuper() {
@@ -175,25 +131,24 @@ public class DiskBaseResource extends BaseResource {
 			throw (new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
 					"Only super user can perform this operation"));
 		}
-	
+
 	}
 
 	protected void cleanCache(String uuid) {
 		CompressedDiskRemoval deleteDisk = new CompressedDiskRemoval(uuid);
-	
+
 		getLogger().info("DiskResource toZip: " + uuid);
-	
-		checkExistance();
-		checkViewRightsOrError(uuid);
-	
+
+		Disk disk = loadExistingDisk();
+		checkViewRightsOrError(disk);
+
 		deleteDisk.run();
 	}
 
-	private void checkViewRightsOrError(String uuid) {
-		Properties diskProperties = zk.getDiskProperties(uuid);
-		if (!hasSufficientRightsToView(diskProperties)) {
+	private void checkViewRightsOrError(Disk disk) {
+		if (!hasSufficientRightsToView(disk)) {
 			throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
-					+ uuid + ") does not exist");
+					+ disk.getUuid() + ") does not exist");
 		}
 	}
 

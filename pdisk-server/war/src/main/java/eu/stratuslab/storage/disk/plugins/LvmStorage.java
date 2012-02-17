@@ -33,7 +33,7 @@ public final class LvmStorage implements DiskStorage {
 		}
 	}
 
-	public String rebase(String cowUuid, String rebaseUuid) {
+	public void rebase(String cowUuid, String rebaseUuid) {
 
 		checkDiskExists(cowUuid);
 
@@ -42,7 +42,6 @@ public final class LvmStorage implements DiskStorage {
 
 		FileUtils.copyFile(sourcePath, rebasedPath);
 		
-		return rebaseUuid;
 	}
 
 	public void createCopyOnWrite(String baseUuid, String cowUuid, long size) {
