@@ -85,16 +85,30 @@ public class ServiceConfiguration {
 
         ZK_ADDRESSES = getConfigValue("disk.store.zookeeper.address");
 
-        VGDISPLAY_CMD = getCommand("disk.store.lvm.vgdisplay");
-        LVCREATE_CMD = getCommand("disk.store.lvm.create");
-        LVREMOVE_CMD = getCommand("disk.store.lvm.remove");
-        LVM_GROUP_PATH = getConfigValue("disk.store.lvm.device");
-        LVCHANGE_CMD = getCommand("disk.store.lvm.lvchange");
-        DMSETUP_CMD = getCommand("disk.store.lvm.dmsetup");
-
         ISCSI_DISK_TYPE = getDiskType();
         ISCSI_CONFIG = getISCSIConfig();
         ISCSI_ADMIN = getCommand("disk.store.iscsi.admin");
+
+        // Only check LVM parameters if LVM storage is actually going to
+        // be used. Otherwise this creates unnecessary dependencies and
+        // failures on systems that don't use LVM.
+        if (ISCSI_DISK_TYPE.equals(DiskType.LVM)) {
+            VGDISPLAY_CMD = getCommand("disk.store.lvm.vgdisplay");
+            LVCREATE_CMD = getCommand("disk.store.lvm.create");
+            LVREMOVE_CMD = getCommand("disk.store.lvm.remove");
+            LVM_GROUP_PATH = getConfigValue("disk.store.lvm.device");
+            LVCHANGE_CMD = getCommand("disk.store.lvm.lvchange");
+            DMSETUP_CMD = getCommand("disk.store.lvm.dmsetup");
+
+            checkLVMGroupExists(LVM_GROUP_PATH);
+        } else {
+            VGDISPLAY_CMD = "";
+            LVCREATE_CMD = "";
+            LVREMOVE_CMD = "";
+            LVM_GROUP_PATH = "";
+            LVCHANGE_CMD = "";
+            DMSETUP_CMD = "";
+        }
 
         STORAGE_LOCATION = getDiskLocation();
 
@@ -104,13 +118,6 @@ public class ServiceConfiguration {
         CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
         CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
         CLOUD_SERVICE_USER = getConfigValue("disk.store.cloud.service.user");
-
-        // Check that the LVM volume exists IF AND ONLY IF LVM is actually going
-        // to be used. Otherwise this check will make it impossible to use any
-        // non-LVM option!
-        if (ISCSI_DISK_TYPE.equals(DiskType.LVM)) {
-            checkLVMGroupExists(LVM_GROUP_PATH);
-        }
 
     }
 
