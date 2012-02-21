@@ -86,13 +86,13 @@ public class ServiceConfiguration {
         ZK_ADDRESSES = getConfigValue("disk.store.zookeeper.address");
 
         ISCSI_DISK_TYPE = getDiskType();
-        ISCSI_CONFIG = getISCSIConfig();
-        ISCSI_ADMIN = getCommand("disk.store.iscsi.admin");
 
         // Only check LVM parameters if LVM storage is actually going to
         // be used. Otherwise this creates unnecessary dependencies and
         // failures on systems that don't use LVM.
         if (ISCSI_DISK_TYPE.equals(DiskType.LVM)) {
+            ISCSI_CONFIG = getISCSIConfig();
+            ISCSI_ADMIN = getCommand("disk.store.iscsi.admin");
             VGDISPLAY_CMD = getCommand("disk.store.lvm.vgdisplay");
             LVCREATE_CMD = getCommand("disk.store.lvm.create");
             LVREMOVE_CMD = getCommand("disk.store.lvm.remove");
@@ -102,6 +102,8 @@ public class ServiceConfiguration {
 
             checkLVMGroupExists(LVM_GROUP_PATH);
         } else {
+            ISCSI_CONFIG = new File("dummy.txt");
+            ISCSI_ADMIN = "";
             VGDISPLAY_CMD = "";
             LVCREATE_CMD = "";
             LVREMOVE_CMD = "";
