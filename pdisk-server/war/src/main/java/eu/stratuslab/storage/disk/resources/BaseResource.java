@@ -21,6 +21,7 @@ package eu.stratuslab.storage.disk.resources;
 
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -126,6 +127,7 @@ public class BaseResource extends ServerResource {
         return "UNKNOWN";
     }
 
+    @SuppressWarnings("rawtypes")
     protected static String extractUserDn(Request request) {
 
         Map<String, Object> attrs = request.getAttributes();
@@ -143,13 +145,21 @@ public class BaseResource extends ServerResource {
             System.err.println("CLASS" + c.getClass().getCanonicalName());
         }
 
-        if (c instanceof X509Certificate[]) {
-            X509Certificate[] certs = (X509Certificate[]) c;
-            X500Principal principal = certs[0].getSubjectX500Principal();
-            String dn = principal.getName();
-            System.err.println("principal: " + principal.toString());
-            System.err.println("dn: " + dn);
-            return stripCNProxy(dn);
+        if (c instanceof List) {
+
+            List certs = (List) c;
+            for (Object o : certs) {
+                System.err.println(o.getClass().getCanonicalName());
+            }
+
+            if (certs.size() > 0) {
+                X509Certificate cert = (X509Certificate) certs.get(0);
+                X500Principal principal = cert.getSubjectX500Principal();
+                String dn = principal.getName();
+                System.err.println("principal: " + principal.toString());
+                System.err.println("dn: " + dn);
+                return stripCNProxy(dn);
+            }
         }
 
         return "";
