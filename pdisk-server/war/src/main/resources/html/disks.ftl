@@ -1,3 +1,4 @@
+
 <#function zebra index>
   <#if (index % 2) == 0>
     <#return "even" />
