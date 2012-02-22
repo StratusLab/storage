@@ -82,7 +82,7 @@
 
 usage()
 {
-    echo "Usage: ${0##*/} [-d] {start|stop|run|restart|check|supervise} [ CONFIGS ... ] "
+    echo "Usage: ${0##*/} [-d] {start|stop|run|restart|check|status|supervise} [ CONFIGS ... ] "
     exit 1
 }
 
@@ -547,7 +547,7 @@ case "$ACTION" in
 
     ;;
 
-  check)
+  check|status)
     echo "Checking arguments to Jetty: "
     echo "JETTY_HOME     =  $JETTY_HOME"
     echo "JETTY_CONF     =  $JETTY_CONF"
