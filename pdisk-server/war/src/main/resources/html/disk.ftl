@@ -19,7 +19,7 @@
       <form action="${url}?method=delete" 
             enctype="application/x-www-form-urlencoded" 
             method="post">
-        <input type="submit" value="Delete">
+        <input type="submit" value="Delete" />
       </form>
     </td>
     <td></td>
