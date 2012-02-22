@@ -114,16 +114,21 @@ public class BaseResource extends ServerResource {
     }
 
     public static String getUsername(Request request) {
-        String dn = extractUserDn(request);
-        if (!"".equals(dn)) {
-            return dn;
-        }
 
+        // Prefer the username and password over the certificate
+        // because browsers remember what certificate was used on
+        // a site and continue to use it, even if it isn't required.
         ChallengeResponse cr = request.getChallengeResponse();
         if (cr != null) {
             return cr.getIdentifier();
         }
 
+        String dn = extractUserDn(request);
+        if (!"".equals(dn)) {
+            return dn;
+        }
+
+        // FIXME: This should really throw an exception instead.
         return "UNKNOWN";
     }
 
