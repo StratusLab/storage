@@ -82,7 +82,7 @@
 
 usage()
 {
-    echo "Usage: ${0##*/} [-d] {start|stop|run|restart|check|supervise} [ CONFIGS ... ] "
+    echo "Usage: ${0##*/} [-d] {start|stop|run|restart|check|status|supervise} [ CONFIGS ... ] "
     exit 1
 }
 
@@ -175,15 +175,6 @@ zookeeper_action() {
             [ $? -gt 0 ] && echo "FAILED" || echo "OK"
         fi
     fi
-}
-
-##################################################
-# Start tgtd
-##################################################
-start_tgtd() {
-    TGT_SERV="/etc/init.d/tgtd"
-    $TGT_SERV status &>/dev/null
-    [ $? -gt 0 ] && $TGT_SERV start 
 }
 
 ##################################################
@@ -473,7 +464,6 @@ case "$ACTION" in
 
       echo "STARTED Jetty `date`" 
       zookeeper_action start
-      start_tgtd
     fi
 
     ;;
@@ -557,7 +547,7 @@ case "$ACTION" in
 
     ;;
 
-  check)
+  check|status)
     echo "Checking arguments to Jetty: "
     echo "JETTY_HOME     =  $JETTY_HOME"
     echo "JETTY_CONF     =  $JETTY_CONF"

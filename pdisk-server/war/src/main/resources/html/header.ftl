@@ -10,7 +10,7 @@
   <base href="${baseurl}"> 
 
   <link rel="shortcut icon" href="css/favicon.ico"/>
-  <link rel="stylesheet" type="text/css" href="css/stratuslab.css"/>
+  <link rel="stylesheet" type="text/css" href="${baseurl}/css/stratuslab.css"/>
 
 </head>
 

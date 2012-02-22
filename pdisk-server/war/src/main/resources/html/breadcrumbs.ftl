@@ -1,3 +1,3 @@
 <div class="breadcrumbs">
-    <a href="/">Home</a> | <a href="disks">Disks</a>
+    <a href="${baseurl}">Home</a> | <a href="${baseurl}/disks">Disks</a>
 </div>

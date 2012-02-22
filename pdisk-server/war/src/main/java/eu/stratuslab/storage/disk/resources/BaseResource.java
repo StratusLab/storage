@@ -19,9 +19,13 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
+import javax.security.auth.x500.X500Principal;
 
 import org.restlet.Request;
 import org.restlet.data.ChallengeResponse;
@@ -36,173 +40,227 @@ import freemarker.template.Configuration;
 
 public class BaseResource extends ServerResource {
 
-	protected final DiskProperties zk;
+    private static final String CLIENT_CERTS_ATTR = "org.restlet.https.clientCertificates";
 
-	public enum DiskVisibility {
-		PRIVATE,
-		// RESTRICTED,
-		PUBLIC;
+    protected final DiskProperties zk;
 
-		public static DiskVisibility valueOfIgnoreCase(String value) {
-			return valueOf(value.toUpperCase());
-		}
-	}
+    public enum DiskVisibility {
+        PRIVATE,
+        // RESTRICTED,
+        PUBLIC;
 
-	public BaseResource() {
-		super();
-		zk = new DiskProperties();
-	}
+        public static DiskVisibility valueOfIgnoreCase(String value) {
+            return valueOf(value.toUpperCase());
+        }
+    }
 
-	@Override
-	protected void doRelease() {
-		if (zk != null) {
-			zk.close();
-		}
-		super.doRelease();
-	}
+    public BaseResource() {
+        super();
+        zk = new DiskProperties();
+    }
 
-	private Configuration getFreeMarkerConfiguration() {
-		return ((RootApplication) getApplication())
-				.getFreeMarkerConfiguration();
-	}
+    @Override
+    protected void doRelease() {
+        if (zk != null) {
+            zk.close();
+        }
+        super.doRelease();
+    }
 
-	protected TemplateRepresentation createTemplateRepresentation(String tpl,
-			Map<String, Object> info, MediaType mediaType) {
+    private Configuration getFreeMarkerConfiguration() {
+        return ((RootApplication) getApplication())
+                .getFreeMarkerConfiguration();
+    }
 
-		Configuration freeMarkerConfig = getFreeMarkerConfiguration();
-		return createTemplateRepresentation(freeMarkerConfig, tpl, info,
-				mediaType);
+    protected TemplateRepresentation createTemplateRepresentation(String tpl,
+            Map<String, Object> info, MediaType mediaType) {
 
-	}
+        Configuration freeMarkerConfig = getFreeMarkerConfiguration();
+        return createTemplateRepresentation(freeMarkerConfig, tpl, info,
+                mediaType);
 
-	public static TemplateRepresentation createTemplateRepresentation(
-			Configuration freeMarkerConfig, String tpl,
-			Map<String, Object> info, MediaType mediaType) {
+    }
 
-		return new TemplateRepresentation(tpl, freeMarkerConfig, info,
-				mediaType);
-	}
+    public static TemplateRepresentation createTemplateRepresentation(
+            Configuration freeMarkerConfig, String tpl,
+            Map<String, Object> info, MediaType mediaType) {
 
-	protected Map<String, Object> createInfoStructure(String title) {
+        return new TemplateRepresentation(tpl, freeMarkerConfig, info,
+                mediaType);
+    }
 
-		return createInfoStructure(title, getRequest(), getBaseUrl());
-	}
+    protected Map<String, Object> createInfoStructure(String title) {
 
-	public static Map<String, Object> createInfoStructure(String title,
-			Request request, String baseUrl) {
+        return createInfoStructure(title, getRequest(), getBaseUrl());
+    }
 
-		Map<String, Object> info = new HashMap<String, Object>();
+    public static Map<String, Object> createInfoStructure(String title,
+            Request request, String baseUrl) {
 
-		// Add the title if appropriate.
-		if (title != null && !"".equals(title)) {
-			info.put("title", title);
-		}
+        Map<String, Object> info = new HashMap<String, Object>();
 
-		// Add the standard base URL declaration.
-		info.put("baseurl", baseUrl);
+        // Add the title if appropriate.
+        if (title != null && !"".equals(title)) {
+            info.put("title", title);
+        }
 
-		// Add user name information
-		info.put("username", getUsername(request));
+        // Add the standard base URL declaration.
+        info.put("baseurl", baseUrl);
 
-		return info;
-	}
+        // Add user name information
+        info.put("username", getUsername(request));
 
-	public static String getUsername(Request request) {
-		ChallengeResponse cr = request.getChallengeResponse();
-		return (cr == null) ? "UNKNOWN" : cr.getIdentifier();
-	}
+        return info;
+    }
 
-	protected String getBaseUrl() {
-		return getRequest().getRootRef().toString();
-	}
+    public static String getUsername(Request request) {
+        String dn = extractUserDn(request);
+        if (!"".equals(dn)) {
+            return dn;
+        }
 
-	public static String getBaseUrl(Request request) {
-		return request.getRootRef().toString();
-	}
+        ChallengeResponse cr = request.getChallengeResponse();
+        if (cr != null) {
+            return cr.getIdentifier();
+        }
 
-	protected String getCurrentUrl() {
-		return getCurrentUrlWithQueryString().replaceAll("\\?.*", "");
-	}
+        return "UNKNOWN";
+    }
 
-	protected String getCurrentUrlWithQueryString() {
-		return getRequest().getResourceRef().toString();
-	}
+    @SuppressWarnings("rawtypes")
+    protected static String extractUserDn(Request request) {
 
-	protected String getQueryString() {
-		return getRequest().getResourceRef().getQuery();
-	}
+        Map<String, Object> attrs = request.getAttributes();
+        for (Map.Entry<String, Object> entry : attrs.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            String className = value.getClass().getCanonicalName();
+            System.err.println(key + " --> " + className + " --> "
+                    + value.toString());
+        }
 
-	protected Boolean hasQueryString(String key) {
-		String queryString = getQueryString();
-		return (queryString != null && queryString.equals(key));
-	}
+        Object c = attrs.get(CLIENT_CERTS_ATTR);
 
-	protected Boolean hasSufficientRightsToView(Properties properties) {
-		String username = getUsername(getRequest());
-		if (properties.get(DiskProperties.DISK_OWNER_KEY).toString()
-				.equals(username)
-				|| isSuperUser(username)) {
-			return true;
-		}
+        if (c != null) {
+            System.err.println("CLASS" + c.getClass().getCanonicalName());
+        }
 
-		String visibility = properties
-				.getProperty(DiskProperties.DISK_VISIBILITY_KEY);
+        if (c instanceof List) {
 
-		DiskVisibility currentVisibility = DiskVisibility
-				.valueOfIgnoreCase(visibility);
+            List certs = (List) c;
+            for (Object o : certs) {
+                System.err.println(o.getClass().getCanonicalName());
+            }
 
-		return (currentVisibility == DiskVisibility.PUBLIC);
-	}
+            if (certs.size() > 0) {
+                X509Certificate cert = (X509Certificate) certs.get(0);
+                X500Principal principal = cert.getSubjectX500Principal();
+                String dn = principal.getName();
+                System.err.println("principal: " + principal.toString());
+                System.err.println("dn: " + dn);
+                return stripCNProxy(dn);
+            }
+        }
 
-	protected boolean isSuperUser(String username) {
-		return RootApplication.CONFIGURATION.CLOUD_SERVICE_USER
-				.equals(username);
-	}
+        return "";
 
-	protected Boolean hasSufficientRightsToDelete(Properties properties) {
-		String username = getUsername(getRequest());
-		return properties.get(DiskProperties.DISK_OWNER_KEY).toString()
-				.equals(username)
-				|| isSuperUser(username);
-	}
+    }
 
-	protected String serviceName() {
-		return getRequest().getHostRef().getHostDomain();
-	}
+    private static String stripCNProxy(String username) {
+        return username.replaceFirst("^CN\\s*=\\s*proxy\\s*,\\s*", "");
+    }
 
-	protected int servicePort() {
-		return getRequest().getHostRef().getHostPort();
-	}
+    protected String getBaseUrl() {
+        return getRequest().getRootRef().toString();
+    }
 
-	public Configuration extractFmConfiguration() {
-		Request request = getRequest();
-		return extractFmConfiguration(request);
-	}
+    public static String getBaseUrl(Request request) {
+        return request.getRootRef().toString();
+    }
 
-	public static Configuration extractFmConfiguration(Request request) {
-		try {
-			Map<String, Object> attributes = request.getAttributes();
-			Object value = attributes.get(RootApplication.FM_CONFIGURATION_KEY);
-			return (Configuration) value;
-		} catch (ClassCastException e) {
-			return null;
-		}
-	}
+    protected String getCurrentUrl() {
+        return getCurrentUrlWithQueryString().replaceAll("\\?.*", "");
+    }
 
-	public ServiceConfiguration extractSvcConfiguration() {
-		Request request = getRequest();
-		return extractSvcConfiguration(request);
-	}
+    protected String getCurrentUrlWithQueryString() {
+        return getRequest().getResourceRef().toString();
+    }
 
-	public static ServiceConfiguration extractSvcConfiguration(Request request) {
-		try {
-			Map<String, Object> attributes = request.getAttributes();
-			Object value = attributes
-					.get(RootApplication.SVC_CONFIGURATION_KEY);
-			return (ServiceConfiguration) value;
-		} catch (ClassCastException e) {
-			return null;
-		}
-	}
+    protected String getQueryString() {
+        return getRequest().getResourceRef().getQuery();
+    }
+
+    protected Boolean hasQueryString(String key) {
+        String queryString = getQueryString();
+        return (queryString != null && queryString.equals(key));
+    }
+
+    protected Boolean hasSufficientRightsToView(Properties properties) {
+        String username = getUsername(getRequest());
+        if (properties.get(DiskProperties.DISK_OWNER_KEY).toString()
+                .equals(username)
+                || isSuperUser(username)) {
+            return true;
+        }
+
+        String visibility = properties
+                .getProperty(DiskProperties.DISK_VISIBILITY_KEY);
+
+        DiskVisibility currentVisibility = DiskVisibility
+                .valueOfIgnoreCase(visibility);
+
+        return (currentVisibility == DiskVisibility.PUBLIC);
+    }
+
+    protected boolean isSuperUser(String username) {
+        return RootApplication.CONFIGURATION.CLOUD_SERVICE_USER
+                .equals(username);
+    }
+
+    protected Boolean hasSufficientRightsToDelete(Properties properties) {
+        String username = getUsername(getRequest());
+        return properties.get(DiskProperties.DISK_OWNER_KEY).toString()
+                .equals(username)
+                || isSuperUser(username);
+    }
+
+    protected String serviceName() {
+        return getRequest().getHostRef().getHostDomain();
+    }
+
+    protected int servicePort() {
+        return getRequest().getHostRef().getHostPort();
+    }
+
+    public Configuration extractFmConfiguration() {
+        Request request = getRequest();
+        return extractFmConfiguration(request);
+    }
+
+    public static Configuration extractFmConfiguration(Request request) {
+        try {
+            Map<String, Object> attributes = request.getAttributes();
+            Object value = attributes.get(RootApplication.FM_CONFIGURATION_KEY);
+            return (Configuration) value;
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+
+    public ServiceConfiguration extractSvcConfiguration() {
+        Request request = getRequest();
+        return extractSvcConfiguration(request);
+    }
+
+    public static ServiceConfiguration extractSvcConfiguration(Request request) {
+        try {
+            Map<String, Object> attributes = request.getAttributes();
+            Object value = attributes
+                    .get(RootApplication.SVC_CONFIGURATION_KEY);
+            return (ServiceConfiguration) value;
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
 
 }
