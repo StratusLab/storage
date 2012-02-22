@@ -39,7 +39,7 @@ import freemarker.template.Configuration;
 
 public class BaseResource extends ServerResource {
 
-    private static final String X509_ATTR_NAME = "javax.servlet.request.X509Certificate";
+    private static final String CLIENT_CERTS_ATTR = "org.restlet.https.clientCertificates";
 
     protected final DiskProperties zk;
 
@@ -128,7 +128,7 @@ public class BaseResource extends ServerResource {
 
     protected static String extractUserDn(Request request) {
 
-        Object c = request.getAttributes().get(X509_ATTR_NAME);
+        Object c = request.getAttributes().get(CLIENT_CERTS_ATTR);
 
         if (c instanceof X509Certificate[]) {
             X509Certificate[] certs = (X509Certificate[]) c;
