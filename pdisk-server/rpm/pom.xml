@@ -234,7 +234,7 @@
                   <excludes>
                     <exclude>*.cfg</exclude>
                     <exclude>etc/login/*</exclude>
-                    <exclude>jetty.jks</exclude>
+                    <exclude>etc/jetty.jks</exclude>
                     <!--<exclude>etc/overrides/*</exclude>-->
                   </excludes>
                 </source>
