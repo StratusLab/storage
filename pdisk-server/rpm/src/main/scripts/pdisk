@@ -178,15 +178,6 @@ zookeeper_action() {
 }
 
 ##################################################
-# Start tgtd
-##################################################
-start_tgtd() {
-    TGT_SERV="/etc/init.d/tgtd"
-    $TGT_SERV status &>/dev/null
-    [ $? -gt 0 ] && $TGT_SERV start 
-}
-
-##################################################
 # Try to determine JETTY_HOME if not set
 ##################################################
 if [ -z "$JETTY_HOME" ] 
@@ -473,7 +464,6 @@ case "$ACTION" in
 
       echo "STARTED Jetty `date`" 
       zookeeper_action start
-      start_tgtd
     fi
 
     ;;
