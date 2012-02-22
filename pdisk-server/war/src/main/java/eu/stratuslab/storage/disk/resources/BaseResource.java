@@ -131,33 +131,14 @@ public class BaseResource extends ServerResource {
     protected static String extractUserDn(Request request) {
 
         Map<String, Object> attrs = request.getAttributes();
-        for (Map.Entry<String, Object> entry : attrs.entrySet()) {
-            String key = entry.getKey();
-            Object value = entry.getValue();
-            String className = value.getClass().getCanonicalName();
-            System.err.println(key + " --> " + className + " --> "
-                    + value.toString());
-        }
-
         Object c = attrs.get(CLIENT_CERTS_ATTR);
 
-        if (c != null) {
-            System.err.println("CLASS" + c.getClass().getCanonicalName());
-        }
-
         if (c instanceof List) {
-
             List certs = (List) c;
-            for (Object o : certs) {
-                System.err.println(o.getClass().getCanonicalName());
-            }
-
             if (certs.size() > 0) {
                 X509Certificate cert = (X509Certificate) certs.get(0);
                 X500Principal principal = cert.getSubjectX500Principal();
                 String dn = principal.getName();
-                System.err.println("principal: " + principal.toString());
-                System.err.println("dn: " + dn);
                 return stripCNProxy(dn);
             }
         }

@@ -16,7 +16,9 @@
   </ul>
 </#if>
 
-<form action="${baseurl}/disks/" enctype="application/x-www-form-urlencoded" method="POST">
+<form action="${baseurl}/disks/" 
+      enctype="application/x-www-form-urlencoded" 
+       method="post">
   <table>
     <thead>
       <tr>
