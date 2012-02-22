@@ -1,3 +1,4 @@
+
 <#include "/html/header.ftl">
 
 <p>
@@ -23,7 +24,7 @@
         <td>
           <form action="${url}?method=delete" 
                 enctype="application/x-www-form-urlencoded" 
-                method="POST">
+                method="post">
             <input type="submit" value="Unmount"></p>
           </form>
         </td>

@@ -1,3 +1,4 @@
+
 <#include "/html/header.ftl">
 
 <p><a href="${url}mounts">View mounts</a> for this disk.</p>
@@ -17,8 +18,8 @@
     <td>
       <form action="${url}?method=delete" 
             enctype="application/x-www-form-urlencoded" 
-            method="POST">
-        <input type="submit" value="Delete">
+            method="post">
+        <input type="submit" value="Delete" />
       </form>
     </td>
     <td></td>
@@ -28,7 +29,7 @@
   </table>
 </#escape>
 
-  <script language="javascript" src="/css/external/jquery.min.js"></script>
+  <script language="javascript" src="/css/external/jquery.min.js" type="text/javascript"></script>
   <script language="javascript" type="text/javascript">
     $(document).ready(function() {
       $('td').each(function(i, element) {
