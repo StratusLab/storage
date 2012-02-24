@@ -183,7 +183,7 @@ zookeeper_action() {
 #
 zookeeper_migrate() {
     if [ -d "/tmp/zookeeper" ]; then
-        if [! -e "var/lib/zookeeper-pdisk"]; then
+        if [ ! -e "var/lib/zookeeper-pdisk" ]; then
             mkdir -p /var/lib/zookeeper-pdisk
             mv /tmp/zookeeper/* /var/lib/zookeeper-pdisk/
         fi
