@@ -59,14 +59,14 @@ public class DiskProperties implements Closeable {
     public static final String DISK_USERS_KEY = "users";
     public static final String DISK_READ_ONLY_KEY = "isreadonly";
     public static final String DISK_COW_BASE_KEY = "iscow";
-	public static final String DISK_TAG_KEY = "tag";
-	public static final String DISK_SIZE_KEY = "size";
-	public static final String DISK_QUARANTINE_KEY = "quarantine";
+    public static final String DISK_TAG_KEY = "tag";
+    public static final String DISK_SIZE_KEY = "size";
+    public static final String DISK_QUARANTINE_KEY = "quarantine";
 
     public static final String STATIC_DISK_TARGET = "static";
     public static final String DISK_TARGET_LIMIT = "limit";
 
-	public static final Object DISK_IDENTIFER_KEY = "Marketplace_id";
+    public static final Object DISK_IDENTIFER_KEY = "Marketplace_id";
 
     public DiskProperties() {
         connect(RootApplication.CONFIGURATION.ZK_ADDRESSES, 3000);
@@ -211,7 +211,7 @@ public class DiskProperties implements Closeable {
     }
 
     private static String getDiskZkPath(String uuid) {
-    	return String.format("%s/%s", ZK_DISKS_PATH, uuid);
+        return String.format("%s/%s", ZK_DISKS_PATH, uuid);
     }
 
     public Boolean diskExists(String uuid) {
@@ -244,8 +244,8 @@ public class DiskProperties implements Closeable {
             String content = properties.get(key).toString();
 
             if (key != UUID_KEY) {
-            	String path = diskRoot + "/" + key;
-            	deleteIfExists(path);
+                String path = diskRoot + "/" + key;
+                deleteIfExists(path);
                 createNode(path, content);
             }
         }
@@ -335,20 +335,20 @@ public class DiskProperties implements Closeable {
         createNode(deviceMountPath, target);
     }
 
-	public int incrementUserCount(String uuid) {
-		String path = getPathValue(DISK_USERS_KEY, uuid);
+    public int incrementUserCount(String uuid) {
+        String path = getPathValue(DISK_USERS_KEY, uuid);
         int count = Integer.parseInt(getNode(path));
         deleteIfExists(path);
         count++;
         createNode(path, String.valueOf(count));
         return count;
-	}
+    }
 
-	public void deleteIfExists(String path) {
-		if (pathExists(path)) {
+    public void deleteIfExists(String path) {
+        if (pathExists(path)) {
             deleteNode(path);
         }
-	}
+    }
 
     public void removeDiskMount(String node, String vmId, String uuid,
             Logger logger) {
@@ -369,7 +369,7 @@ public class DiskProperties implements Closeable {
     }
 
     public static String getDiskPath(String uuid) {
-    	return getDiskZkPath(uuid);
+        return getDiskZkPath(uuid);
     }
 
     private String getDiskMountPath(String uuid) {
@@ -532,28 +532,28 @@ public class DiskProperties implements Closeable {
 
         return children;
     }
-    
+
     public boolean isCoW(String uuid) {
         return isTrue(DiskProperties.DISK_COW_BASE_KEY, uuid);
     }
-    
+
     public boolean isReadOnly(String uuid) {
         return isTrue(DiskProperties.DISK_READ_ONLY_KEY, uuid);
-    	
+
     }
 
-	protected boolean isTrue(String key, String uuid) {
-		String path = getPathValue(key, uuid);
-		
-		if (pathExists(path)) {
-			String value = getNode(path);
-			if("false".equals(value)) {
-				return false;
-			} else {
-				return true;
-			}
-		} else {
-			return false;
-		}
-	}
+    protected boolean isTrue(String key, String uuid) {
+        String path = getPathValue(key, uuid);
+
+        if (pathExists(path)) {
+            String value = getNode(path);
+            if ("false".equals(value)) {
+                return false;
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
 }

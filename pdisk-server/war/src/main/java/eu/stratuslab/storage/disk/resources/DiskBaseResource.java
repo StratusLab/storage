@@ -35,10 +35,10 @@ import eu.stratuslab.storage.disk.utils.MiscUtils;
 
 public class DiskBaseResource extends BaseResource {
 
-	protected Properties getExistingProperties() {
-		return zk.getDiskProperties(getDiskId());
-	}
-	
+    protected Properties getExistingProperties() {
+        return zk.getDiskProperties(getDiskId());
+    }
+
     protected Properties getDiskProperties(Form form) {
 
         Properties diskProperties = processWebFormWithDefaults(form);
@@ -46,7 +46,8 @@ public class DiskBaseResource extends BaseResource {
         return diskProperties;
     }
 
-    protected Properties getDiskProperties(Form form, Properties initialProperties) {
+    protected Properties getDiskProperties(Form form,
+            Properties initialProperties) {
 
         Properties diskProperties = processWebForm(initialProperties, form);
 
@@ -71,11 +72,11 @@ public class DiskBaseResource extends BaseResource {
     }
 
     protected Properties processWebForm(Form form) {
-    	return processWebForm(new Properties(), form);
+        return processWebForm(new Properties(), form);
     }
-    
+
     private Properties processWebForm(Properties initialProperties, Form form) {
-    	Properties properties = initialProperties;
+        Properties properties = initialProperties;
 
         for (String name : form.getNames()) {
             String value = form.getFirstValue(name);
@@ -144,29 +145,29 @@ public class DiskBaseResource extends BaseResource {
         return zk.incrementUserCount(uuid);
     }
 
-	protected void checkExistance() {
-		if (!zk.diskExists(getDiskId())) {
-	        throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
-	                + getDiskId() + ") does not exist");
-	    }
-	}
+    protected void checkExistance() {
+        if (!zk.diskExists(getDiskId())) {
+            throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
+                    + getDiskId() + ") does not exist");
+        }
+    }
 
-	protected String getDiskId() {
-	    Map<String, Object> attributes = getRequest().getAttributes();
-	
-	    return attributes.get("uuid").toString();
-	}
+    protected String getDiskId() {
+        Map<String, Object> attributes = getRequest().getAttributes();
 
-	protected void createDisk(Properties properties) {
-	    DiskUtils.createDisk(properties);
-	}
+        return attributes.get("uuid").toString();
+    }
 
-	protected void checkIsSuper() {
-		if (!isSuperUser(getUsername(getRequest()))) {
-			throw (new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
-					"Only super user can perform this operation"));
-		}
-	
-	}
+    protected void createDisk(Properties properties) {
+        DiskUtils.createDisk(zk, properties);
+    }
+
+    protected void checkIsSuper() {
+        if (!isSuperUser(getUsername(getRequest()))) {
+            throw (new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
+                    "Only super user can perform this operation"));
+        }
+
+    }
 
 }

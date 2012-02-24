@@ -4,7 +4,7 @@ import java.util.List;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
-import eu.stratuslab.storage.disk.utils.DiskProperties;
+import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
@@ -14,8 +14,9 @@ public final class IscsiSharing implements DiskSharing {
     private static final String TARGET_NAME_TEMPLATE = "iqn.2011-01.eu.stratuslab:%s";
 
     // Template for an iSCSI target entry.
-    private static final String TARGET_TEMPLATE = "<target " + TARGET_NAME_TEMPLATE + ">\n"
-            + "backing-store %s/%s\n" + "</target>\n";
+    private static final String TARGET_TEMPLATE = "<target "
+            + TARGET_NAME_TEMPLATE + ">\n" + "backing-store %s/%s\n"
+            + "</target>\n";
 
     public IscsiSharing() {
 
@@ -45,12 +46,13 @@ public final class IscsiSharing implements DiskSharing {
         return true;
     }
 
-	private synchronized static void updateIscsiConfigurationFile() {
-		String configuration = createISCSITargetConfiguration(getAllDisks());
+    private synchronized static void updateIscsiConfigurationFile() {
+        String configuration = createISCSITargetConfiguration(DiskUtils
+                .getAllDisks());
 
         FileUtils.writeToFile(RootApplication.CONFIGURATION.ISCSI_CONFIG,
                 configuration);
-	}
+    }
 
     private static String createISCSITargetConfiguration(List<String> disks) {
         StringBuilder sb = new StringBuilder();
@@ -70,12 +72,8 @@ public final class IscsiSharing implements DiskSharing {
 
         ProcessUtils.execute(pb, "Perhaps there is a syntax error in "
                 + RootApplication.CONFIGURATION.ISCSI_CONFIG.getAbsolutePath()
-                + " or in " + ServiceConfiguration.DEFAULT_ISCSI_CONFIG_FILENAME);
-    }
-    
-    private static List<String> getAllDisks() {
-        DiskProperties zk = new DiskProperties();
-        return zk.getDisks();
+                + " or in "
+                + ServiceConfiguration.DEFAULT_ISCSI_CONFIG_FILENAME);
     }
 
     private static String getDisksLocation() {
@@ -86,5 +84,5 @@ public final class IscsiSharing implements DiskSharing {
             return RootApplication.CONFIGURATION.LVM_GROUP_PATH;
         }
     }
-    
+
 }
