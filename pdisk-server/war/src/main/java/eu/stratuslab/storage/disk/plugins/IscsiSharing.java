@@ -15,8 +15,8 @@ public final class IscsiSharing implements DiskSharing {
 
     // Template for an iSCSI target entry.
     private static final String TARGET_TEMPLATE = "<target "
-            + TARGET_NAME_TEMPLATE + ">\n" + "backing-store %s/%s\n"
-            + "</target>\n";
+            + TARGET_NAME_TEMPLATE + ">%n" + "backing-store %s/%s%n"
+            + "</target>%n";
 
     public IscsiSharing() {
 

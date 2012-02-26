@@ -20,6 +20,7 @@
 package eu.stratuslab.storage.disk.utils;
 
 import java.io.Closeable;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
@@ -50,6 +51,8 @@ public class DiskProperties implements Closeable {
     private static final String ZK_DISKS_PATH = "/disks";
 
     private static final String ZK_TARGETS_PATH = "/targets";
+
+    private static final Charset utf8 = Charset.forName("UTF-8");
 
     // Property keys
     public static final String UUID_KEY = "uuid";
@@ -120,15 +123,15 @@ public class DiskProperties implements Closeable {
 
         try {
             if (zk.exists(ZK_DISKS_PATH, false) == null) {
-                zk.create(ZK_DISKS_PATH, "pdiskDisks".getBytes(),
+                zk.create(ZK_DISKS_PATH, "pdiskDisks".getBytes(utf8),
                         Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             }
             if (zk.exists(ZK_USAGE_PATH, false) == null) {
-                zk.create(ZK_USAGE_PATH, "pdiskUsers".getBytes(),
+                zk.create(ZK_USAGE_PATH, "pdiskUsers".getBytes(utf8),
                         Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             }
             if (zk.exists(ZK_TARGETS_PATH, false) == null) {
-                zk.create(ZK_TARGETS_PATH, "pdiskTargets".getBytes(),
+                zk.create(ZK_TARGETS_PATH, "pdiskTargets".getBytes(utf8),
                         Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
             }
         } catch (KeeperException e) {
@@ -144,7 +147,7 @@ public class DiskProperties implements Closeable {
         String node = "";
 
         try {
-            node = new String(zk.getData(root, false, null));
+            node = new String(zk.getData(root, false, null), utf8);
         } catch (KeeperException e) {
             throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND,
                     "ZooKeeper error: " + e.getMessage());
@@ -158,7 +161,7 @@ public class DiskProperties implements Closeable {
 
     private void createNode(String path, String content) {
         try {
-            zk.create(path, content.getBytes(), Ids.OPEN_ACL_UNSAFE,
+            zk.create(path, content.getBytes(utf8), Ids.OPEN_ACL_UNSAFE,
                     CreateMode.PERSISTENT);
         } catch (KeeperException e) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -173,7 +176,7 @@ public class DiskProperties implements Closeable {
             throws KeeperException.NodeExistsException {
 
         try {
-            zk.create(path, content.getBytes(), Ids.OPEN_ACL_UNSAFE,
+            zk.create(path, content.getBytes(utf8), Ids.OPEN_ACL_UNSAFE,
                     CreateMode.PERSISTENT);
         } catch (KeeperException.NodeExistsException e) {
             // If this already exists, rethrow the exception to allow
@@ -256,15 +259,12 @@ public class DiskProperties implements Closeable {
         String root = getDiskZkPath(uuid);
 
         Properties properties = new Properties();
-        List<String> tree = listSubTree(root);
 
-        for (int i = tree.size() - 1; i >= 0; --i) {
-            String key = MiscUtils.last(tree.get(i).split("/"));
-            String content = getNode(tree.get(i));
+        for (String path : listSubTree(root)) {
 
-            if (tree.get(i) == root) {
-                key = UUID_KEY;
-            }
+            String key = (root.equals(path)) ? UUID_KEY : MiscUtils.last(path
+                    .split("/"));
+            String content = getNode(path);
 
             properties.put(key, content);
         }

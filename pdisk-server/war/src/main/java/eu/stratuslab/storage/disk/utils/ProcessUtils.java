@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.Charset;
 import java.util.logging.Logger;
 
 import org.restlet.data.Status;
@@ -30,13 +31,14 @@ public final class ProcessUtils {
         try {
             process = pb.start();
 
-            BufferedReader stdOutErr = new BufferedReader(new InputStreamReader(
-            		process.getInputStream()));
-    		String line;
-    		while ((line = stdOutErr.readLine()) != null) {
-    			outputBuf.append(line);
-    			outputBuf.append("\n");
-    		}
+            BufferedReader stdOutErr = new BufferedReader(
+                    new InputStreamReader(process.getInputStream(),
+                            Charset.defaultCharset()));
+            String line;
+            while ((line = stdOutErr.readLine()) != null) {
+                outputBuf.append(line);
+                outputBuf.append("\n");
+            }
 
             processWait(process);
 
@@ -59,12 +61,11 @@ public final class ProcessUtils {
 
         if (returnCode != 0) {
 
-        	process.getErrorStream();
+            process.getErrorStream();
 
             String msg = "An error occurred while executing command: "
                     + MiscUtils.join(pb.command(), " ") + ".\n"
-                    + outputBuf.toString() + "\n"
-                    + errorMsg
+                    + outputBuf.toString() + "\n" + errorMsg
                     + ".\nReturn code was: " + String.valueOf(returnCode);
 
             LOGGER.severe(msg);
@@ -75,15 +76,14 @@ public final class ProcessUtils {
         }
     }
 
-
     public static int executeGetStatus(ProcessBuilder pb) {
-    	Process process;
-    	try {
-	    	process = pb.start();
-	        return processWaitGetStatus(process);
-    	} catch (IOException e) {
-    		return -1;
-    	}
+        Process process;
+        try {
+            process = pb.start();
+            return processWaitGetStatus(process);
+        } catch (IOException e) {
+            return -1;
+        }
     }
 
     private static void processWait(Process process) {
@@ -99,19 +99,18 @@ public final class ProcessUtils {
 
     }
 
-
     private static int processWaitGetStatus(Process process) {
-    	int rc = -1;
-    	boolean blocked = true;
-    	while (blocked) {
-    		try {
-    			rc = process.waitFor();
-    			blocked = false;
-    		} catch (InterruptedException consumed) {
-    			// just continue to wait
-    		}
-    	}
-    	return rc;
+        int rc = -1;
+        boolean blocked = true;
+        while (blocked) {
+            try {
+                rc = process.waitFor();
+                blocked = false;
+            } catch (InterruptedException consumed) {
+                // just continue to wait
+            }
+        }
+        return rc;
     }
 
     private static String streamToString(InputStream is) {
@@ -123,7 +122,7 @@ public final class ProcessUtils {
 
         try {
 
-            r = new InputStreamReader(is);
+            r = new InputStreamReader(is, Charset.defaultCharset());
             for (int n = r.read(c); n > 0; n = r.read(c)) {
                 sb.append(c, 0, n);
             }
@@ -144,4 +143,3 @@ public final class ProcessUtils {
     }
 
 }
-

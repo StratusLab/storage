@@ -1,8 +1,11 @@
 package eu.stratuslab.storage.disk.main;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.Charset;
 import java.util.Properties;
 
 import org.restlet.data.Status;
@@ -136,9 +139,10 @@ public class ServiceConfiguration {
                     "Configuration file does not exists.");
         }
 
-        FileReader reader = null;
+        Reader reader = null;
         try {
-            reader = new FileReader(cfgFile);
+            reader = new InputStreamReader(new FileInputStream(cfgFile),
+                    Charset.defaultCharset());
             properties.load(reader);
         } catch (IOException consumed) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,

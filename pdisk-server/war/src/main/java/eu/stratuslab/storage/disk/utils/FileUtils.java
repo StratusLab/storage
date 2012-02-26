@@ -1,16 +1,16 @@
 package eu.stratuslab.storage.disk.utils;
 
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.Charset;
 
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
@@ -34,7 +34,7 @@ public final class FileUtils {
         Writer writer = null;
 
         try {
-            writer = new FileWriter(file, true);
+            writer = getDefaultCharsetWriter(file, true);
             writer.append(contents);
         } catch (IOException e) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -55,7 +55,7 @@ public final class FileUtils {
         Writer writer = null;
 
         try {
-            writer = new FileWriter(file);
+            writer = getDefaultCharsetWriter(file);
             writer.write(contents);
         } catch (IOException e) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -109,14 +109,10 @@ public final class FileUtils {
 
     public static Boolean fileHasLine(File file, String line) {
         Boolean isPresent = false;
-        DataInputStream in = null;
-        FileInputStream is = null;
         BufferedReader br = null;
 
         try {
-            is = new FileInputStream(file);
-            in = new DataInputStream(is);
-            br = new BufferedReader(new InputStreamReader(in));
+            br = getDefaultCharsetReader(file);
 
             String currentLine;
 
@@ -134,12 +130,6 @@ public final class FileUtils {
                     "An error occured will reading file " + file.getName());
         } finally {
             try {
-                if (in != null) {
-                    in.close();
-                }
-                if (is != null) {
-                    is.close();
-                }
                 if (br != null) {
                     br.close();
                 }
@@ -150,5 +140,22 @@ public final class FileUtils {
         }
 
         return isPresent;
+    }
+
+    private static Writer getDefaultCharsetWriter(File file)
+            throws FileNotFoundException {
+        return getDefaultCharsetWriter(file, false);
+    }
+
+    private static Writer getDefaultCharsetWriter(File file, boolean append)
+            throws FileNotFoundException {
+        return new OutputStreamWriter(new FileOutputStream(file, append),
+                Charset.defaultCharset());
+    }
+
+    private static BufferedReader getDefaultCharsetReader(File file)
+            throws FileNotFoundException {
+        return new BufferedReader(new InputStreamReader(new FileInputStream(
+                file), Charset.defaultCharset()));
     }
 }
