@@ -23,8 +23,9 @@ REGISTER_FILE="$VM_DIR/$REGISTER_FILENAME"
 
 register_disk() {
     # We assume here that the disk can be mounted by the user (permission and remaining places)
+    # Only username/password authentication is supported for the pdisk user.
     local NODE=$(host $(hostname) | awk '{print $4}')
-    local REGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/disks/${DISK_UUID}/mounts/ -d node=${NODE}&vm_id=${VM_ID}&register_only=true"
+    local REGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/pswd/disks/${DISK_UUID}/mounts/ -d node=${NODE}&vm_id=${VM_ID}&register_only=true"
     set +e
     output=$($REGISTER_CMD 2>&1)
     if [ "$?" != "0" ]; then
