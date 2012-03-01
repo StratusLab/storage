@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 UUID_URL=$1
 DEVICE_LINK=$2
@@ -26,18 +26,17 @@ register_disk() {
     # Only username/password authentication is supported for the pdisk user.
     local NODE=$(host $(hostname) | awk '{print $4}')
     local REGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/pswd/disks/${DISK_UUID}/mounts/ -d node=${NODE}&vm_id=${VM_ID}&register_only=true"
-    set +e
     output=$($REGISTER_CMD 2>&1)
     if [ "$?" != "0" ]; then
         if ( echo $output | grep -q "client certificate not found" ); then 
             set -e
             $REGISTER_CMD
+            set +e
         else
             echo $output
             exit 1
         fi
     fi
-    set -e
 }
 
 attach_nfs() {
