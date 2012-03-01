@@ -26,11 +26,15 @@ action_default = ''
 valid_actions = { 'create':'', 'delete':'', 'rebase':'', 'snapshot':'' }
 valid_actions_str = ', '.join(valid_actions.keys())
 
-lun_cmd_prefix = [ 'ssh', '%%ISCSI_PROXY%%', 'iscsi' ]
-create_lun_cmd = [ 'connection', 'show' ]
-delete_lun_cmd = [ 'connection', 'show' ]
-rebase_lun_cmd = [ 'connection', 'show' ]
-snapshot_lun_cmd = [ 'connection', 'show' ]
+lun_cmd_prefix = [ 'ssh', '%%ISCSI_PROXY%%' ]
+create_lun_cmd = [ 'lun', 'create', '-s', '%%SIZE%%', '-t', '%%LUNOS%%', '%%NAME%%' ]
+delete_lun_cmd = [ 'iscsi', 'connection', 'show' ]
+map_lun_cmd = [ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ]
+rebase_lun_cmd = [ 'iscsi', 'connection', 'show' ]
+snapshot_lun_cmd = [ 'iscsi', 'connection', 'show' ]
+
+# Would be great to have it configurable as NetApp needs to know the client OS
+lun_os = 'linux'
 
 config_file_default = '/opt/stratuslab/etc/persistent-disk-backend.conf'
 config_defaults = StringIO.StringIO("""
@@ -141,6 +145,7 @@ except ValueError:
 try:
   iscsi_proxy = iscsi_proxies[0]
   lun_name_prefix=config.get(iscsi_proxy,'lun_namespace')
+  initiator_group=config.get(iscsi_proxy,'initiator_group')
 except:
   abort("Section %s missing or incomplete in configuration" % (iscsi_proxy))
   
@@ -153,36 +158,48 @@ elif not options.action in valid_actions:
 # Build command to execute based on action requested.
 # This includes parsing special keyword in command string that have to be replaced by arguments
 
-action_cmd = lun_cmd_prefix
+command_list = []
 if options.action == 'create':
   debug(1,"Creating LUN...")
-  action_cmd.extend(create_lun_cmd)
+  command_list.extend(create_lun_cmd)
+  command_list.extend(map_lun_cmd)
 elif options.action == 'delete':
   debug(1,"Deleting LUN...")
+  command_list.extend(delete_lun_cmd)
 elif options.action == 'rebase':
   debug(1,"Rebasing LUN...")
+  command_list.extend(rebase_lun_cmd)
 elif options.action == 'rebase':
   debug(1,"Doing a LUN snapshot...")
+  command_list.extend(snapshot_lun_cmd)
+
+# Execute all commands in command_list one by one
     
-for i in range(len(action_cmd)):
-  if action_cmd[i] == '%%SIZE%%':
-    action_cmd[i] = lun_size
-  elif action_cmd[i] == '%%LUNID%%':
-    action_cmd[i] = lun_guid
-  elif action_cmd[i] == '%%ISCSI_PROXY%%':
-    action_cmd[i] = iscsi_proxy
-
-
-# Execute command
-
-debug(1,"Executing command: '%s'" % (' '.join(action_cmd)))
-try:
-  proc = Popen(action_cmd, shell=False, stdout=PIPE, stderr=STDOUT)
-  retcode = proc.wait()
-  output = proc.communicate()[0]
-  if retcode != 0:
-      abort('Failed to execute %s action (error=%s). Command output:\n%s' % (options.action,retcode,output))
-  else:
-      debug(1,'%s action completed successfully. Command output:\n%s' % (options.action,output))
-except OSError, details:
-  abort('Failed to execute %s action: %s' % (options.action,details))  
+for command in command_list:
+  # Build command to execute
+  action_cmd = lun_cmd_prefix
+  action_cmd.extend(command)
+  for i in range(len(action_cmd)):
+    if action_cmd[i] == '%%SIZE%%':
+      action_cmd[i] = lun_size
+    elif action_cmd[i] == '%%INITIATORGRP%%':
+      action_cmd[i] = initiator_group
+    elif action_cmd[i] == '%%LUNOS%%':
+      action_cmd[i] = lun_os
+    elif action_cmd[i] == '%%NAME%%':
+      action_cmd[i] = lun_name_prefix + '/' + lun_guid
+    elif action_cmd[i] == '%%ISCSI_PROXY%%':
+      action_cmd[i] = iscsi_proxy
+  
+  # Execute command
+  debug(1,"Executing command: '%s'" % (' '.join(action_cmd)))
+  try:
+    proc = Popen(action_cmd, shell=False, stdout=PIPE, stderr=STDOUT)
+    retcode = proc.wait()
+    output = proc.communicate()[0]
+    if retcode != 0:
+        abort('Failed to execute %s action (error=%s). Command output:\n%s' % (options.action,retcode,output))
+    else:
+        debug(1,'%s action completed successfully. Command output:\n%s' % (options.action,output))
+  except OSError, details:
+    abort('Failed to execute %s action: %s' % (options.action,details))  
