@@ -1,0 +1,188 @@
+#!/usr/bin/env python
+"""
+Script to manage a iSCSI LUN on a NetApp filer
+"""
+
+__version__ = "0.0.1-1dev"
+__author__  = "Michel Jouvin <jouvin@lal.in2p3.fr>"
+
+import sys
+import os
+import os.path
+import re
+from subprocess import *
+import StringIO
+from optparse import OptionParser
+import logging
+import logging.handlers
+import syslog
+import ConfigParser
+
+# Initializations
+verbosity = 0
+logger = None
+action_default = ''
+# Only keys matter, values are not used
+valid_actions = { 'create':'', 'delete':'', 'rebase':'', 'snapshot':'' }
+valid_actions_str = ', '.join(valid_actions.keys())
+
+lun_cmd_prefix = [ 'ssh', '%%ISCSI_PROXY%%', 'iscsi' ]
+create_lun_cmd = [ 'connection', 'show' ]
+delete_lun_cmd = [ 'connection', 'show' ]
+rebase_lun_cmd = [ 'connection', 'show' ]
+snapshot_lun_cmd = [ 'connection', 'show' ]
+
+config_file_default = '/opt/stratuslab/etc/persistent-disk-backend.conf'
+config_defaults = StringIO.StringIO("""
+# Options commented out are configuration options available for which no 
+# sensible default value can be defined.
+[main]
+# Define the list of iSCSI proxies that can be used.
+# One section per proxy must also exists to define parameters specific to the proxy.
+#iscsi_proxies=filer.example.org
+# Log file for persistent disk management
+log_file=/var/log/stratuslab-persistent-disk.log
+
+#[filer.example.org]
+#lun_namespace=/iscsi/stratuslab
+
+""")
+
+
+def abort(msg):
+    logger.error("Persistent disk creation failed:\n%s" % (msg))
+    sys.exit(2)
+
+def debug(level,msg):
+  if level <= verbosity:
+    if level == 0:
+      logger.info(msg)
+    else:
+      logger.debug(msg)
+
+
+# Configure loggers and handlers.
+# Initially cnfigure only syslog and stderr handler.
+
+logging_source = 'stratuslab-pdisk'
+logger = logging.getLogger(logging_source)
+logger.setLevel(logging.DEBUG)
+
+#fmt=logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+fmt=logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+# Handler used to report to SVN must display only the message to allow proper XML formatting
+svn_fmt=logging.Formatter("%(message)s")
+
+syslog_handler = logging.handlers.SysLogHandler('/dev/log')
+syslog_handler.setLevel(logging.WARNING)
+logger.addHandler(syslog_handler)
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+logger.addHandler(console_handler)
+
+
+# Parse configuration and options
+
+parser = OptionParser()
+parser.add_option('--config', dest='config_file', action='store', default=config_file_default, help='Name of the configuration file to use')
+parser.add_option('--action', dest='action', action='store', default=action_default, help='Action to execute. Valid actions: %s'%(valid_actions_str))
+parser.add_option('-v', '--debug', '--verbose', dest='verbosity', action='count', default=0, help='Increase verbosity level for debugging (on stderr)')
+parser.add_option('--version', dest='version', action='store_true', default=False, help='Display various information about this script')
+options, args = parser.parse_args()
+
+if options.version:
+  debug (0,"Version %s written by %s" % (__version__,__author__))
+  debug (0,__doc__)
+  sys.exit(0)
+
+if len(args) < 2:
+  abort("Insufficient argument provided (2 required)")  
+  
+if options.verbosity:
+  verbosity = options.verbosity
+
+lun_guid = args[0]
+lun_size = args[1]
+
+
+# Read configuration file.
+# The file must exists as there is no sensible default value for several options.
+
+config = ConfigParser.ConfigParser()
+config.readfp(config_defaults)
+try:
+  config.readfp(open(options.config_file))
+except IOError, (errno,errmsg):
+  if errno == 2:
+    abort(1,'Configuration file (%s) is missing.' % (options.config_file))
+  else:
+    abort('Error opening configuration file (%s): %s (errno=%s)' % (options.config_file,errmsg,errno))
+  
+try:
+  section = 'main'
+  iscsi_proxies_list = config.get(section,'iscsi_proxies')
+  iscsi_proxies = iscsi_proxies_list.split(',')
+except ValueError:
+  abort("Invalid value specified for 'iscsi_proxies' (section %s) (must be a comma-separated list)" % (section))
+
+try:
+  section = 'main'
+  log_file = config.get(section,'log_file')
+  if log_file:
+    logfile_handler = logging.handlers.RotatingFileHandler(log_file,'a',100000,10)
+    logfile_handler.setLevel(logging.DEBUG)
+    logfile_handler.setFormatter(fmt)
+    logger.addHandler(logfile_handler)
+except ValueError:
+  abort("Invalid value specified for 'log_file' (section %s)" % (section))
+
+
+try:
+  iscsi_proxy = iscsi_proxies[0]
+  lun_name_prefix=config.get(iscsi_proxy,'lun_namespace')
+except:
+  abort("Section %s missing or incomplete in configuration" % (iscsi_proxy))
+  
+if options.action == '':
+  abort('No action specified (use --action to do it).')
+elif not options.action in valid_actions:
+  abort('Invalid action specified (%s). Valid actions are: %s.' % (options.action,valid_actions_str))
+  
+  
+# Build command to execute based on action requested.
+# This includes parsing special keyword in command string that have to be replaced by arguments
+
+action_cmd = lun_cmd_prefix
+if options.action == 'create':
+  debug(1,"Creating LUN...")
+  action_cmd.extend(create_lun_cmd)
+elif options.action == 'delete':
+  debug(1,"Deleting LUN...")
+elif options.action == 'rebase':
+  debug(1,"Rebasing LUN...")
+elif options.action == 'rebase':
+  debug(1,"Doing a LUN snapshot...")
+    
+for i in range(len(action_cmd)):
+  if action_cmd[i] == '%%SIZE%%':
+    action_cmd[i] = lun_size
+  elif action_cmd[i] == '%%LUNID%%':
+    action_cmd[i] = lun_guid
+  elif action_cmd[i] == '%%ISCSI_PROXY%%':
+    action_cmd[i] = iscsi_proxy
+
+
+# Execute command
+
+debug(1,"Executing command: '%s'" % (' '.join(action_cmd)))
+try:
+  proc = Popen(action_cmd, shell=False, stdout=PIPE, stderr=STDOUT)
+  retcode = proc.wait()
+  output = proc.communicate()[0]
+  if retcode != 0:
+      abort('Failed to execute %s action (error=%s). Command output:\n%s' % (options.action,retcode,output))
+  else:
+      debug(1,'%s action completed successfully. Command output:\n%s' % (options.action,output))
+except OSError, details:
+  abort('Failed to execute %s action: %s' % (options.action,details))  
