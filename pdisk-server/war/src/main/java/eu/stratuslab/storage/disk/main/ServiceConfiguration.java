@@ -16,250 +16,266 @@ import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
 public class ServiceConfiguration {
 
-    private static final ServiceConfiguration instance = new ServiceConfiguration();
+	private static final ServiceConfiguration instance = new ServiceConfiguration();
 
-    public enum DiskType {
-        LVM, FILE;
+	public enum DiskType {
+		LVM, FILE, NETAPP;
 
-        public static DiskType valueOfIgnoreCase(String value) {
-            try {
-                return valueOf(value.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                        "illegal value for disk.store.iscsi.type: " + value);
-            }
-        }
-    }
+		public static DiskType valueOfIgnoreCase(String value) {
+			try {
+				return valueOf(value.toUpperCase());
+			} catch (IllegalArgumentException e) {
+				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+						"illegal value for disk.store.iscsi.type: " + value);
+			}
+		}
+	}
 
-    public enum ShareType {
-        ISCSI, NFS;
+	public enum ShareType {
+		ISCSI, NFS;
 
-        public static ShareType valueOfIgnoreCase(String value) {
-            try {
-                return valueOf(value.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                        "illegal value for disk.store.share: " + value);
-            }
-        }
+		public static ShareType valueOfIgnoreCase(String value) {
+			try {
+				return valueOf(value.toUpperCase());
+			} catch (IllegalArgumentException e) {
+				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+						"illegal value for disk.store.share: " + value);
+			}
+		}
 
-    }
+	}
 
-    // Configuration file
-    public static final String DEFAULT_CFG_FILENAME = "/etc/stratuslab/pdisk.cfg";
-    public static final String DEFAULT_ISCSI_CONFIG_FILENAME = "/etc/stratuslab/iscsi.conf";
-    public static final String ISCSI_CONFIG_FILENAME_SYS_PARAM_NAME = "iscsi.config.filename";
+	// Configuration file
+	public static final String DEFAULT_CFG_FILENAME = "pdisk.cfg";
+	public static final String DEFAULT_CFG_LOCATION = "/etc/stratuslab/";
+	public static final String DEFAULT_ISCSI_CONFIG_FILENAME = "/etc/stratuslab/iscsi.conf";
+	public static final String ISCSI_CONFIG_FILENAME_SYS_PARAM_NAME = "iscsi.config.filename";
 
-    // Disk size limits (in GiBs)
-    public static final int DISK_SIZE_MIN = 1;
-    public static final int DISK_SIZE_MAX = 1024;
+	// Disk size limits (in GiBs)
+	public static final int DISK_SIZE_MIN = 1;
+	public static final int DISK_SIZE_MAX = 1024;
 
-    public final Properties CONFIGURATION;
+	public final Properties CONFIGURATION;
 
-    public final ShareType SHARE_TYPE;
+	public final ShareType SHARE_TYPE;
 
-    public final String ZK_ADDRESSES;
+	public final String ZK_ADDRESSES;
 
-    public final DiskType ISCSI_DISK_TYPE;
-    public final File ISCSI_CONFIG;
-    public final String ISCSI_ADMIN;
+	public final DiskType ISCSI_DISK_TYPE;
+	public final File ISCSI_CONFIG;
+	public final String ISCSI_ADMIN;
 
-    public final String LVM_GROUP_PATH;
-    public final String VGDISPLAY_CMD;
-    public final String LVCREATE_CMD;
-    public final String LVREMOVE_CMD;
-    public final String LVCHANGE_CMD;
-    public final String DMSETUP_CMD;
+	public final String LVM_GROUP_PATH;
+	public final String VGDISPLAY_CMD;
+	public final String LVCREATE_CMD;
+	public final String LVREMOVE_CMD;
+	public final String LVCHANGE_CMD;
+	public final String DMSETUP_CMD;
 
-    public final File STORAGE_LOCATION;
+	public final File STORAGE_LOCATION;
 
-    public final int USERS_PER_DISK;
+	public final int USERS_PER_DISK;
 
-    public final String CLOUD_NODE_SSH_KEY;
-    public final String CLOUD_NODE_ADMIN;
-    public final String CLOUD_NODE_VM_DIR;
-    public final String CLOUD_SERVICE_USER;
+	public final String CLOUD_NODE_SSH_KEY;
+	public final String CLOUD_NODE_ADMIN;
+	public final String CLOUD_NODE_VM_DIR;
+	public final String CLOUD_SERVICE_USER;
 
-    private ServiceConfiguration() {
+	private ServiceConfiguration() {
 
-        CONFIGURATION = readConfigFile();
+		CONFIGURATION = readConfigFile();
 
-        SHARE_TYPE = getShareType();
+		SHARE_TYPE = getShareType();
 
-        ZK_ADDRESSES = getConfigValue("disk.store.zookeeper.address");
+		ZK_ADDRESSES = getConfigValue("disk.store.zookeeper.address");
 
-        ISCSI_DISK_TYPE = getDiskType();
+		ISCSI_DISK_TYPE = getDiskType();
 
-        // Only check LVM parameters if LVM storage is actually going to
-        // be used. Otherwise this creates unnecessary dependencies and
-        // failures on systems that don't use LVM.
-        if (ISCSI_DISK_TYPE.equals(DiskType.LVM)) {
-            ISCSI_CONFIG = getISCSIConfig();
-            ISCSI_ADMIN = getCommand("disk.store.iscsi.admin");
-            VGDISPLAY_CMD = getCommand("disk.store.lvm.vgdisplay");
-            LVCREATE_CMD = getCommand("disk.store.lvm.create");
-            LVREMOVE_CMD = getCommand("disk.store.lvm.remove");
-            LVM_GROUP_PATH = getConfigValue("disk.store.lvm.device");
-            LVCHANGE_CMD = getCommand("disk.store.lvm.lvchange");
-            DMSETUP_CMD = getCommand("disk.store.lvm.dmsetup");
+		// Only check LVM parameters if LVM storage is actually going to
+		// be used. Otherwise this creates unnecessary dependencies and
+		// failures on systems that don't use LVM.
+		if (ISCSI_DISK_TYPE.equals(DiskType.LVM)) {
+			ISCSI_CONFIG = getISCSIConfig();
+			ISCSI_ADMIN = getCommand("disk.store.iscsi.admin");
+			VGDISPLAY_CMD = getCommand("disk.store.lvm.vgdisplay");
+			LVCREATE_CMD = getCommand("disk.store.lvm.create");
+			LVREMOVE_CMD = getCommand("disk.store.lvm.remove");
+			LVM_GROUP_PATH = getConfigValue("disk.store.lvm.device");
+			LVCHANGE_CMD = getCommand("disk.store.lvm.lvchange");
+			DMSETUP_CMD = getCommand("disk.store.lvm.dmsetup");
 
-            checkLVMGroupExists(LVM_GROUP_PATH);
-        } else {
-            ISCSI_CONFIG = new File("dummy.txt");
-            ISCSI_ADMIN = "";
-            VGDISPLAY_CMD = "";
-            LVCREATE_CMD = "";
-            LVREMOVE_CMD = "";
-            LVM_GROUP_PATH = "";
-            LVCHANGE_CMD = "";
-            DMSETUP_CMD = "";
-        }
+			checkLVMGroupExists(LVM_GROUP_PATH);
+		} else {
+			ISCSI_CONFIG = new File("dummy.txt");
+			ISCSI_ADMIN = "";
+			VGDISPLAY_CMD = "";
+			LVCREATE_CMD = "";
+			LVREMOVE_CMD = "";
+			LVM_GROUP_PATH = "";
+			LVCHANGE_CMD = "";
+			DMSETUP_CMD = "";
+		}
 
-        STORAGE_LOCATION = getDiskLocation();
+		STORAGE_LOCATION = getDiskLocation();
 
-        USERS_PER_DISK = getUsersPerDisks();
+		USERS_PER_DISK = getUsersPerDisks();
 
-        CLOUD_NODE_SSH_KEY = getConfigValue("disk.store.cloud.node.ssh_keyfile");
-        CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
-        CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
-        CLOUD_SERVICE_USER = getConfigValue("disk.store.cloud.service.user");
+		CLOUD_NODE_SSH_KEY = getConfigValue("disk.store.cloud.node.ssh_keyfile");
+		CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
+		CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
+		CLOUD_SERVICE_USER = getConfigValue("disk.store.cloud.service.user");
 
-    }
+	}
 
-    public static ServiceConfiguration getInstance() {
-        return instance;
-    }
+	public static ServiceConfiguration getInstance() {
+		return instance;
+	}
 
-    private static Properties readConfigFile() {
-        File cfgFile = new File(DEFAULT_CFG_FILENAME);
-        Properties properties = new Properties();
+	private static Properties readConfigFile() {
+		File cfgFile = locateConfigFile();
 
-        if (!cfgFile.exists()) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "Configuration file does not exists.");
-        }
+		Properties properties = new Properties();
 
-        Reader reader = null;
-        try {
-            reader = new InputStreamReader(new FileInputStream(cfgFile),
-                    Charset.defaultCharset());
-            properties.load(reader);
-        } catch (IOException consumed) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "An error occured while reading configuration file");
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException consumed) {
-                    throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                            "An error occured while reading configuration file");
-                }
-            }
-        }
+		Reader reader = null;
+		try {
+			reader = new InputStreamReader(new FileInputStream(cfgFile),
+					Charset.defaultCharset());
+			properties.load(reader);
+		} catch (IOException consumed) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"An error occured while reading configuration file");
+		} finally {
+			if (reader != null) {
+				try {
+					reader.close();
+				} catch (IOException consumed) {
+					throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+							"An error occured while reading configuration file");
+				}
+			}
+		}
 
-        return properties;
-    }
+		return properties;
+	}
 
-    private ShareType getShareType() {
-        String type = getConfigValue("disk.store.share");
-        return ShareType.valueOfIgnoreCase(type);
-    }
+	private static File locateConfigFile() {
 
-    private DiskType getDiskType() {
-        String value = getConfigValue("disk.store.iscsi.type");
-        return DiskType.valueOfIgnoreCase(value);
-    }
+		// Default to a local filename, then one in the /etc/stratuslab/ area.
+		File cfgFile = new File(DEFAULT_CFG_FILENAME);
+		if (!cfgFile.exists()) {
+			cfgFile = new File(DEFAULT_CFG_LOCATION + DEFAULT_CFG_FILENAME);
+			if (!cfgFile.exists()) {
+				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+						"Configuration file does not exists.");
+			}
+		}
+		return cfgFile;
+	}
 
-    private File getISCSIConfig() {
-        String iscsiConf = getConfigValue("disk.store.iscsi.conf");
-        File confHandler = new File(iscsiConf);
-        File stratusConf = new File(System.getProperty(
-                ISCSI_CONFIG_FILENAME_SYS_PARAM_NAME,
-                DEFAULT_ISCSI_CONFIG_FILENAME));
-        String includeConfig = "\ninclude " + stratusConf.getAbsolutePath()
-                + "\n";
+	private ShareType getShareType() {
+		String type = getConfigValue("disk.store.share");
+		return ShareType.valueOfIgnoreCase(type);
+	}
 
-        if (!confHandler.isFile()) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "Unable to find ISCSI configuration file.");
-        }
+	private DiskType getDiskType() {
+		String value = getConfigValue("disk.store.iscsi.type");
+		return DiskType.valueOfIgnoreCase(value);
+	}
 
-        // Add include instruction in conf file in not
-        if (!FileUtils
-                .fileHasLine(confHandler, includeConfig.replace("\n", ""))) {
-            FileUtils.appendToFile(confHandler, includeConfig);
-        }
+	private File getISCSIConfig() {
+		String iscsiConf = getConfigValue("disk.store.iscsi.conf");
+		File confHandler = new File(iscsiConf);
+		File stratusConf = new File(System.getProperty(
+				ISCSI_CONFIG_FILENAME_SYS_PARAM_NAME,
+				DEFAULT_ISCSI_CONFIG_FILENAME));
+		String includeConfig = "\ninclude " + stratusConf.getAbsolutePath()
+				+ "\n";
 
-        return stratusConf;
-    }
+		if (!confHandler.isFile()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Unable to find ISCSI configuration file.");
+		}
 
-    private String getConfigValue(String key) {
-        if (!CONFIGURATION.containsKey(key)) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "Unable to retrieve configuration key: " + key);
-        }
+		// Add include instruction in conf file in not
+		if (!FileUtils
+				.fileHasLine(confHandler, includeConfig.replace("\n", ""))) {
+			FileUtils.appendToFile(confHandler, includeConfig);
+		}
 
-        return CONFIGURATION.getProperty(key);
-    }
+		return stratusConf;
+	}
 
-    private File getDiskLocation() {
-        String diskStoreDir;
-        if (SHARE_TYPE == ShareType.ISCSI) {
-            diskStoreDir = getConfigValue("disk.store.iscsi.file.location");
-        } else {
-            diskStoreDir = getConfigValue("disk.store.nfs.location");
-        }
+	private String getConfigValue(String key) {
+		if (!CONFIGURATION.containsKey(key)) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Unable to retrieve configuration key: " + key);
+		}
 
-        File diskStoreHandler = new File(diskStoreDir);
+		return CONFIGURATION.getProperty(key);
+	}
 
-        // Don't check if we use LVM
-        if (SHARE_TYPE == ShareType.ISCSI && ISCSI_DISK_TYPE == DiskType.LVM) {
-            return diskStoreHandler;
-        }
+	private File getDiskLocation() {
+		String diskStoreDir;
+		if (SHARE_TYPE == ShareType.ISCSI) {
+			diskStoreDir = getConfigValue("disk.store.iscsi.file.location");
+		} else {
+			diskStoreDir = getConfigValue("disk.store.nfs.location");
+		}
 
-        if (!diskStoreHandler.isDirectory() || !diskStoreHandler.canWrite()
-                || !diskStoreHandler.canRead()) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "Disk store must be readable and writable");
-        }
+		File diskStoreHandler = new File(diskStoreDir);
 
-        return diskStoreHandler;
-    }
+		// Don't check if we use LVM
+		if (SHARE_TYPE == ShareType.ISCSI && ISCSI_DISK_TYPE == DiskType.LVM) {
+			return diskStoreHandler;
+		}
 
-    private String getCommand(String configName) {
-        String configValue = getConfigValue(configName);
-        File exec = new File(configValue);
+		// Don't check if we use NETAPP
+		if (ISCSI_DISK_TYPE == DiskType.NETAPP) {
+			return diskStoreHandler;
+		}
 
-        if (!FileUtils.isExecutable(exec)) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    configValue
-                            + " command does not exist or is not executable");
-        }
+		if (!diskStoreHandler.isDirectory() || !diskStoreHandler.canWrite()
+				|| !diskStoreHandler.canRead()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Disk store must be readable and writable");
+		}
 
-        return configValue;
-    }
+		return diskStoreHandler;
+	}
 
-    private int getUsersPerDisks() {
-        String users = getConfigValue("disk.store.user_per_disk");
-        int userNo = 0;
+	private String getCommand(String configName) {
+		String configValue = getConfigValue(configName);
+		File exec = new File(configValue);
 
-        try {
-            userNo = Integer.parseInt(users);
-        } catch (NumberFormatException e) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "Unable to get user per disk value");
-        }
+		if (!FileUtils.isExecutable(exec)) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					configValue
+							+ " command does not exist or is not executable");
+		}
 
-        return userNo;
-    }
+		return configValue;
+	}
 
-    private void checkLVMGroupExists(String lvmGroup) {
-        ProcessBuilder pb = new ProcessBuilder(VGDISPLAY_CMD, lvmGroup);
+	private int getUsersPerDisks() {
+		String users = getConfigValue("disk.store.user_per_disk");
+		int userNo = 0;
 
-        ProcessUtils
-                .execute(pb,
-                        "LVM Group does not exist. Please create it and restart pdisk service");
-    }
+		try {
+			userNo = Integer.parseInt(users);
+		} catch (NumberFormatException e) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Unable to get user per disk value");
+		}
+
+		return userNo;
+	}
+
+	private void checkLVMGroupExists(String lvmGroup) {
+		ProcessBuilder pb = new ProcessBuilder(VGDISPLAY_CMD, lvmGroup);
+
+		ProcessUtils
+				.execute(pb,
+						"LVM Group does not exist. Please create it and restart pdisk service");
+	}
 
 }

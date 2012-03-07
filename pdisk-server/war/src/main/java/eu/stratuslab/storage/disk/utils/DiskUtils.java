@@ -17,209 +17,217 @@ import org.restlet.resource.ResourceException;
 import eu.stratuslab.marketplace.metadata.MetadataUtils;
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
-import eu.stratuslab.storage.disk.main.ServiceConfiguration.ShareType;
 import eu.stratuslab.storage.disk.plugins.DiskSharing;
 import eu.stratuslab.storage.disk.plugins.DiskStorage;
 import eu.stratuslab.storage.disk.plugins.FileSystemSharing;
 import eu.stratuslab.storage.disk.plugins.IscsiSharing;
 import eu.stratuslab.storage.disk.plugins.LvmStorage;
+import eu.stratuslab.storage.disk.plugins.NetAppStorage;
 import eu.stratuslab.storage.disk.plugins.PosixStorage;
 
 public final class DiskUtils {
 
-    private DiskUtils() {
+	private DiskUtils() {
 
-    }
+	}
 
-    private static DiskSharing getDiskSharing() {
-        switch (RootApplication.CONFIGURATION.SHARE_TYPE) {
-        case NFS:
-            return new FileSystemSharing();
-        case ISCSI:
-            return new IscsiSharing();
-        default:
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL);
-        }
-    }
+	private static DiskSharing getDiskSharing() {
+		switch (RootApplication.CONFIGURATION.SHARE_TYPE) {
+		case NFS:
+			return new FileSystemSharing();
+		case ISCSI:
+			return new IscsiSharing();
+		default:
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL);
+		}
+	}
 
-    private static DiskStorage getDiskStorage() {
+	private static DiskStorage getDiskStorage() {
 
-        if (RootApplication.CONFIGURATION.SHARE_TYPE == ShareType.NFS
-                || RootApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
+		if (RootApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
 
-            return new PosixStorage();
-        } else {
-            return new LvmStorage();
-        }
-    }
+			return new PosixStorage();
+		}
 
-    public static void createDisk(DiskProperties zk, Properties properties) {
-        String uuid = properties.getProperty(DiskProperties.UUID_KEY)
-                .toString();
+		switch (RootApplication.CONFIGURATION.ISCSI_DISK_TYPE) {
+		case FILE:
+			return new PosixStorage();
+		case LVM:
+			return new LvmStorage();
+		case NETAPP:
+			return new NetAppStorage();
+		default:
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL);
+		}
+	}
 
-        DiskSharing diskSharing = getDiskSharing();
-        DiskStorage diskStorage = getDiskStorage();
+	public static void createDisk(DiskProperties zk, Properties properties) {
+		String uuid = properties.getProperty(DiskProperties.UUID_KEY)
+				.toString();
 
-        diskSharing.preDiskCreationActions(uuid);
+		DiskSharing diskSharing = getDiskSharing();
+		DiskStorage diskStorage = getDiskStorage();
 
-        diskStorage.create(uuid, getSize(properties));
+		diskSharing.preDiskCreationActions(uuid);
 
-        properties.put(DiskProperties.UUID_KEY, uuid);
+		diskStorage.create(uuid, getSize(properties));
 
-        zk.saveDiskProperties(properties);
+		properties.put(DiskProperties.UUID_KEY, uuid);
 
-        diskSharing.postDiskCreationActions(uuid);
-    }
+		zk.saveDiskProperties(properties);
 
-    public static String createCoWDisk(DiskProperties zk, Properties properties) {
-        String uuid = properties.getProperty(DiskProperties.UUID_KEY)
-                .toString();
+		diskSharing.postDiskCreationActions(uuid);
+	}
 
-        DiskSharing diskSharing = getDiskSharing();
-        DiskStorage diskStorage = getDiskStorage();
+	public static String createCoWDisk(DiskProperties zk, Properties properties) {
+		String uuid = properties.getProperty(DiskProperties.UUID_KEY)
+				.toString();
 
-        String cowUuid = generateUUID();
+		DiskSharing diskSharing = getDiskSharing();
+		DiskStorage diskStorage = getDiskStorage();
 
-        diskSharing.preDiskCreationActions(cowUuid);
+		String cowUuid = generateUUID();
 
-        diskStorage.createCopyOnWrite(uuid, cowUuid, getSize(properties));
+		diskSharing.preDiskCreationActions(cowUuid);
 
-        // TODO: refactor
-        properties.put(DiskProperties.UUID_KEY, cowUuid);
-        String baseDiskHref = String.format("<a href='%s'>basedisk<a/>",
-                DiskProperties.getDiskPath(uuid));
-        properties.put(DiskProperties.DISK_COW_BASE_KEY, baseDiskHref);
+		diskStorage.createCopyOnWrite(uuid, cowUuid, getSize(properties));
 
-        zk.saveDiskProperties(properties);
+		// TODO: refactor
+		properties.put(DiskProperties.UUID_KEY, cowUuid);
+		String baseDiskHref = String.format("<a href='%s'>basedisk<a/>",
+				DiskProperties.getDiskPath(uuid));
+		properties.put(DiskProperties.DISK_COW_BASE_KEY, baseDiskHref);
 
-        diskSharing.postDiskCreationActions(cowUuid);
+		zk.saveDiskProperties(properties);
 
-        return cowUuid;
-    }
+		diskSharing.postDiskCreationActions(cowUuid);
 
-    public static String rebaseDisk(Properties properties) {
-        String uuid = properties.getProperty(DiskProperties.UUID_KEY)
-                .toString();
+		return cowUuid;
+	}
 
-        DiskStorage diskStorage = getDiskStorage();
+	public static String rebaseDisk(Properties properties) {
+		String uuid = properties.getProperty(DiskProperties.UUID_KEY)
+				.toString();
 
-        String rebaseUuid = DiskUtils.generateUUID();
+		DiskStorage diskStorage = getDiskStorage();
 
-        diskStorage.create(rebaseUuid, getSize(properties));
+		String rebaseUuid = DiskUtils.generateUUID();
 
-        String rebasedUuid = diskStorage.rebase(uuid, rebaseUuid);
+		diskStorage.create(rebaseUuid, getSize(properties));
 
-        return rebasedUuid;
-    }
+		String rebasedUuid = diskStorage.rebase(uuid, rebaseUuid);
 
-    protected static int getSize(Properties properties) {
-        return Integer.parseInt(properties.getProperty("size"));
-    }
+		return rebasedUuid;
+	}
 
-    public static void removeDisk(String uuid) {
-        DiskSharing diskSharing = getDiskSharing();
+	protected static int getSize(Properties properties) {
+		return Integer.parseInt(properties.getProperty("size"));
+	}
 
-        diskSharing.preDiskRemovalActions(uuid);
+	public static void removeDisk(String uuid) {
+		DiskSharing diskSharing = getDiskSharing();
 
-        getDiskStorage().delete(uuid);
+		diskSharing.preDiskRemovalActions(uuid);
 
-        diskSharing.postDiskRemovalActions(uuid);
-    }
+		getDiskStorage().delete(uuid);
 
-    public static void removeDiskSharing(String uuid) {
-        DiskSharing diskSharing = getDiskSharing();
-        diskSharing.preDiskRemovalActions(uuid);
-        diskSharing.postDiskRemovalActions(uuid);
-    }
+		diskSharing.postDiskRemovalActions(uuid);
+	}
 
-    public static void attachHotplugDisk(String serviceName, int servicePort,
-            String node, String vmId, String diskUuid, String target) {
+	public static void removeDiskSharing(String uuid) {
+		DiskSharing diskSharing = getDiskSharing();
+		diskSharing.preDiskRemovalActions(uuid);
+		diskSharing.postDiskRemovalActions(uuid);
+	}
 
-        String attachedDisk = RootApplication.CONFIGURATION.CLOUD_NODE_VM_DIR
-                + "/" + vmId + "/images/pdisk-" + diskUuid;
+	public static void attachHotplugDisk(String serviceName, int servicePort,
+			String node, String vmId, String diskUuid, String target) {
 
-        List<String> attachCmd = new ArrayList<String>();
-        attachCmd.add("ssh");
-        attachCmd.add("-p");
-        attachCmd.add("22");
-        attachCmd.add("-o");
-        attachCmd.add("ConnectTimeout=5");
-        attachCmd.add("-o");
-        attachCmd.add("StrictHostKeyChecking=no");
-        attachCmd.add("-i");
-        attachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
-        attachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN + "@"
-                + node);
-        attachCmd.add("/usr/sbin/attach-persistent-disk.sh");
-        attachCmd.add("pdisk:" + serviceName + ":"
-                + String.valueOf(servicePort) + ":" + diskUuid);
-        attachCmd.add(attachedDisk);
-        attachCmd.add(target);
+		String attachedDisk = RootApplication.CONFIGURATION.CLOUD_NODE_VM_DIR
+				+ "/" + vmId + "/images/pdisk-" + diskUuid;
 
-        ProcessBuilder pb = new ProcessBuilder(attachCmd);
-        ProcessUtils.execute(pb, "Unable to attach persistent disk");
-    }
+		List<String> attachCmd = new ArrayList<String>();
+		attachCmd.add("ssh");
+		attachCmd.add("-p");
+		attachCmd.add("22");
+		attachCmd.add("-o");
+		attachCmd.add("ConnectTimeout=5");
+		attachCmd.add("-o");
+		attachCmd.add("StrictHostKeyChecking=no");
+		attachCmd.add("-i");
+		attachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
+		attachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN + "@"
+				+ node);
+		attachCmd.add("/usr/sbin/attach-persistent-disk.sh");
+		attachCmd.add("pdisk:" + serviceName + ":"
+				+ String.valueOf(servicePort) + ":" + diskUuid);
+		attachCmd.add(attachedDisk);
+		attachCmd.add(target);
 
-    public static void detachHotplugDisk(String serviceName, int servicePort,
-            String node, String vmId, String diskUuid, String target) {
+		ProcessBuilder pb = new ProcessBuilder(attachCmd);
+		ProcessUtils.execute(pb, "Unable to attach persistent disk");
+	}
 
-        List<String> detachCmd = new ArrayList<String>();
-        detachCmd.add("ssh");
-        detachCmd.add("-p");
-        detachCmd.add("22");
-        detachCmd.add("-o");
-        detachCmd.add("ConnectTimeout=5");
-        detachCmd.add("-o");
-        detachCmd.add("StrictHostKeyChecking=no");
-        detachCmd.add("-i");
-        detachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
-        detachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN + "@"
-                + node);
-        detachCmd.add("/usr/sbin/detach-persistent-disk.sh");
-        detachCmd.add("pdisk:" + serviceName + ":"
-                + String.valueOf(servicePort) + ":" + diskUuid);
-        detachCmd.add(target);
-        detachCmd.add(vmId);
+	public static void detachHotplugDisk(String serviceName, int servicePort,
+			String node, String vmId, String diskUuid, String target) {
 
-        ProcessBuilder pb = new ProcessBuilder(detachCmd);
-        ProcessUtils.execute(pb, "Unable to detach persistent disk");
-    }
+		List<String> detachCmd = new ArrayList<String>();
+		detachCmd.add("ssh");
+		detachCmd.add("-p");
+		detachCmd.add("22");
+		detachCmd.add("-o");
+		detachCmd.add("ConnectTimeout=5");
+		detachCmd.add("-o");
+		detachCmd.add("StrictHostKeyChecking=no");
+		detachCmd.add("-i");
+		detachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
+		detachCmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN + "@"
+				+ node);
+		detachCmd.add("/usr/sbin/detach-persistent-disk.sh");
+		detachCmd.add("pdisk:" + serviceName + ":"
+				+ String.valueOf(servicePort) + ":" + diskUuid);
+		detachCmd.add(target);
+		detachCmd.add(vmId);
 
-    public static String generateUUID() {
-        return UUID.randomUUID().toString();
-    }
+		ProcessBuilder pb = new ProcessBuilder(detachCmd);
+		ProcessUtils.execute(pb, "Unable to detach persistent disk");
+	}
 
-    public static String calculateHash(String uuid)
-            throws FileNotFoundException {
+	public static String generateUUID() {
+		return UUID.randomUUID().toString();
+	}
 
-        InputStream fis = new FileInputStream(getDevicePath() + uuid);
+	public static String calculateHash(String uuid)
+			throws FileNotFoundException {
 
-        Map<String, BigInteger> info = MetadataUtils.streamInfo(fis);
+		InputStream fis = new FileInputStream(getDevicePath() + uuid);
 
-        BigInteger sha1Digest = info.get("SHA-1");
+		Map<String, BigInteger> info = MetadataUtils.streamInfo(fis);
 
-        String identifier = MetadataUtils.sha1ToIdentifier(sha1Digest);
+		BigInteger sha1Digest = info.get("SHA-1");
 
-        return identifier;
+		String identifier = MetadataUtils.sha1ToIdentifier(sha1Digest);
 
-    }
+		return identifier;
 
-    public static String getDevicePath() {
-        return RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
-    }
+	}
 
-    public static List<String> getAllDisks() {
-        DiskProperties zk = null;
-        List<String> disks = Collections.emptyList();
-        try {
-            zk = new DiskProperties();
-            disks = zk.getDisks();
-        } finally {
-            if (zk != null) {
-                zk.close();
-            }
-        }
-        return disks;
-    }
+	public static String getDevicePath() {
+		return RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
+	}
+
+	public static List<String> getAllDisks() {
+		DiskProperties zk = null;
+		List<String> disks = Collections.emptyList();
+		try {
+			zk = new DiskProperties();
+			disks = zk.getDisks();
+		} finally {
+			if (zk != null) {
+				zk.close();
+			}
+		}
+		return disks;
+	}
 
 }

@@ -78,9 +78,9 @@ fmt=logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 # Handler used to report to SVN must display only the message to allow proper XML formatting
 svn_fmt=logging.Formatter("%(message)s")
 
-syslog_handler = logging.handlers.SysLogHandler('/dev/log')
-syslog_handler.setLevel(logging.WARNING)
-logger.addHandler(syslog_handler)
+#syslog_handler = logging.handlers.SysLogHandler('/dev/log')
+#syslog_handler.setLevel(logging.WARNING)
+#logger.addHandler(syslog_handler)
 
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.DEBUG)
