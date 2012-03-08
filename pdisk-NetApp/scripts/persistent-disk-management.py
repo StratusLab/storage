@@ -26,7 +26,7 @@ action_default = ''
 valid_actions = { 'check':'', 'create':'', 'delete':'', 'rebase':'', 'snapshot':'' }
 valid_actions_str = ', '.join(valid_actions.keys())
 
-lun_cmd_prefix = [ 'ssh', ',-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
+lun_cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
 check_lun_cmd = [ 'lun', 'show', '%%NAME%%' ]
 create_lun_cmd = [ 'lun', 'create', '-s', '%%SIZE%%', '-t', '%%LUNOS%%', '%%NAME%%' ]
 delete_lun_cmd = [ 'lun', 'destroy', '%%NAME%%' ]
@@ -87,10 +87,6 @@ fmt=logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 # Handler used to report to SVN must display only the message to allow proper XML formatting
 svn_fmt=logging.Formatter("%(message)s")
 
-#syslog_handler = logging.handlers.SysLogHandler('/dev/log')
-#syslog_handler.setLevel(logging.WARNING)
-#logger.addHandler(syslog_handler)
-
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.DEBUG)
 logger.addHandler(console_handler)
@@ -98,8 +94,8 @@ logger.addHandler(console_handler)
 
 # Parse configuration and options
 
-parser = OptionParser()
-parser.add_option('--config', dest='config_file', action='store', default=config_file_default, help='Name of the configuration file to use')
+parser = OptionParser(usage="usage: %prog [options] LUN_GUID LUN_Size")
+parser.add_option('--config', dest='config_file', action='store', default=config_file_default, help='Name of the configuration file to use (D: %s)' % (config_file_default))
 parser.add_option('--action', dest='action', action='store', default=action_default, help='Action to execute. Valid actions: %s'%(valid_actions_str))
 parser.add_option('-v', '--debug', '--verbose', dest='verbosity', action='count', default=0, help='Increase verbosity level for debugging (on stderr)')
 parser.add_option('--version', dest='version', action='store_true', default=False, help='Display various information about this script')
@@ -111,7 +107,9 @@ if options.version:
   sys.exit(0)
 
 if len(args) < 2:
-  abort("Insufficient argument provided (2 required)")  
+  debug(0,"Insufficient argument provided (2 required)")  
+  parser.print_help()
+  abort("")
   
 if options.verbosity:
   verbosity = options.verbosity
@@ -129,17 +127,11 @@ try:
   config.readfp(open(options.config_file))
 except IOError, (errno,errmsg):
   if errno == 2:
-    abort(1,'Configuration file (%s) is missing.' % (options.config_file))
+    abort('Configuration file (%s) is missing.' % (options.config_file))
   else:
     abort('Error opening configuration file (%s): %s (errno=%s)' % (options.config_file,errmsg,errno))
   
-try:
-  section = 'main'
-  iscsi_proxies_list = config.get(section,'iscsi_proxies')
-  iscsi_proxies = iscsi_proxies_list.split(',')
-except ValueError:
-  abort("Invalid value specified for 'iscsi_proxies' (section %s) (must be a comma-separated list)" % (section))
-
+logfile_handler = None
 try:
   log_file = config.get(config_main_section,'log_file')
   if log_file:
@@ -150,6 +142,18 @@ try:
 except ValueError:
   abort("Invalid value specified for 'log_file' (section %s)" % (config_main_section))
 
+if logfile_handler == None or not log_file:
+  # Use standard log destination in case a log file is not defined
+  syslog_handler = logging.handlers.SysLogHandler('/dev/log')
+  syslog_handler.setLevel(logging.WARNING)
+  logger.addHandler(syslog_handler)
+
+
+try:
+  iscsi_proxies_list = config.get(config_main_section,'iscsi_proxies')
+  iscsi_proxies = iscsi_proxies_list.split(',')
+except ValueError:
+  abort("Invalid value specified for 'iscsi_proxies' (section %s) (must be a comma-separated list)" % (config_main_section))
 
 try:
   iscsi_proxy = iscsi_proxies[0]
@@ -184,7 +188,10 @@ elif not options.action in valid_actions:
 # This includes parsing special keyword in command string that have to be replaced by arguments
 
 command_list = []
-if options.action == 'create':
+if options.action == 'check':
+  debug(1,"Checking LUN existence...")
+  command_list.append(check_lun_cmd)
+elif options.action == 'create':
   debug(1,"Creating LUN...")
   command_list.append(create_lun_cmd)
   command_list.append(map_lun_cmd)
@@ -198,6 +205,8 @@ elif options.action == 'rebase':
 elif options.action == 'rebase':
   debug(1,"Doing a LUN snapshot...")
   command_list.append(snapshot_lun_cmd)
+else:
+  abort ("Internal error: unimplemented action (%s)" % (options.action))
 
 # Execute all commands in command_list one by one
     
