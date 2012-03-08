@@ -58,8 +58,6 @@ public class ServiceConfiguration {
 
 	public final ShareType SHARE_TYPE;
 
-	public final String ZK_ADDRESSES;
-
 	public final DiskType ISCSI_DISK_TYPE;
 	public final File ISCSI_CONFIG;
 	public final String ISCSI_ADMIN;
@@ -93,8 +91,6 @@ public class ServiceConfiguration {
 		CONFIGURATION = readConfigFile();
 
 		SHARE_TYPE = getShareType();
-
-		ZK_ADDRESSES = getConfigValue("disk.store.zookeeper.address");
 
 		ISCSI_DISK_TYPE = getDiskType();
 		ISCSI_CONFIG = getISCSIConfig();
