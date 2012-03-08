@@ -23,10 +23,11 @@ verbosity = 0
 logger = None
 action_default = ''
 # Only keys matter, values are not used
-valid_actions = { 'create':'', 'delete':'', 'rebase':'', 'snapshot':'' }
+valid_actions = { 'check':'', 'create':'', 'delete':'', 'rebase':'', 'snapshot':'' }
 valid_actions_str = ', '.join(valid_actions.keys())
 
-lun_cmd_prefix = [ 'ssh', '%%ISCSI_PROXY%%' ]
+lun_cmd_prefix = [ 'ssh', ',-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
+check_lun_cmd = [ 'lun', 'show', '%%NAME%%' ]
 create_lun_cmd = [ 'lun', 'create', '-s', '%%SIZE%%', '-t', '%%LUNOS%%', '%%NAME%%' ]
 delete_lun_cmd = [ 'lun', 'destroy', '%%NAME%%' ]
 map_lun_cmd = [ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ]
@@ -38,6 +39,7 @@ unmap_lun_cmd = [ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
 lun_os = 'linux'
 
 config_file_default = '/opt/stratuslab/etc/persistent-disk-backend.conf'
+config_main_section = 'main'
 config_defaults = StringIO.StringIO("""
 # Options commented out are configuration options available for which no 
 # sensible default value can be defined.
@@ -47,9 +49,16 @@ config_defaults = StringIO.StringIO("""
 #iscsi_proxies=filer.example.org
 # Log file for persistent disk management
 log_file=/var/log/stratuslab-persistent-disk.log
+# User name to use to connect the filer (may also be defined in the filer section)
+mgt_user_name=root
+# SSH private key to use for 'mgt_user_name' authorisation
+#mgt_user_private_key=/some/file.rsa
 
 #[filer.example.org]
+# LUN name prefix
 #lun_namespace=/iscsi/stratuslab
+# Initiator group the LUN must be mapped to
+#initiator_group = linux_servers
 
 """)
 
@@ -132,15 +141,14 @@ except ValueError:
   abort("Invalid value specified for 'iscsi_proxies' (section %s) (must be a comma-separated list)" % (section))
 
 try:
-  section = 'main'
-  log_file = config.get(section,'log_file')
+  log_file = config.get(config_main_section,'log_file')
   if log_file:
     logfile_handler = logging.handlers.RotatingFileHandler(log_file,'a',100000,10)
     logfile_handler.setLevel(logging.DEBUG)
     logfile_handler.setFormatter(fmt)
     logger.addHandler(logfile_handler)
 except ValueError:
-  abort("Invalid value specified for 'log_file' (section %s)" % (section))
+  abort("Invalid value specified for 'log_file' (section %s)" % (config_main_section))
 
 
 try:
@@ -149,6 +157,22 @@ try:
   initiator_group=config.get(iscsi_proxy,'initiator_group')
 except:
   abort("Section %s missing or incomplete in configuration" % (iscsi_proxy))
+
+try:
+  mgt_user_name=config.get(iscsi_proxy,'mgt_user_name')  
+except:
+  try:
+    mgt_user_name=config.get(config_main_section,'mgt_user_name')  
+  except:
+    abort("User name to use for connecting to iSCSI proxy undefined")
+  
+try:
+  mgt_user_private_key=config.get(iscsi_proxy,'mgt_user_private_key')  
+except:
+  try:
+    mgt_user_private_key=config.get(config_main_section,'mgt_user_private_key')  
+  except:
+    abort("SSH private key to use for connecting to iSCSI proxy undefined")
   
 if options.action == '':
   abort('No action specified (use --action to do it).')
@@ -191,8 +215,10 @@ for command in command_list:
       action_cmd[i] = lun_os
     elif action_cmd[i] == '%%NAME%%':
       action_cmd[i] = lun_name_prefix + '/' + lun_guid
+    elif action_cmd[i] == '%%PRIVKEY%%':
+      action_cmd[i] = mgt_user_private_key
     elif action_cmd[i] == '%%ISCSI_PROXY%%':
-      action_cmd[i] = iscsi_proxy
+      action_cmd[i] = "%s@%s" % (mgt_user_name,iscsi_proxy)
   
   # Execute command: NetApp command don't return an exit code. When a command is sucessful,
   # its output is empty.

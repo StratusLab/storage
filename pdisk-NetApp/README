@@ -1,10 +1,8 @@
 This module adds support for NetApp filers as a pdisk storage backend.
 
-Support is implemented through the script
-scripts/persistent-disk-management.py. This script handles all pdisk
-operations (create, delete, rebase, snapshot). The action to execute
-is selected with option --action. Use option --help to get the full
-list of supported options.
+Support is implemented through the script scripts/persistent-disk-management.py. This script handles all pdisk 
+operations (create, delete, rebase, snapshot). The action to execute is selected with option --action. Use option --help to
+get the full list of supported options.
 
 In addition to options, the script requires up to 2 arguments
 - LUN GUID : this argument is required for all actions
@@ -14,22 +12,19 @@ In addition to options, the script requires up to 2 arguments
 + Configuration +
 +++++++++++++++++
 
-This script requires a configuration file to describe which filers are
-available, how to connect them, where to create new LUNs...  The
-default config file is
-/opt/stratuslab/etc/persistent-disk-backend.conf. This location can be
-modified with option --config.  This script is devided into sections
-introduced by '[section_name]'. Section [main] is required and must
-list the available iSCSI proxies (servers) in iscsi_proxies
-attribute. For each iSCSI proxy, a section is required whose name must
-be the proxy name. This section lists parameters specific to the iSCSI
-proxy.
+This script requires a configuration file to describe which filers are available, how to connect them, where to create new LUNs...
+The default config file is /opt/stratuslab/etc/persistent-disk-backend.conf. This location can be modified with option --config.
+This script is devided into sections introduced by '[section_name]'. Section [main] is required and must list the available iSCSI
+proxies (servers) in iscsi_proxies attribute. For each iSCSI proxy, a section is required whose name must be the proxy name. This
+section lists parameters specific to the iSCSI proxy.
 
 A typical configuration file looks like:
 ------------------------------------------
 [main]
 log_file =
 iscsi_proxies=nfsserv21,nfsserv22
+mgt_user_name=root
+mgt_user_private_key=/some/dir/key.rsa
 
 [nfsserv21]
 lun_namespace = /iscsi/stratuslab
@@ -47,4 +42,7 @@ initiator_group = linux_servers
 
 The script uses ssh to connect to the NetApp filer. Before being able to
 successfully use it, SSH keys must be properly configured for the
-account used by StratusLab pdisk.
+account used by StratusLab pdisk and appropriate parameters (mgt_user_name/mgt_user_private_key)
+must be defined in the configuration file.
+
+
