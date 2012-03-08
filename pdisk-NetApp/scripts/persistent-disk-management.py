@@ -27,13 +27,21 @@ valid_actions = { 'check':'', 'create':'', 'delete':'', 'rebase':'', 'snapshot':
 valid_actions_str = ', '.join(valid_actions.keys())
 
 lun_cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
-check_lun_cmd = [ 'lun', 'show', '%%NAME%%' ]
-create_lun_cmd = [ 'lun', 'create', '-s', '%%SIZE%%', '-t', '%%LUNOS%%', '%%NAME%%' ]
-delete_lun_cmd = [ 'lun', 'destroy', '%%NAME%%' ]
-map_lun_cmd = [ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ]
-rebase_lun_cmd = [ 'iscsi', 'connection', 'show' ]
-snapshot_lun_cmd = [ 'iscsi', 'connection', 'show' ]
-unmap_lun_cmd = [ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
+lun_cmds = {'check':[ 'lun', 'show', '%%NAME%%' ],
+            'create':[ 'lun', 'create', '-s', '%%SIZE%%', '-t', '%%LUNOS%%', '%%NAME%%' ],
+            'delete':[ 'lun', 'destroy', '%%NAME%%' ],
+            'map':[ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ],
+            'rebase':[ 'iscsi', 'connection', 'show' ],
+            'snapshot':[ 'iscsi', 'connection', 'show' ],
+            'unmap':[ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
+            }
+
+# Most commands are expected to return nothing when they succeeded. The following
+# dictionnary lists exceptions and provides a pattern matching output in case of
+# success.
+# Keys must match an existing key in lun_cmds
+success_msg_pattern = { 'check':'online' 
+                      }
 
 # Would be great to have it configurable as NetApp needs to know the client OS
 lun_os = 'linux'
@@ -190,21 +198,21 @@ elif not options.action in valid_actions:
 command_list = []
 if options.action == 'check':
   debug(1,"Checking LUN existence...")
-  command_list.append(check_lun_cmd)
+  command_list.append('check')
 elif options.action == 'create':
   debug(1,"Creating LUN...")
-  command_list.append(create_lun_cmd)
-  command_list.append(map_lun_cmd)
+  command_list.append('create')
+  command_list.append('map')
 elif options.action == 'delete':
   debug(1,"Deleting LUN...")
-  command_list.append(unmap_lun_cmd)
-  command_list.append(delete_lun_cmd)
+  command_list.append('unmap')
+  command_list.append('delete')
 elif options.action == 'rebase':
   debug(1,"Rebasing LUN...")
-  command_list.append(rebase_lun_cmd)
+  command_list.append('rebase')
 elif options.action == 'rebase':
   debug(1,"Doing a LUN snapshot...")
-  command_list.append(snapshot_lun_cmd)
+  command_list.append('snapshot')
 else:
   abort ("Internal error: unimplemented action (%s)" % (options.action))
 
@@ -214,7 +222,7 @@ for command in command_list:
   # Build command to execute
   action_cmd = []
   action_cmd.extend(lun_cmd_prefix)
-  action_cmd.extend(command)
+  action_cmd.extend(lun_cmds[command])
   for i in range(len(action_cmd)):
     if action_cmd[i] == '%%SIZE%%':
       action_cmd[i] = "%sg" % lun_size
@@ -239,9 +247,17 @@ for command in command_list:
     if retcode != 0:
         abort('Failed to execute %s action (error=%s). Command output:\n%s' % (options.action,retcode,output))
     else:
-        if len(output) == 0:
-          debug(1,'%s action completed successfully.' % (options.action))
+        # Need to check if the command is expected to return an output when successfull
+        success = True
+        if command in success_msg_pattern:
+          if not re.search(success_msg_pattern[command],output):
+            success = False
         else:
-          debug(0,'Failed to execute %s action. Command output:\n%s' % (options.action,output))
+          if len(output) != 0:
+            success = False
+        if success:
+            debug(1,'%s action completed successfully.' % (options.action))
+        else:
+            debug(0,'Failed to execute %s action. Command output:\n%s' % (options.action,output))
   except OSError, details:
     abort('Failed to execute %s action: %s' % (options.action,details))  
