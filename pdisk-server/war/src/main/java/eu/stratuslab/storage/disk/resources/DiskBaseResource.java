@@ -57,7 +57,7 @@ public class DiskBaseResource extends BaseResource {
 
 		try {
 			disk.setVisibility(DiskVisibility.valueOf(form.getFirstValue(
-					"visibility", disk.getVisibility().toString())));
+					"visibility", disk.getVisibility().toString()).toUpperCase()));
 
 		} catch (IllegalArgumentException ex) {
 			throw (new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
