@@ -55,8 +55,14 @@ public class DiskBaseResource extends BaseResource {
 					"Error parsing size: " + e.getMessage());
 		}
 
-		disk.setVisibility(DiskVisibility.valueOf(form.getFirstValue(
-				"visibility", disk.getVisibility().toString())));
+		try {
+			disk.setVisibility(DiskVisibility.valueOf(form.getFirstValue(
+					"visibility", disk.getVisibility().toString())));
+
+		} catch (IllegalArgumentException ex) {
+			throw (new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					"Invalid value for form element visibility: " + ex.getMessage()));
+		}
 
 		disk.setTag(form.getFirstValue("tag", ""));
 
