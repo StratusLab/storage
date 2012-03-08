@@ -63,13 +63,13 @@ public final class DiskUtils {
 		DiskSharing diskSharing = getDiskSharing();
 		DiskStorage diskStorage = getDiskStorage();
 
-		diskSharing.preDiskCreationActions();
+		diskSharing.preDiskCreationActions(disk.getUuid());
 
 		diskStorage.create(disk.getUuid(), disk.getSize());
 
 		disk.store();
 		
-		diskSharing.postDiskCreationActions();
+		diskSharing.postDiskCreationActions(disk.getUuid());
 	}
 
 	public static String createCoWDisk(Disk disk) {
@@ -78,7 +78,7 @@ public final class DiskUtils {
 		DiskSharing diskSharing = getDiskSharing();
 		DiskStorage diskStorage = getDiskStorage();
 
-		diskSharing.preDiskCreationActions();
+		diskSharing.preDiskCreationActions(disk.getUuid());
 
 		Disk cowDisk = new Disk();
 
@@ -87,7 +87,7 @@ public final class DiskUtils {
 		cowDisk.setBaseDiskUuid(uuid);
 		cowDisk.store();
 
-		diskSharing.postDiskCreationActions();
+		diskSharing.postDiskCreationActions(disk.getUuid());
 
 		return cowDisk.getUuid();
 	}
@@ -107,15 +107,19 @@ public final class DiskUtils {
 	}
 
 	public static void removeDisk(String uuid) {
-
 		DiskSharing diskSharing = getDiskSharing();
-		DiskStorage diskStorage = getDiskStorage();
 
-		diskSharing.preDiskRemovalActions();
+		diskSharing.preDiskRemovalActions(uuid);
 
-		diskStorage.delete(uuid);
+		getDiskStorage().delete(uuid);
 
-		diskSharing.postDiskRemovalActions();
+		diskSharing.postDiskRemovalActions(uuid);
+	}
+
+	public static void removeDiskSharing(String uuid) {
+		DiskSharing diskSharing = getDiskSharing();
+		diskSharing.preDiskRemovalActions(uuid);
+		diskSharing.postDiskRemovalActions(uuid);
 	}
 
 	public static void attachHotplugDisk(String serviceName, int servicePort,

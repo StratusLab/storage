@@ -11,45 +11,51 @@ import eu.stratuslab.storage.persistence.DiskView;
 
 public final class IscsiSharing implements DiskSharing {
 
-	// Template for an iSCSI target entry.
-	private static final String TARGET_TEMPLATE = "<target iqn.2011-01.eu.stratuslab:%s>\n"
-			+ "backing-store %s/%s\n" + "</target>\n";
+    // Template for an iSCSI target name.
+    private static final String TARGET_NAME_TEMPLATE = "iqn.2011-01.eu.stratuslab:%s";
+
+    // Template for an iSCSI target entry.
+    private static final String TARGET_TEMPLATE = "<target " + TARGET_NAME_TEMPLATE + ">\n"
+            + "backing-store %s/%s\n" + "</target>\n";
 
 	public IscsiSharing() {
 
 	}
 
-	public void preDiskCreationActions() {
+    public void preDiskCreationActions(String uuid) {
 
 	}
 
-	public void postDiskCreationActions() {
-		updateISCSIConfiguration();
+    public void postDiskCreationActions(String uuid) {
+        updateISCSIConfiguration(uuid);
+    }
+
+    public void preDiskRemovalActions(String uuid) {
+        updateISCSIConfiguration(uuid);
+    }
+
+    public void postDiskRemovalActions(String uuid) {
+
 	}
 
-	public void preDiskRemovalActions() {
-		updateISCSIConfiguration();
-	}
+    private static Boolean updateISCSIConfiguration(String uuid) {
+        updateIscsiConfigurationFile();
 
-	public void postDiskRemovalActions() {
-
-	}
-
-	private static Boolean updateISCSIConfiguration() {
-		String configuration = createISCSITargetConfiguration();
-
-		FileUtils.writeToFile(RootApplication.CONFIGURATION.ISCSI_CONFIG,
-				configuration);
-
-		updateISCSIServer();
+        updateISCSIServer(uuid);
 
 		return true;
 	}
 
-	private static String createISCSITargetConfiguration() {
-		StringBuilder sb = new StringBuilder();
-		List<DiskView> disks = getAllDisks();
-		String disksLocation = getDisksLocation();
+	private synchronized static void updateIscsiConfigurationFile() {
+		String configuration = createISCSITargetConfiguration(getAllDisks());
+
+        FileUtils.writeToFile(RootApplication.CONFIGURATION.ISCSI_CONFIG,
+                configuration);
+	}
+
+    private static String createISCSITargetConfiguration(List<DiskView> disks) {
+        StringBuilder sb = new StringBuilder();
+        String disksLocation = getDisksLocation();
 
 		for (DiskView disk : disks) {
 			sb.append(String.format(TARGET_TEMPLATE, disk.getUuid(),
@@ -59,26 +65,27 @@ public final class IscsiSharing implements DiskSharing {
 		return sb.toString();
 	}
 
-	private static void updateISCSIServer() {
-		ProcessBuilder pb = new ProcessBuilder(
-				RootApplication.CONFIGURATION.ISCSI_ADMIN, "--update", "ALL");
+    private static void updateISCSIServer(String uuid) {
+        ProcessBuilder pb = new ProcessBuilder(
+                RootApplication.CONFIGURATION.ISCSI_ADMIN, "--update",
+                String.format(TARGET_NAME_TEMPLATE, uuid));
 
-		ProcessUtils.execute(pb, "Perhaps there is a syntax error in "
-				+ RootApplication.CONFIGURATION.ISCSI_CONFIG.getAbsolutePath()
-				+ " or in "
-				+ ServiceConfiguration.DEFAULT_ISCSI_CONFIG_FILENAME);
-	}
-
+        ProcessUtils.execute(pb, "Perhaps there is a syntax error in "
+                + RootApplication.CONFIGURATION.ISCSI_CONFIG.getAbsolutePath()
+                + " or in " + ServiceConfiguration.DEFAULT_ISCSI_CONFIG_FILENAME);
+    }
+    
 	private static List<DiskView> getAllDisks() {
 		return Disk.viewListAll();
 	}
 
-	private static String getDisksLocation() {
-		if (RootApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
-			return RootApplication.CONFIGURATION.STORAGE_LOCATION
-					.getAbsolutePath();
-		} else {
-			return RootApplication.CONFIGURATION.LVM_GROUP_PATH;
-		}
-	}
+    private static String getDisksLocation() {
+        if (RootApplication.CONFIGURATION.ISCSI_DISK_TYPE == ServiceConfiguration.DiskType.FILE) {
+            return RootApplication.CONFIGURATION.STORAGE_LOCATION
+                    .getAbsolutePath();
+        } else {
+            return RootApplication.CONFIGURATION.LVM_GROUP_PATH;
+        }
+    }
+    
 }

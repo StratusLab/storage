@@ -171,7 +171,7 @@ zookeeper_action() {
         if [ "x$ACT" != "xrestart" ]
         then
             echo -n "Trying to $ACT ZooKeeper service... "
-            /bin/sh $ZOOKEEPER_SERVER_CMD $ACT &>> /var/log/zookeeper.log
+            /bin/sh $ZOOKEEPER_SERVER_CMD $ACT &> /var/log/zookeeper.log
             [ $? -gt 0 ] && echo "FAILED" || echo "OK"
         fi
     fi
