@@ -88,7 +88,7 @@ public class DiskBaseResource extends BaseResource {
 
 		String ownerInForm = form.getFirstValue(OWNER_KEY);
 		if (ownerInForm != null) {
-			disk.setTag(ownerInForm);
+			disk.setOwner(ownerInForm);
 		}
 
 		return disk;
