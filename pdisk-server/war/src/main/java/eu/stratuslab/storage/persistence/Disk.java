@@ -115,8 +115,8 @@ public class Disk implements Serializable {
 	private int usersCount;
 	private boolean isreadonly = false;
 	private boolean iscow = false;
-	private String tag;
-	private long size;
+	private String tag = "";
+	private long size = -1;
 
 	private String identifier; // Marketplace identifier
 
