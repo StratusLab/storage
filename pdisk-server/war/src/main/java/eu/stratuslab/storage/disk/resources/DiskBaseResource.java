@@ -49,7 +49,7 @@ public class DiskBaseResource extends BaseResource {
 		return processWebForm(disk, form);
 	}
 
-	private Disk processWebForm(Disk disk, Form form) {
+	protected Disk processWebForm(Disk disk, Form form) {
 
 		String sizeInForm = form.getFirstValue(SIZE_KEY);
 		if (sizeInForm != null) {

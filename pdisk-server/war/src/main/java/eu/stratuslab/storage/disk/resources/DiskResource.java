@@ -64,13 +64,13 @@ public class DiskResource extends DiskBaseResource {
 	@Put
 	public void update(Representation entity) {
 
-		loadExistingDisk();
-
 		checkIsSuper();
 
 		MiscUtils.checkForNullEntity(entity);
 
-		Disk disk = processWebForm(new Form(entity));
+		Disk disk = loadExistingDisk();
+		disk = processWebForm(disk, new Form(entity));
+
 		disk.setUuid(getDiskId());
 
 		updateDisk(disk);
