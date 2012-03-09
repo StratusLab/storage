@@ -75,7 +75,7 @@
           <th>Users</th>
           <th>Owner</th>
           <th>UUID</th>
-          <th>Marketplace Id</th>
+          <th>Image identifier</th>
         </tr>
       </thead>
       <tbody>
