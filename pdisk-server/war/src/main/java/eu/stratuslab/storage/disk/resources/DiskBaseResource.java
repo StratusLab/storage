@@ -51,11 +51,12 @@ public class DiskBaseResource extends BaseResource {
 
 	private Disk processWebForm(Disk disk, Form form) {
 
-		if (form.contains(SIZE_KEY)) {
+		String sizeInForm = form.getFirstValue(SIZE_KEY);
+		if (sizeInForm != null) {
 
 			long size;
 			try {
-				size = Long.parseLong(form.getFirstValue(SIZE_KEY));
+				size = Long.parseLong(sizeInForm);
 			} catch (NumberFormatException e) {
 				throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 						"Error parsing size: " + e.getMessage());
@@ -64,11 +65,11 @@ public class DiskBaseResource extends BaseResource {
 			disk.setSize(size);
 		}
 
-		if (form.contains(VISIBILITY_KEY)) {
+		String visibilityInForm = form.getFirstValue(VISIBILITY_KEY);
+		if (visibilityInForm != null) {
 			DiskVisibility visibility;
 			try {
-				visibility = DiskVisibility.valueOf(form.getFirstValue(
-						VISIBILITY_KEY));
+				visibility = DiskVisibility.valueOf(visibilityInForm);
 			} catch (IllegalArgumentException ex) {
 				throw (new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 						"Invalid value for form element visibility: "
@@ -78,8 +79,9 @@ public class DiskBaseResource extends BaseResource {
 			disk.setVisibility(visibility);
 		}
 		
-		if (form.contains(TAG_KEY)) {
-			disk.setTag(form.getFirstValue(TAG_KEY));
+		String tagInForm = form.getFirstValue(TAG_KEY);
+		if (tagInForm != null) {
+			disk.setTag(tagInForm);
 		}
 		
 		return disk;
