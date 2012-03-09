@@ -38,6 +38,7 @@ public class DiskBaseResource extends BaseResource {
 	private static final String SIZE_KEY = "size";
 	private static final String VISIBILITY_KEY = "visibility";
 	private static final String TAG_KEY = "tag";
+	private static final String OWNER_KEY = "owner";
 
 	protected Disk getDisk(Form form) {
 
@@ -83,6 +84,11 @@ public class DiskBaseResource extends BaseResource {
 		String tagInForm = form.getFirstValue(TAG_KEY);
 		if (tagInForm != null) {
 			disk.setTag(tagInForm);
+		}
+
+		String ownerInForm = form.getFirstValue(OWNER_KEY);
+		if (ownerInForm != null) {
+			disk.setTag(ownerInForm);
 		}
 
 		return disk;
