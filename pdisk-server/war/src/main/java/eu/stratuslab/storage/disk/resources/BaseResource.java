@@ -139,7 +139,7 @@ public class BaseResource extends ServerResource {
 
 	protected Boolean hasSufficientRightsToDelete(Disk disk) {
 		String username = getUsername(getRequest());
-		return disk.getOwner().equals(username) || isSuperUser(username);
+		return username.equals(disk.getOwner()) || isSuperUser(username);
 	}
 
 	protected String serviceName() {
