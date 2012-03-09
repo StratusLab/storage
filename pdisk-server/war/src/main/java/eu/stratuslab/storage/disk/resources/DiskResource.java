@@ -47,7 +47,6 @@ import eu.stratuslab.storage.persistence.Disk;
 public class DiskResource extends DiskBaseResource {
 
 	private static final String UUID_KEY_NAME = Disk.UUID_KEY;
-	private Disk disk = null;
 
 	@Override
 	protected void doInit() throws ResourceException {
@@ -101,7 +100,7 @@ public class DiskResource extends DiskBaseResource {
 
 		Disk disk = initializeDisk();
 
-		disk.setSize(this.disk.getSize());
+		disk.setSize(disk.getSize());
 		disk.setUuid(getDiskId());
 
 		DiskUtils.createCoWDisk(disk);
