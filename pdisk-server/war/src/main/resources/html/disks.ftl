@@ -83,7 +83,7 @@
           <tr class="${zebra(disk_index)}">
             <td>
               <#if disk.tag?has_content>
-                ${disk.tag!}
+                ${disk.tag}
                 <#else><em>No tag</em>
               </#if>
             </td>
