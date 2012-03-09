@@ -47,22 +47,28 @@ public class DiskBaseResource extends BaseResource {
 
 	private Disk processWebForm(Disk disk, Form form) {
 
-		long size = Long.parseLong(form.getFirstValue("size", "-1"));
+		long size;
 		try {
-			disk.setSize(size);
+			size = Long.parseLong(form.getFirstValue("size", "-1"));
 		} catch (NumberFormatException e) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					"Error parsing size: " + e.getMessage());
 		}
 
-		try {
-			disk.setVisibility(DiskVisibility.valueOf(form.getFirstValue(
-					"visibility", disk.getVisibility().toString()).toUpperCase()));
+		disk.setSize(size);
 
+		DiskVisibility visibility;
+		try {
+			visibility = DiskVisibility.valueOf(form.getFirstValue(
+					"visibility", disk.getVisibility().toString())
+					.toUpperCase());
 		} catch (IllegalArgumentException ex) {
 			throw (new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"Invalid value for form element visibility: " + ex.getMessage()));
+					"Invalid value for form element visibility: "
+							+ ex.getMessage()));
 		}
+
+		disk.setVisibility(visibility);
 
 		disk.setTag(form.getFirstValue("tag", ""));
 
