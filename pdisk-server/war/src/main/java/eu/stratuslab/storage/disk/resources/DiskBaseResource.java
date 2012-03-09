@@ -69,7 +69,8 @@ public class DiskBaseResource extends BaseResource {
 		if (visibilityInForm != null) {
 			DiskVisibility visibility;
 			try {
-				visibility = DiskVisibility.valueOf(visibilityInForm);
+				visibility = DiskVisibility.valueOf(visibilityInForm
+						.toUpperCase());
 			} catch (IllegalArgumentException ex) {
 				throw (new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 						"Invalid value for form element visibility: "
@@ -78,12 +79,12 @@ public class DiskBaseResource extends BaseResource {
 
 			disk.setVisibility(visibility);
 		}
-		
+
 		String tagInForm = form.getFirstValue(TAG_KEY);
 		if (tagInForm != null) {
 			disk.setTag(tagInForm);
 		}
-		
+
 		return disk;
 	}
 
