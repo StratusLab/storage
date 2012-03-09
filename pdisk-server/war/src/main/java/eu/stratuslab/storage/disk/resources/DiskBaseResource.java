@@ -35,6 +35,10 @@ import eu.stratuslab.storage.persistence.Disk;
 
 public class DiskBaseResource extends BaseResource {
 
+	private static final String SIZE_KEY = "size";
+	private static final String VISIBILITY_KEY = "visibility";
+	private static final String TAG_KEY = "tag";
+
 	protected Disk getDisk(Form form) {
 
 		return processWebForm(form);
@@ -47,31 +51,37 @@ public class DiskBaseResource extends BaseResource {
 
 	private Disk processWebForm(Disk disk, Form form) {
 
-		long size;
-		try {
-			size = Long.parseLong(form.getFirstValue("size", "-1"));
-		} catch (NumberFormatException e) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"Error parsing size: " + e.getMessage());
+		if (form.contains(SIZE_KEY)) {
+
+			long size;
+			try {
+				size = Long.parseLong(form.getFirstValue(SIZE_KEY));
+			} catch (NumberFormatException e) {
+				throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+						"Error parsing size: " + e.getMessage());
+			}
+
+			disk.setSize(size);
 		}
 
-		disk.setSize(size);
+		if (form.contains(VISIBILITY_KEY)) {
+			DiskVisibility visibility;
+			try {
+				visibility = DiskVisibility.valueOf(form.getFirstValue(
+						VISIBILITY_KEY));
+			} catch (IllegalArgumentException ex) {
+				throw (new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+						"Invalid value for form element visibility: "
+								+ ex.getMessage()));
+			}
 
-		DiskVisibility visibility;
-		try {
-			visibility = DiskVisibility.valueOf(form.getFirstValue(
-					"visibility", disk.getVisibility().toString())
-					.toUpperCase());
-		} catch (IllegalArgumentException ex) {
-			throw (new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					"Invalid value for form element visibility: "
-							+ ex.getMessage()));
+			disk.setVisibility(visibility);
 		}
-
-		disk.setVisibility(visibility);
-
-		disk.setTag(form.getFirstValue("tag", ""));
-
+		
+		if (form.contains(TAG_KEY)) {
+			disk.setTag(form.getFirstValue(TAG_KEY));
+		}
+		
 		return disk;
 	}
 
