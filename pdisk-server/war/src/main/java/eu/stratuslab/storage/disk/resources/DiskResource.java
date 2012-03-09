@@ -98,11 +98,11 @@ public class DiskResource extends DiskBaseResource {
 
 	private String createCoW(Disk disk) {
 
-		DiskUtils.createCoWDisk(disk);
+		String cowUuid = DiskUtils.createCoWDisk(disk);
 
 		incrementOriginDiskUserCount();
 
-		return disk.getUuid();
+		return cowUuid;
 	}
 
 	private void incrementOriginDiskUserCount() {
