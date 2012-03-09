@@ -1,6 +1,13 @@
 {
-  <#assign keys=properties?keys>
-  <#list keys as key>
-  "${key}" : "${properties[key]?j_string}"<#if key_has_next>,</#if>
-  </#list>
+    "uuid": "${disk.uuid}",
+    <#if disk.tag?has_content>
+    "tag": "${disk.tag}",
+<#else>    "tag": "",
+    </#if>
+    "count": "${disk.usersCount}",
+    "owner": "${disk.owner}",
+    <#if disk.identifier?has_content>
+    "identifier": "${disk.identifier}",
+    </#if>
+    "size": "${disk.size}"
 }
