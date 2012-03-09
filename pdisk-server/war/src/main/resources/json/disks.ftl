@@ -1,10 +1,16 @@
 [
   <#list disks as disk>
   {
-    <#assign keys=disk?keys>
-    <#list keys as key>
-    "${key}" : "${disk[key]?j_string}"<#if key_has_next>,</#if>
-    </#list>
-  }<#if disk_has_next>,</#if>
+    "uuid": ${disk.uuid}
+    <#if disk.tag?has_content>
+    "tag": ${disk.tag},
+    </#if>
+    "count": ${disk.usersCount},
+    "owner": ${disk.owner},
+    <#if disk.identifier?has_content>
+    "identifier": ${disk.identifier},
+    </#if>
+    "size": ${disk.size}
+  }<#if disk_index < disks?size-1>,</#if>
   </#list>
 ]
