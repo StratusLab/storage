@@ -4,7 +4,7 @@
     "uuid": "${disk.uuid}",
     <#if disk.tag?has_content>
     "tag": "${disk.tag}",
-    <#else>"tag": "",
+    <#else>    "tag": "",
     </#if>
     "count": "${disk.usersCount}",
     "owner": "${disk.owner}",
