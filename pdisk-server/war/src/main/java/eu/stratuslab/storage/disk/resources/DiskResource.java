@@ -47,7 +47,6 @@ import eu.stratuslab.storage.persistence.Disk;
 public class DiskResource extends DiskBaseResource {
 
 	private static final String UUID_KEY_NAME = Disk.UUID_KEY;
-	private Disk disk = null;
 
 	@Override
 	protected void doInit() throws ResourceException {
