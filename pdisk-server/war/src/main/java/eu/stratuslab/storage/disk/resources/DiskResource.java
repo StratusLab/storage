@@ -47,6 +47,7 @@ import eu.stratuslab.storage.persistence.Disk;
 public class DiskResource extends DiskBaseResource {
 
 	private static final String UUID_KEY_NAME = Disk.UUID_KEY;
+	private Disk disk = null;
 
 	@Override
 	protected void doInit() throws ResourceException {
@@ -87,21 +88,16 @@ public class DiskResource extends DiskBaseResource {
 
 		String newUuid = null;
 		if (disk.getIscow()) {
-			newUuid = rebase();
+			newUuid = rebase(disk);
 		} else {
-			newUuid = createCoW();
+			newUuid = createCoW(disk);
 		}
 
 		redirectSeeOther(getBaseUrl() + "/disks/" + newUuid + "/");
 
 	}
 
-	private String createCoW() {
-
-		Disk disk = initializeDisk();
-
-		disk.setSize(disk.getSize());
-		disk.setUuid(getDiskId());
+	private String createCoW(Disk disk) {
 
 		DiskUtils.createCoWDisk(disk);
 
@@ -114,9 +110,7 @@ public class DiskResource extends DiskBaseResource {
 		incrementUserCount(getDiskId());
 	}
 
-	private String rebase() {
-
-		Disk disk = Disk.load(getDiskId());
+	private String rebase(Disk disk) {
 
 		String newUuid = DiskUtils.rebaseDisk(disk);
 
