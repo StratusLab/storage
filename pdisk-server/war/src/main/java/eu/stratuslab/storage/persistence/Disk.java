@@ -109,7 +109,7 @@ public class Disk implements Serializable {
 
 	private Properties properties;
 
-	private String owner;
+	private String owner = "";
 	private DiskVisibility visibility = DiskVisibility.PRIVATE;
 	private String created;
 	private int usersCount;
