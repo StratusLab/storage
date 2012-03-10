@@ -19,6 +19,22 @@
       <type>war</type>
       <version>1.13-SNAPSHOT</version>
     </dependency>
+    <dependency>
+      <groupId>eu.stratuslab.authn</groupId>
+      <artifactId>authn-ssl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>eu.stratuslab.authn</groupId>
+      <artifactId>authn-login-module</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+    </dependency>
   </dependencies>
   
   <properties> 
@@ -106,41 +122,16 @@
             </configuration>
           </execution>
 
-          <execution>
-            <id>copy-jars</id>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/dependency/jars</outputDirectory>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>bouncycastle</groupId>
-                  <artifactId>bcprov-jdk16</artifactId>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>log4j</groupId>
-                  <artifactId>log4j</artifactId>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.glite.security</groupId>
-                  <artifactId>trustmanager</artifactId>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.glite.security</groupId>
-                  <artifactId>util-java</artifactId>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>eu.stratuslab.authn</groupId>
-                  <artifactId>authn-ssl</artifactId>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>eu.stratuslab.authn</groupId>
-                  <artifactId>authn-login-module</artifactId>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
+	  <execution>
+	    <id>copy-jars</id>
+	    <goals>
+	      <goal>copy-dependencies</goal>
+	    </goals>
+	    <configuration>
+	      <outputDirectory>${project.build.directory}/dependency/jars</outputDirectory>
+              <excludeArtifactIds>storage-pdisk-server-war</excludeArtifactIds>
+	    </configuration>
+	  </execution>
 
           <execution>
             <id>copy-war</id>

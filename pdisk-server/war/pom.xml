@@ -50,12 +50,14 @@
       <groupId>org.apache.zookeeper</groupId>
       <artifactId>zookeeper</artifactId>
     </dependency>
+<!--
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
     </dependency>
+-->
     <dependency>
-      <groupId>bouncycastle</groupId>
+      <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk16</artifactId>
     </dependency>
     <dependency>
@@ -63,12 +65,8 @@
       <artifactId>log4j</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.glite.security</groupId>
-      <artifactId>trustmanager</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.glite.security</groupId>
-      <artifactId>util-java</artifactId>
+      <groupId>eu.emi.security</groupId>
+      <artifactId>authlib</artifactId>
     </dependency>
     <dependency>
       <groupId>eu.stratuslab.authn</groupId>

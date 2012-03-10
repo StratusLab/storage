@@ -8,20 +8,24 @@
 
   <Call name="addConnector">
     <Arg>
-      <New class="eu.stratuslab.ssl.GridSslSelectChannelConnector">
-        <Set name="SslTrustManagerFactoryAlgorithm">GridTM</Set>
-        <Set name="Port">8445</Set>
-        <Set name="maxIdleTime">30000</Set>
-        <Set name="Acceptors">2</Set>
-        <Set name="AcceptQueueSize">100</Set>
-        <Set name="Keystore"><Property name="jetty.home" default="." />/etc/jetty.jks</Set>
-        <Set name="Password">jettycred</Set>
-        <Set name="KeyPassword">jettycred</Set>
-        <Set name="truststore"><Property name="jetty.home" default="." />/etc/jetty.jks</Set>
-        <Set name="trustPassword">jettycred</Set>
-        <Set name="wantClientAuth">true</Set>
-        <Set name="needClientAuth">false</Set>
+      <New class="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
+	<Arg>
+	  <New class="eu.stratuslab.ssl.GridSslContextFactory">
+            <Arg></Arg> <!-- CA directory (/etc/grid-security/certificates) -->
+            <Arg></Arg> <!-- CA namespace validation (EUGRIDPMA_AND_GLOBUS) --> 
+            <Arg></Arg> <!-- update interval in ms (60000 = 10 min) -->
+            <Arg></Arg> <!-- CRL checking policy (REQUIRE) -->
+
+	    <Set name="KeyManagerPassword">jettycred</Set>
+
+	    <Set name="KeyStorePath"><Property name="jetty.home" default="." />/etc/jetty.jks</Set>
+	    <Set name="KeyStorePassword">jettycred</Set>
+	  </New>
+	</Arg>
+	<Set name="Port">8445</Set>
+	<Set name="MaxIdleTime">30000</Set>
       </New>
     </Arg>
   </Call>
+
 </Configure>
