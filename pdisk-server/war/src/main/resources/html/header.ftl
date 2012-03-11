@@ -13,8 +13,8 @@
 
   <base href="${baseurl}" /> 
 
-  <link rel="shortcut icon" href="css/favicon.ico"/>
-  <link rel="stylesheet" type="text/css" href="${baseurl}/css/stratuslab.css"/>
+  <link rel="shortcut icon" href="${baseurl}/media/img/favicon.ico"/>
+  <link rel="stylesheet" type="text/css" href="${baseurl}/media/css/stratuslab.css"/>
 
 </head>
 

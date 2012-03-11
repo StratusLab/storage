@@ -3,7 +3,7 @@ body {
   margin: 10px 95px;
   font-family:"Lucida Grande","bitstream vera sans","trebuchet ms",sans-serif,verdana;
 
-  background-image: url('stratuslab-logo-s-vertical.png');
+  background-image: url('../img/stratuslab-logo-s-vertical.png');
   background-repeat: no-repeat;
   background-position: -25px 0px;
   

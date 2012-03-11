@@ -29,6 +29,7 @@
   </table>
 </#escape>
 
+  <!-- 
   <script language="javascript" src="/css/external/jquery.min.js" type="text/javascript"></script>
   <script language="javascript" type="text/javascript">
     $(document).ready(function() {
@@ -39,5 +40,6 @@
       });
     });
   </script>
+  -->
 
 <#include "/html/footer.ftl">

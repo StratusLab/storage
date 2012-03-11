@@ -110,19 +110,19 @@ public class RootApplication extends Application {
 
         router.attach("/", HomeResource.class);
 
-        router.attach("/css/", createCssDirectory(context));
+        router.attach("/media/", createMediaDirectory(context));
 
         return createGuard(context, router);
     }
 
-    private static Directory createCssDirectory(Context context) {
-		String cssLocation = System.getProperty(
-				"css.content.location", "war:///css");
-        Directory cssDir = new Directory(context, cssLocation);
-        cssDir.setNegotiatingContent(false);
-        cssDir.setIndexName("index.html");
+    private static Directory createMediaDirectory(Context context) {
+		String mediaLocation = System.getProperty(
+				"css.content.location", "war:///media");
+        Directory mediaDir = new Directory(context, mediaLocation);
+        mediaDir.setNegotiatingContent(false);
+        mediaDir.setIndexName("index.html");
 
-        return cssDir;
+        return mediaDir;
     }
 
     //
