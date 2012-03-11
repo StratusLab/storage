@@ -1,28 +1,14 @@
 $.STRATUS = function (){
 	
 	var _init = function () {
-		console.log('Loaded')
 		$('#logout').click(_logout)
-	};
-	
-	var _makeBasicAuth = function(user, password) {
-		  var token = user + ':' + password;
-		  var hash = Base64.encode(token);
-		  return "Basic " + hash;
 	};
 
 	var _logout = function (event) {
-		console.log('Logout called')
 		event.preventDefault();
-		
-		var auth = _makeBasicAuth('invalid','');
-		$.ajax({
-		    url : 'https://192.168.56.101:8445/pswd/',
-		    method : 'GET',
-		    beforeSend : function(req) {
-		        req.setRequestHeader('Authorization', auth);
-		    }
-		});
+		// Workaround to logout user 
+		// As HTTP is state-less there is no cross-browser clean way to do
+		$.get(location.href.replace('://', '://x-pdisk-logout@'));
 	};
 	
 	return {
