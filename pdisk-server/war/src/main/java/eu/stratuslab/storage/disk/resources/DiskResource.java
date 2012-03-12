@@ -97,10 +97,7 @@ public class DiskResource extends DiskBaseResource {
 	}
 
 	private String createCoW(Disk disk) {
-
-		String cowUuid = DiskUtils.createCoWDisk(disk);
-
-		return cowUuid;
+		return DiskUtils.createCoWDisk(disk);
 	}
 
 	private String rebase(Disk disk) {
