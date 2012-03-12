@@ -125,10 +125,6 @@ public class DiskBaseResource extends BaseResource {
 		}
 	}
 
-	protected void registerDisk(Disk disk) {
-		disk.store();
-	}
-
 	protected Disk updateDisk(Disk disk) {
 		disk.store();
 		return disk;
