@@ -79,13 +79,7 @@ public final class DiskUtils {
 
 		diskSharing.preDiskCreationActions(disk.getUuid());
 
-		Disk cowDisk = new Disk();
-		cowDisk.setIscow(true);
-		cowDisk.setBaseDiskUuid(disk.getUuid());
-		cowDisk.setSize(disk.getSize());
-		cowDisk.setUsersCount(1);
-		cowDisk.setTag(disk.getTag());
-		cowDisk.setIdentifier(disk.getIdentifier());
+		Disk cowDisk = createCowDisk(disk);
 		
 		diskStorage.createCopyOnWrite(disk.getUuid(), cowDisk.getUuid(), disk.getSize());
 
@@ -94,6 +88,17 @@ public final class DiskUtils {
 		diskSharing.postDiskCreationActions(disk.getUuid());
 
 		return cowDisk.getUuid();
+	}
+
+	protected static Disk createCowDisk(Disk disk) {
+		Disk cowDisk = new Disk();
+		cowDisk.setIscow(true);
+		cowDisk.setBaseDiskUuid(disk.getUuid());
+		cowDisk.setSize(disk.getSize());
+		cowDisk.setUsersCount(1);
+		cowDisk.setTag(disk.getTag());
+		cowDisk.setIdentifier(disk.getIdentifier());
+		return cowDisk;
 	}
 
 	public static String rebaseDisk(Disk disk) {
