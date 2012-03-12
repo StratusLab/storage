@@ -96,7 +96,6 @@ public final class DiskUtils {
 		cowDisk.setBaseDiskUuid(disk.getUuid());
 		cowDisk.setSize(disk.getSize());
 		cowDisk.setUsersCount(1);
-		cowDisk.setTag(disk.getTag());
 		cowDisk.setIdentifier(disk.getIdentifier());
 		return cowDisk;
 	}
