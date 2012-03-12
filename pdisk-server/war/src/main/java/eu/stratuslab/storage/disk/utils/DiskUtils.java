@@ -83,7 +83,13 @@ public final class DiskUtils {
 
 		diskStorage.createCopyOnWrite(disk.getUuid(), cowDisk.getUuid(), disk.getSize());
 
+		cowDisk.setIscow(true);
 		cowDisk.setBaseDiskUuid(disk.getUuid());
+		cowDisk.setSize(disk.getSize());
+		cowDisk.setUsersCount(1);
+		cowDisk.setTag(disk.getTag());
+		cowDisk.setIdentifier(disk.getIdentifier());
+		
 		cowDisk.store();
 
 		diskSharing.postDiskCreationActions(disk.getUuid());
