@@ -66,7 +66,7 @@ public final class DiskUtils {
 		diskSharing.preDiskCreationActions(disk.getUuid());
 
 		diskStorage.create(disk.getUuid(), disk.getSize());
-
+		
 		disk.store();
 		
 		diskSharing.postDiskCreationActions(disk.getUuid());
@@ -97,6 +97,7 @@ public final class DiskUtils {
 		cowDisk.setSize(disk.getSize());
 		cowDisk.setUsersCount(1);
 		cowDisk.setIdentifier(disk.getIdentifier());
+		disk.incrementUserCount();
 		return cowDisk;
 	}
 
