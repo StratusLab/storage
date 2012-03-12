@@ -240,7 +240,12 @@ public class DisksResource extends DiskBaseResource {
 		addCreateFormDefaults(info);
 
 		String username = getUsername(getRequest());
-		List<DiskView> disks = Disk.viewAll(username);
+		List<DiskView> disks;
+		if(isSuperUser(username)){
+			disks = Disk.listAll();
+		} else {
+			disks = Disk.listAllByUser(username);			
+		}
 		info.put("disks", disks);
 
 		return info;
