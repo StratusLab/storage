@@ -29,6 +29,7 @@ import javax.security.auth.x500.X500Principal;
 
 import org.restlet.Request;
 import org.restlet.data.ChallengeResponse;
+import org.restlet.data.Form;
 import org.restlet.data.MediaType;
 import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.resource.ServerResource;
@@ -249,4 +250,17 @@ public class BaseResource extends ServerResource {
         }
     }
 
+    protected Properties processWebForm(Properties initialProperties, Form form) {
+        Properties properties = initialProperties;
+
+        for (String name : form.getNames()) {
+            String value = form.getFirstValue(name);
+            if (value != null) {
+                properties.put(name, value);
+            }
+        }
+
+        return properties;
+    }
+    
 }

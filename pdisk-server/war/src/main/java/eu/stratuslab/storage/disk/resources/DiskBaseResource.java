@@ -75,19 +75,6 @@ public class DiskBaseResource extends BaseResource {
         return processWebForm(new Properties(), form);
     }
 
-    private Properties processWebForm(Properties initialProperties, Form form) {
-        Properties properties = initialProperties;
-
-        for (String name : form.getNames()) {
-            String value = form.getFirstValue(name);
-            if (value != null) {
-                properties.put(name, value);
-            }
-        }
-
-        return properties;
-    }
-
     protected Properties initializeProperties() {
         Properties properties = getEmptyFormProperties();
         properties.put(DiskProperties.UUID_KEY, DiskUtils.generateUUID());

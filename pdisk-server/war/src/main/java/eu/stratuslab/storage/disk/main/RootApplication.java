@@ -35,9 +35,11 @@ import org.restlet.resource.Directory;
 import org.restlet.routing.Router;
 import org.restlet.security.ChallengeAuthenticator;
 
+import eu.stratuslab.storage.disk.resources.AuthErrorResource;
 import eu.stratuslab.storage.disk.resources.DiskResource;
 import eu.stratuslab.storage.disk.resources.DisksResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
+import eu.stratuslab.storage.disk.resources.LoginResource;
 import eu.stratuslab.storage.disk.resources.MountResource;
 import eu.stratuslab.storage.disk.resources.MountsResource;
 import eu.stratuslab.storage.disk.utils.DummyVerifier;
@@ -108,6 +110,12 @@ public class RootApplication extends Application {
         router.attach("/disks/", DisksResource.class);
         router.attach("/disks", DisksResource.class);
 
+        router.attach("/auth/login/", LoginResource.class);
+        router.attach("/auth/login", LoginResource.class);
+        
+        router.attach("/auth/error/", AuthErrorResource.class);
+        router.attach("/auth/error", AuthErrorResource.class);
+        
         router.attach("/", HomeResource.class);
 
         router.attach("/media/", createMediaDirectory(context));

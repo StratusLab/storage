@@ -6,7 +6,12 @@
    version="2.5">
 
   <login-config>
-    <auth-method>BASIC</auth-method>
+    <!-- <auth-method>BASIC</auth-method> -->
+    <auth-method>FORM</auth-method>
+    <form-login-config>
+      <form-login-page>/auth/login/</form-login-page>
+      <form-error-page>/auth/error/</form-error-page>
+    </form-login-config>
     <realm-name>StratusLab Password Realm</realm-name>
   </login-config>
 
