@@ -112,8 +112,6 @@ public class DiskResource extends DiskBaseResource {
 		// TODO: implement here and remove client-side implementation
 		// newProperties = calculateHashes(newProperties);
 		newDisk.store();
-
-		disk.incrementUserCount();
 		
 		return newUuid;
 	}
