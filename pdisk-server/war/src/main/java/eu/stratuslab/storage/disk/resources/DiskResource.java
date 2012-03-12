@@ -294,5 +294,4 @@ public class DiskResource extends DiskBaseResource {
 		}
 		disk.remove();
 	}
-
 }
