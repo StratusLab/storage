@@ -218,14 +218,6 @@ public class Disk implements Serializable {
 		return properties;
 	}
 
-	public String getMountPath(String node, String vmId) {
-		return String.format("%s-%s", vmId, node);
-	}
-
-	public static String getDiskPath(String uuid) {
-		return uuid;
-	}
-
 	public int incrementUserCount() {
 		EntityManager em = PersistenceUtil.createEntityManager();
 		EntityTransaction transaction = em.getTransaction();
