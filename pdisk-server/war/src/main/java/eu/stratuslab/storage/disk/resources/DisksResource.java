@@ -136,6 +136,10 @@ public class DisksResource extends DiskBaseResource {
 
 	}
 
+	protected void createDisk(Disk disk) {
+		DiskUtils.createDisk(disk);
+	}
+
 	private Disk saveAndInflateFiles() {
 
 		int fileSizeLimit = ServiceConfiguration.getInstance().UPLOAD_COMPRESSED_IMAGE_MAX_BYTES;

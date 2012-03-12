@@ -29,7 +29,6 @@ import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.CompressedDiskRemoval;
-import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
 import eu.stratuslab.storage.persistence.Disk;
 
@@ -147,10 +146,6 @@ public class DiskBaseResource extends BaseResource {
 		Map<String, Object> attributes = getRequest().getAttributes();
 
 		return attributes.get("uuid").toString();
-	}
-
-	protected void createDisk(Disk disk) {
-		DiskUtils.createDisk(disk);
 	}
 
 	protected void checkIsSuper() {
