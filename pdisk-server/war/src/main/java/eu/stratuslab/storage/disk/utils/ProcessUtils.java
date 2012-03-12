@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.Iterator;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.restlet.data.Status;
@@ -12,7 +14,13 @@ import org.restlet.resource.ResourceException;
 
 public final class ProcessUtils {
 
+	public enum VerboseLevel {
+		Normal,
+		Debug
+	}
+	
 	private static final Logger LOGGER = Logger.getLogger("org.restlet");
+	public static VerboseLevel verboseLevel = VerboseLevel.Debug;
 
 	private ProcessUtils() {
 
@@ -27,6 +35,10 @@ public final class ProcessUtils {
 
 		pb.redirectErrorStream(true);
 
+		if(verboseLevel == VerboseLevel.Debug) {
+			info(pb);
+		}
+		
 		try {
 			process = pb.start();
 
@@ -74,6 +86,22 @@ public final class ProcessUtils {
 		}
 	}
 
+	private static void info(ProcessBuilder processBuilder) {
+		LOGGER.info(joinList(processBuilder.command(), " "));
+	}
+	
+    private static String joinList(List<String> list, String glue) {
+        Iterator<String> i = list.iterator();
+        if(i.hasNext() == false) {
+        	return "";
+        }
+        String ret = i.next();
+        while (i.hasNext()) {
+                ret += glue + i.next();
+        }
+        return ret;
+    }	
+	
 	public static int executeGetStatus(ProcessBuilder pb) {
 		Process process;
 		try {
