@@ -100,13 +100,7 @@ public class DiskResource extends DiskBaseResource {
 
 		String cowUuid = DiskUtils.createCoWDisk(disk);
 
-		incrementOriginDiskUserCount();
-
 		return cowUuid;
-	}
-
-	private void incrementOriginDiskUserCount() {
-		incrementUserCount(getDiskId());
 	}
 
 	private String rebase(Disk disk) {
