@@ -73,7 +73,6 @@ public final class DiskUtils {
 	}
 
 	public static String createCoWDisk(Disk disk) {
-		String uuid = disk.getUuid();
 
 		DiskSharing diskSharing = getDiskSharing();
 		DiskStorage diskStorage = getDiskStorage();
@@ -82,9 +81,9 @@ public final class DiskUtils {
 
 		Disk cowDisk = new Disk();
 
-		diskStorage.createCopyOnWrite(uuid, cowDisk.getUuid(), disk.getSize());
+		diskStorage.createCopyOnWrite(disk.getUuid(), cowDisk.getUuid(), disk.getSize());
 
-		cowDisk.setBaseDiskUuid(uuid);
+		cowDisk.setBaseDiskUuid(disk.getUuid());
 		cowDisk.store();
 
 		diskSharing.postDiskCreationActions(disk.getUuid());
