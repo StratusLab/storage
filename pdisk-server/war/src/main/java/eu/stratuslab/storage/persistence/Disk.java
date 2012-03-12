@@ -117,6 +117,7 @@ public class Disk implements Serializable {
 	private boolean iscow = false;
 	private String tag = "";
 	private long size = -1;
+	private String quarantine = ""; // quarantine start date
 
 	private String identifier; // Marketplace identifier
 
@@ -265,6 +266,14 @@ public class Disk implements Serializable {
 
 	public Map<String, Mount> getMounts() {
 		return mounts;
+	}
+
+	public String getQuarantine() {
+		return quarantine;
+	}
+
+	public void setQuarantine(String quarantineStartDate) {
+		this.quarantine = quarantineStartDate;
 	}
 
 }

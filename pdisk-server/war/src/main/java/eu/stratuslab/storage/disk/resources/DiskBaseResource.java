@@ -38,6 +38,7 @@ public class DiskBaseResource extends BaseResource {
 	private static final String VISIBILITY_KEY = "visibility";
 	private static final String TAG_KEY = "tag";
 	private static final String OWNER_KEY = "owner";
+	private static final String QUARANTINE_START_DATE_KEY = "quarantine";
 
 	protected Disk getDisk(Form form) {
 
@@ -88,6 +89,11 @@ public class DiskBaseResource extends BaseResource {
 		String ownerInForm = form.getFirstValue(OWNER_KEY);
 		if (ownerInForm != null) {
 			disk.setOwner(ownerInForm);
+		}
+
+		String quarantineStartDate = form.getFirstValue(QUARANTINE_START_DATE_KEY);
+		if (quarantineStartDate != null) {
+			disk.setQuarantine(quarantineStartDate);
 		}
 
 		return disk;
