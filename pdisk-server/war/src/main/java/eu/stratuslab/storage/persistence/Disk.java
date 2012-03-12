@@ -72,7 +72,7 @@ public class Disk implements Serializable {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static List<DiskView> viewListAll() {
+	public static List<DiskView> listAll() {
 		EntityManager em = PersistenceUtil.createEntityManager();
 		Query q = em.createNamedQuery("allDisks");
 		List<DiskView> list = q.getResultList();
@@ -81,7 +81,7 @@ public class Disk implements Serializable {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static List<DiskView> viewAll(String user) {
+	public static List<DiskView> listAllByUser(String user) {
 		EntityManager em = PersistenceUtil.createEntityManager();
 		Query q = em.createNamedQuery("allDisksByUser");
 		q.setParameter("user", user);

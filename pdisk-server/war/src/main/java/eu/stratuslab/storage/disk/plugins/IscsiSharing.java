@@ -76,7 +76,7 @@ public final class IscsiSharing implements DiskSharing {
     }
     
 	private static List<DiskView> getAllDisks() {
-		return Disk.viewListAll();
+		return Disk.listAll();
 	}
 
     private static String getDisksLocation() {
