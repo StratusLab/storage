@@ -16,7 +16,6 @@ import javax.persistence.Query;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
 
 @SuppressWarnings("serial")
@@ -33,6 +32,17 @@ public class Mount implements Serializable {
 		Mount mount = em.find(Mount.class, id);
 		em.close();
 		return mount;
+	}
+
+	public static Mount load(Instance instance, Disk disk) {
+		EntityManager em = PersistenceUtil.createEntityManager();
+		Mount mount = em.find(Mount.class, constructId(instance, disk));
+		em.close();
+		return mount;
+	}
+
+	private static String constructId(Instance instance, Disk disk) {
+		return disk.getUuid() + "_" + instance.getVmId();
 	}
 
 	public Mount store() {
@@ -61,8 +71,12 @@ public class Mount implements Serializable {
 		em.close();
 	}
 
-	public Mount() {
-		id = DiskUtils.generateUUID();
+	public Mount(Instance instance, Disk disk) {
+		id = constructId(instance, disk);
+		this.vmId = instance.getVmId();
+		this.instance = instance;
+		uuid = disk.getUuid();
+		this.disk = disk;
 	}
 
 	@Id
@@ -81,7 +95,7 @@ public class Mount implements Serializable {
 
 	private String vmId;
 
-	private String uuid;
+	private String uuid; // Disk uuid
 
 	public String getVmId() {
 		return vmId;
@@ -98,11 +112,6 @@ public class Mount implements Serializable {
 	public void setInstance(Instance instance) {
 		this.instance = instance;
 		this.vmId = instance.getVmId();
-	}
-
-	public void setDisk(Disk disk) {
-		this.disk = disk;
-		this.uuid = disk.getUuid();
 	}
 
 	@ManyToOne(fetch=FetchType.LAZY)
