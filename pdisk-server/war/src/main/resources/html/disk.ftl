@@ -40,6 +40,12 @@
           <td>${disk.visibility}</td>
         </tr>
       </#if>
+      <#if disk.quarantine?has_content>
+        <tr>
+          <td><strong>Quarantine start period</strong></td>
+          <td>${disk.quarantine}</td>
+        </tr>
+      </#if>
 <#escape x as x?html>
   <#assign keys=disk.properties?keys>
     <#list keys as key>
