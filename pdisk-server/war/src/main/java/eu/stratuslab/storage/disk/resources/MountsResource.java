@@ -90,7 +90,7 @@ public class MountsResource extends BaseResource {
 
 		instance = Instance.load(vmId);
 		if(instance == null) {
-			instance = new Instance(vmId);
+			instance = new Instance(vmId, getUsername(getRequest()));
 		}
 
 		String target = registerOnly ? Disk.STATIC_DISK_TARGET : instance

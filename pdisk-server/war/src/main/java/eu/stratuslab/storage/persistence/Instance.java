@@ -88,8 +88,9 @@ public class Instance implements Serializable {
 	private Instance() {
 	}
 
-	public Instance(String vmId) {
+	public Instance(String vmId, String owner) {
 		this.vmId = vmId;
+		this.owner = owner;
 	}
 
 	@Id
@@ -98,6 +99,8 @@ public class Instance implements Serializable {
 	private String node; // host
 
 	private String timestamp = MiscUtils.getTimestamp();
+	
+	private String owner;
 
 	@MapKey(name = "id")
 	@OneToMany(mappedBy = "instance", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
@@ -107,6 +110,10 @@ public class Instance implements Serializable {
 
 	public Map<String, Mount> getMounts() {
 		return mounts;
+	}
+
+	public String getOwner() {
+		return owner;
 	}
 
 	public String getVmId() {
