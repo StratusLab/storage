@@ -26,10 +26,10 @@ import eu.stratuslab.storage.disk.utils.DiskUtils;
 @Entity
 @SuppressWarnings("serial")
 @NamedQueries({
-		@NamedQuery(name = "allDisks", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner) FROM Disk d ORDER BY d.created DESC"),
-		@NamedQuery(name = "allDisksByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner) FROM Disk d WHERE d.owner = :user ORDER BY d.created DESC"),
-		@NamedQuery(name = "allDisksAvailableByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner) FROM Disk d WHERE d.owner = :user OR d.visibility = PUBLIC ORDER BY d.created DESC"),
-		@NamedQuery(name = "allDisksByIdentifier", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner) FROM Disk d WHERE d.identifier = :identifier AND d.owner = :user ORDER BY d.created DESC") })
+		@NamedQuery(name = "allDisks", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine) FROM Disk d ORDER BY d.created DESC"),
+		@NamedQuery(name = "allDisksByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine) FROM Disk d WHERE d.owner = :user ORDER BY d.created DESC"),
+		@NamedQuery(name = "allDisksAvailableByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine) FROM Disk d WHERE d.owner = :user OR d.visibility = PUBLIC ORDER BY d.created DESC"),
+		@NamedQuery(name = "allDisksByIdentifier", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine) FROM Disk d WHERE d.identifier = :identifier AND d.owner = :user ORDER BY d.created DESC") })
 public class Disk implements Serializable {
 
 	public static final String STATIC_DISK_TARGET = "static";
