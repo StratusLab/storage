@@ -109,7 +109,7 @@ public class Instance implements Serializable {
 
 	private boolean containsDevice(String device) {
 		for (String mount : mounts.keySet()) {
-			if(device.equals(mounts.get(mount).getDevice())) {
+			if (device.equals(mounts.get(mount).getDevice())) {
 				return true;
 			}
 		}
