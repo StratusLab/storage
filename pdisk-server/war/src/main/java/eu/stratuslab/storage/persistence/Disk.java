@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
@@ -124,7 +123,7 @@ public class Disk implements Serializable {
 	private String baseDiskUuid;
 	
 	@MapKey(name = "id")
-	@OneToMany(mappedBy = "disk", cascade = CascadeType.ALL, fetch=FetchType.EAGER)
+	@OneToMany(mappedBy = "disk", fetch=FetchType.EAGER)
 	@ElementMap(name = "mounts", required = false, data = true, valueType = Mount.class)
 	private Map<String, Mount> mounts = new HashMap<String, Mount>(); // key is vmId
 
