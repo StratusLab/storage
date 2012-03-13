@@ -144,6 +144,11 @@ public class MountsResource extends BaseResource {
 					"Not enough rights to attach disk");
 		}
 
+		if (Mount.load(instance, disk) != null) {
+			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
+			"Mount already exists for: " + instance.getVmId() + " and " + disk.getUuid());
+		}
+		
 		getLogger().info(
 				"attachDisk: " + node + " " + vmId + " " + disk.getUuid() + " "
 						+ target);
@@ -162,13 +167,9 @@ public class MountsResource extends BaseResource {
 		disk.store();
 		instance.store();
 		
-		
-		Mount mount = new Mount();
-//		mount.store();
+
+		Mount mount = new Mount(instance, disk);
 		mount.setDevice(target);
-		mount.setDisk(disk);
-		mount.setInstance(instance);
-		
 
 		disk.getMounts().put(vmId, mount);
 		instance.getMounts().put(disk.getUuid(), mount);
