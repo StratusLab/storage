@@ -44,14 +44,14 @@ public class MountResource extends BaseResource {
 		
 		mount  = Mount.load(mountId);
 
+		if(mount == null) {
+			setExisting(false);
+		}
+
 	}
 
 	@Get("html")
 	public Representation getAsHtml() {
-
-		getLogger().info(
-				"DiskResource getAsHtml: " + diskId + ", " + mountId + ", "
-						+ node + ", " + mount.getVmId());
 
 		Map<String, Object> info = getMountProperties();
 		return createTemplateRepresentation("html/mount.ftl", info, TEXT_HTML);
@@ -59,10 +59,6 @@ public class MountResource extends BaseResource {
 
 	@Get("json")
 	public Representation getAsJson() {
-
-		getLogger().info(
-				"DiskResource getAsJson: " + diskId + ", " + mountId + ", "
-						+ node + ", " + mount.getVmId());
 
 		Map<String, Object> info = getMountProperties();
 		return createTemplateRepresentation("json/mount.ftl", info,
