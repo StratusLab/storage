@@ -9,5 +9,8 @@
     <#if disk.identifier?has_content>
     "identifier": "${disk.identifier}",
     </#if>
+    <#if disk.quarantine?has_content>
+    "quarantine": "${disk.quarantine}",
+    </#if>
     "size": "${disk.size}"
 }
