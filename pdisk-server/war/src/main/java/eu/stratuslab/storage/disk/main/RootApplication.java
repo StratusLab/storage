@@ -40,6 +40,7 @@ import org.restlet.security.ChallengeAuthenticator;
 import eu.stratuslab.storage.disk.resources.DiskResource;
 import eu.stratuslab.storage.disk.resources.DisksResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
+import eu.stratuslab.storage.disk.resources.InstancesResource;
 import eu.stratuslab.storage.disk.resources.MountResource;
 import eu.stratuslab.storage.disk.resources.MountsResource;
 import eu.stratuslab.storage.disk.utils.DummyVerifier;
@@ -113,6 +114,9 @@ public class RootApplication extends Application {
 
         router.attach("/disks/", DisksResource.class);
         router.attach("/disks", DisksResource.class);
+
+        router.attach("/instances/", InstancesResource.class);
+        router.attach("/instances", InstancesResource.class);
 
         router.attach("/", HomeResource.class);
 
