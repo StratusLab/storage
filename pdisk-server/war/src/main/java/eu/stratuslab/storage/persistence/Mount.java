@@ -71,6 +71,10 @@ public class Mount implements Serializable {
 		em.close();
 	}
 
+	@SuppressWarnings("unused")
+	private Mount() {
+	}
+	
 	public Mount(Instance instance, Disk disk) {
 		id = constructId(instance, disk);
 		this.vmId = instance.getVmId();
