@@ -65,6 +65,7 @@ public class Mount implements Serializable {
 		transaction.begin();
 		Mount fromDb = em.find(Mount.class, id);
 		if (fromDb != null) {
+			fromDb.disk.decrementUserCount();
 			em.remove(fromDb);
 		}
 		transaction.commit();
