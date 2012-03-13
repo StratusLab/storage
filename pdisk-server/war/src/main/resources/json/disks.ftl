@@ -6,6 +6,9 @@
     "tag": "${disk.tag}",
     <#else>    "tag": "",
     </#if>
+    <#if disk.quarantine?has_content>
+    "quarantine": "${disk.quarantine}",
+    </#if>
     "count": "${disk.usersCount}",
     "owner": "${disk.owner}",
     <#if disk.identifier?has_content>
