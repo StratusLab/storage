@@ -26,8 +26,8 @@ import eu.stratuslab.storage.disk.utils.MiscUtils;
 @SuppressWarnings("serial")
 @Entity
 @NamedQueries({
-	@NamedQuery(name = "allInstances", query = "SELECT NEW eu.stratuslab.storage.persistence.InstanceView(i.vmId) FROM Instance i ORDER BY i.vmId DESC"),
-	@NamedQuery(name = "allInstancesByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.InstanceView(i.vmId) FROM Instance i WHERE i.owner = :user ORDER BY i.vmId DESC")})
+	@NamedQuery(name = "allInstances", query = "SELECT NEW eu.stratuslab.storage.persistence.InstanceView(i.vmId, i.owner) FROM Instance i ORDER BY i.vmId DESC"),
+	@NamedQuery(name = "allInstancesByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.InstanceView(i.vmId, i.owner) FROM Instance i WHERE i.owner = :user ORDER BY i.vmId DESC")})
 public class Instance implements Serializable {
 
 	private static final String DEVICE_PREFIX = "vd";
@@ -84,7 +84,8 @@ public class Instance implements Serializable {
 		em.close();
 	}
 
-	protected Instance() {
+	@SuppressWarnings("unused")
+	private Instance() {
 	}
 
 	public Instance(String vmId) {
