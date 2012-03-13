@@ -84,8 +84,7 @@ public class Instance implements Serializable {
 		em.close();
 	}
 
-	@SuppressWarnings("unused")
-	private Instance() {
+	public Instance() {
 	}
 
 	public Instance(String vmId, String owner) {

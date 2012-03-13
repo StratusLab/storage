@@ -71,8 +71,7 @@ public class Mount implements Serializable {
 		em.close();
 	}
 
-	@SuppressWarnings("unused")
-	private Mount() {
+	public Mount() {
 	}
 	
 	public Mount(Instance instance, Disk disk) {
