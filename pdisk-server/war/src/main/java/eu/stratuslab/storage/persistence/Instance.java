@@ -2,6 +2,7 @@ package eu.stratuslab.storage.persistence;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.persistence.CascadeType;
@@ -11,7 +12,10 @@ import javax.persistence.EntityTransaction;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.MapKey;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
+import javax.persistence.Query;
 
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
@@ -21,6 +25,9 @@ import eu.stratuslab.storage.disk.utils.MiscUtils;
 
 @SuppressWarnings("serial")
 @Entity
+@NamedQueries({
+	@NamedQuery(name = "allInstances", query = "SELECT NEW eu.stratuslab.storage.persistence.InstanceView(i.vmId) FROM Instance i ORDER BY i.vmId DESC"),
+	@NamedQuery(name = "allInstancesByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.InstanceView(i.vmId) FROM Instance i WHERE i.owner = :user ORDER BY i.vmId DESC")})
 public class Instance implements Serializable {
 
 	private static final String DEVICE_PREFIX = "vd";
@@ -30,6 +37,25 @@ public class Instance implements Serializable {
 		Instance disk = em.find(Instance.class, vmId);
 		em.close();
 		return disk;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static List<InstanceView> listAll() {
+		EntityManager em = PersistenceUtil.createEntityManager();
+		Query q = em.createNamedQuery("allInstances");
+		List<InstanceView> list = q.getResultList();
+		em.close();
+		return list;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static List<InstanceView> listAllByUser(String user) {
+		EntityManager em = PersistenceUtil.createEntityManager();
+		Query q = em.createNamedQuery("allInstancesByUser");
+		q.setParameter("user", user);
+		List<InstanceView> list = q.getResultList();
+		em.close();
+		return list;
 	}
 
 	public Instance store() {

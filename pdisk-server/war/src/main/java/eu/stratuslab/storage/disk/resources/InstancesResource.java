@@ -22,39 +22,20 @@ package eu.stratuslab.storage.disk.resources;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.GZIPInputStream;
 
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.FileUploadException;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.restlet.data.Form;
-import org.restlet.data.Status;
-import org.restlet.ext.fileupload.RestletFileUpload;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
-import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.main.ServiceConfiguration;
-import eu.stratuslab.storage.disk.utils.DiskUtils;
-import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.persistence.Disk;
-import eu.stratuslab.storage.persistence.DiskView;
 import eu.stratuslab.storage.persistence.Instance;
+import eu.stratuslab.storage.persistence.InstanceView;
 
 public class InstancesResource extends DiskBaseResource {
 
-	private Form form = null;
-	
 	@Get("html")
 	public Representation getAsHtml() {
 
@@ -79,13 +60,13 @@ public class InstancesResource extends DiskBaseResource {
 		addCreateFormDefaults(info);
 
 		String username = getUsername(getRequest());
-//		List<InstancesView> disks;
-//		if(isSuperUser(username)){
-//			disks = Instance.listAll();
-//		} else {
-//			disks = Instance.listAllByUser(username);			
-//		}
-//		info.put("instances", instances);
+		List<InstanceView> instances;
+		if(isSuperUser(username)){
+			instances = Instance.listAll();
+		} else {
+			instances = Instance.listAllByUser(username);			
+		}
+		info.put("instances", instances);
 
 		return info;
 	}
