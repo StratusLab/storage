@@ -115,6 +115,9 @@ public class RootApplication extends Application {
         router.attach("/disks/", DisksResource.class);
         router.attach("/disks", DisksResource.class);
 
+        router.attach("/instances/{vmid}/", InstancesResource.class);
+        router.attach("/instances/{vmid}", InstancesResource.class);
+
         router.attach("/instances/", InstancesResource.class);
         router.attach("/instances", InstancesResource.class);
 
