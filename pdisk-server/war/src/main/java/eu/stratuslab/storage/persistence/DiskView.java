@@ -20,12 +20,15 @@ public class DiskView {
 
 	private String owner;
 
-    public DiskView(String uuid, String tag, long size, int usersCount, String owner) {
+	private String quarantine;
+
+    public DiskView(String uuid, String tag, long size, int usersCount, String owner, String quarantine) {
     	this.uuid = uuid;
     	this.tag = tag;
     	this.size = size;
     	this.usersCount = usersCount;
     	this.owner = owner;
+    	this.quarantine = quarantine;
     }
 
     @Root(name = "list")
@@ -74,6 +77,10 @@ public class DiskView {
 
 	public String getUuid() {
 		return uuid;
+	}
+
+	public String getQuarantine() {
+		return quarantine;
 	}
 
 }
