@@ -3,7 +3,7 @@
 Script to manage a iSCSI LUN on a NetApp filer
 """
 
-__version__ = "0.0.1-1dev"
+__version__ = "0.0.9-1dev"
 __author__  = "Michel Jouvin <jouvin@lal.in2p3.fr>"
 
 import sys
@@ -22,29 +22,10 @@ import ConfigParser
 verbosity = 0
 logger = None
 action_default = ''
-# Only keys matter, values are not used
-valid_actions = { 'check':'', 'create':'', 'delete':'', 'rebase':'', 'snapshot':'' }
+
+# Keys are supported actions, values are the number of arguments required for the each action
+valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':3, 'snapshot':2 }
 valid_actions_str = ', '.join(valid_actions.keys())
-
-lun_cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
-lun_cmds = {'check':[ 'lun', 'show', '%%NAME%%' ],
-            'create':[ 'lun', 'create', '-s', '%%SIZE%%', '-t', '%%LUNOS%%', '%%NAME%%' ],
-            'delete':[ 'lun', 'destroy', '%%NAME%%' ],
-            'map':[ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ],
-            'rebase':[ 'iscsi', 'connection', 'show' ],
-            'snapshot':[ 'iscsi', 'connection', 'show' ],
-            'unmap':[ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
-            }
-
-# Most commands are expected to return nothing when they succeeded. The following
-# dictionnary lists exceptions and provides a pattern matching output in case of
-# success.
-# Keys must match an existing key in lun_cmds
-success_msg_pattern = { 'check':'online' 
-                      }
-
-# Would be great to have it configurable as NetApp needs to know the client OS
-lun_os = 'linux'
 
 config_file_default = '/opt/stratuslab/etc/persistent-disk-backend.conf'
 config_main_section = 'main'
@@ -71,8 +52,179 @@ mgt_user_name=root
 """)
 
 
+class NetAppProxy:
+  lun_cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
+  lun_cmds = {'check':[ 'lun', 'show', '%%NAME%%' ],
+              'create':[ 'lun', 'create', '-s', '%%SIZE%%', '-t', '%%LUNOS%%', '%%NAME%%' ],
+              'delete':[ 'lun', 'destroy', '%%NAME%%' ],
+              'map':[ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ],
+              'rebase':[ 'iscsi', 'connection', 'show' ],
+              'snapshot':[ 'lun', 'clone', 'create', '%%SNAP_NAME%%', '-b', '%%NAME%%', '%%SNAP_PARENT%%'  ],
+              'unmap':[ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
+              }
+
+  # Most commands are expected to return nothing when they succeeded. The following
+  # dictionnary lists exceptions and provides a pattern matching output in case of
+  # success.
+  # Keys must match an existing key in lun_cmds
+  success_msg_pattern = { 'check':'online' 
+                      }
+  # Would be great to have it configurable as NetApp needs to know the client OS
+  lunOS = 'linux'
+  
+  def __init__(self,proxy,mgtUser,mgtPrivKey,namespace,initiatorGroup,snapshotParent):
+    self.proxyHost = proxy
+    self.mgtUser = mgtUser
+    self.mgtPrivKey = mgtPrivKey
+    self.namespace = namespace
+    self.initiatorGroup = initiatorGroup
+    self.snapshotParent = snapshotParent
+
+  # Return values:
+  #    - the command corresponding to the action as a list of tokens, with iSCSI proxy related
+  #      variables parsed.
+  #    - the expected message pattern in case of success if the command output is not empty
+  def getCmd(self,action):
+    if action in self.lun_cmds.keys():
+      command = self.lun_cmds[action]
+      parsed_command = self.parse(command)
+    else:
+      abort("Internal error: action '%s' unknown" % (action))
+
+    if action in self.success_msg_pattern:
+      success_pattern = self.success_msg_pattern[action]
+    else:
+      success_pattern = None
+      
+    return parsed_command,success_pattern
+    
+  # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
+  # Return parsed command as a list of token.
+  def parse(self,command):    
+    # Build command to execute
+    action_cmd = []
+    action_cmd.extend(self.lun_cmd_prefix)
+    action_cmd.extend(command)
+    for i in range(len(action_cmd)):
+      if action_cmd[i] == '%%INITIATORGRP%%':
+        action_cmd[i] = self.initiatorGroup
+      elif action_cmd[i] == '%%LUNOS%%':
+        action_cmd[i] = self.lunOS
+      elif action_cmd[i] == '%%PRIVKEY%%':
+        action_cmd[i] = self.mgtPrivKey
+      elif action_cmd[i] == '%%ISCSI_PROXY%%':
+        action_cmd[i] = "%s@%s" % (self.mgtUser,self.proxyHost)
+      elif action_cmd[i] == '%%SNAP_PARENT%%':
+        action_cmd[i] = self.snapshotParent
+      elif action_cmd[i] == '%%NAME%%':
+        action_cmd[i] = self.namespace + "/%%UUID%%"
+      elif action_cmd[i] == '%%SNAP_NAME%%':
+        action_cmd[i] = self.namespace + "/%%SNAP_UUID%%"
+    return action_cmd
+    
+
+class LUN:
+
+  
+  def __init__(self,uuid,size=None,proxy=None):
+    self.uuid = uuid
+    self.size = size
+    self.proxy = proxy
+    self.snapshotLUN = None
+    
+  def check(self):
+    self.__executeCmd__('check')
+    
+  def create(self):
+    self.__executeCmd__('create')
+    
+  def delete(self):
+    self.__executeCmd__('delete')
+    
+  def map(self):
+    self.__executeCmd__('map')
+    
+  def rebase(self,snapshot_lun):
+    self.snapshotLUN = snapshot_lun
+    self.__executeCmd__('rebase')
+    
+  def snapshot(self,snapshot_lun):
+    self.snapshotLUN = snapshot_lun
+    self.__executeCmd__('snapshot')
+    
+  def unmap(self):
+    self.__executeCmd__('unmap')
+    
+  # Execute command on LUN.
+  # In case an error occurs during one command, try to continue...
+  # TODO: stop rather than continue if an error occurs? Also risky if there is no revert of action done...
+  def __executeCmd__(self,action):
+    cmd_toks,successMsg = self.proxy.getCmd(action)
+    command = Command(action,self.parse(cmd_toks),successMsg)
+    command.execute()
+    command.checkStatus()
+
+  # Parse all variables related to current LUN in the command (passed and returned as a list of tokens).  
+  def parse(self,action_cmd):
+    for i in range(len(action_cmd)):
+      if action_cmd[i] == '%%SIZE%%':
+        action_cmd[i] = "%sg" % self.size
+      elif re.search('%%UUID%%',action_cmd[i]):
+        action_cmd[i] = re.sub('%%UUID%%',self.uuid,action_cmd[i])
+      elif re.search('%%SNAP_UUID%%',action_cmd[i]):
+        action_cmd[i] = re.sub('%%SNAP_UUID%%',self.snapshotLUN.uuid,action_cmd[i])
+    return action_cmd
+    
+    
+class Command:
+  
+  def __init__(self,action,cmd,successMsg=None):
+    self.action = action
+    self.action_cmd = cmd
+    self.successMsg = successMsg
+    self.proc = None
+
+  def execute(self):
+    status = 0
+    # Execute command: NetApp command don't return an exit code. When a command is sucessful,
+    # its output is empty.
+    debug(1,"Executing command: '%s'" % (' '.join(self.action_cmd)))
+    try:
+      self.proc = Popen(self.action_cmd, shell=False, stdout=PIPE, stderr=STDOUT)
+    except OSError, details:
+      abort('Failed to execute %s action: %s' % (self.action,details))
+      status = 1
+    return status
+  
+  def checkStatus(self):
+    try:
+      retcode = self.proc.wait()
+      output = self.proc.communicate()[0]
+      if retcode != 0:
+          abort('Failed to execute %s action (error=%s). Command output:\n%s' % (self.action,retcode,output))
+      else:
+          # Need to check if the command is expected to return an output when successfull
+          success = True
+          if self.successMsg:
+            if not re.search(self.successMsg,output):
+              success = False
+          else:
+            if len(output) != 0:
+              success = False
+          if success:
+            debug(1,'%s action completed successfully.' % (self.action))
+          else:
+            retcode = -1
+            debug(0,'Failed to execute %s action. Command output:\n%s' % (self.action,output))
+    except OSError, details:
+      abort('Failed to execute %s action: %s' % (self.action,details))  
+    return retcode
+
+
+# Functions to handle logging
+
 def abort(msg):
-    logger.error("Persistent disk creation failed:\n%s" % (msg))
+    logger.error("Persistent disk operation failed:\n%s" % (msg))
     sys.exit(2)
 
 def debug(level,msg):
@@ -102,7 +254,17 @@ logger.addHandler(console_handler)
 
 # Parse configuration and options
 
-parser = OptionParser(usage="usage: %prog [options] LUN_GUID LUN_Size")
+usage_text = """usage: %prog [options] action_parameters
+
+Parameters:
+    action=check:    LUN_UUID
+    action=create:   LUN_UUID LUN_Size
+    action=delete:   LUN_UUID
+    action=rebase:   LUN_UUID New_LUN_UUID
+    action=snapshot: LUN_UUID New_LUN_UUID Snapshot_Size
+"""
+
+parser = OptionParser(usage=usage_text)
 parser.add_option('--config', dest='config_file', action='store', default=config_file_default, help='Name of the configuration file to use (D: %s)' % (config_file_default))
 parser.add_option('--action', dest='action', action='store', default=action_default, help='Action to execute. Valid actions: %s'%(valid_actions_str))
 parser.add_option('-v', '--debug', '--verbose', dest='verbosity', action='count', default=0, help='Increase verbosity level for debugging (on stderr)')
@@ -114,17 +276,22 @@ if options.version:
   debug (0,__doc__)
   sys.exit(0)
 
-if len(args) < 2:
-  debug(0,"Insufficient argument provided (2 required)")  
-  parser.print_help()
-  abort("")
-  
 if options.verbosity:
   verbosity = options.verbosity
 
-lun_guid = args[0]
-lun_size = args[1]
-
+if options.action in valid_actions:
+  if len(args) < valid_actions[options.action]:
+    debug(0,"Insufficient argument provided (%d required)" % (valid_actions[options.action]))  
+    parser.print_help()
+    abort("")
+else:
+  if options.action:
+    debug(0,"Invalid action requested (%s)\n" % (options.action))
+  else:
+    debug(0,"No action specified\n")
+  parser.print_help()
+  abort("")
+    
 
 # Read configuration file.
 # The file must exists as there is no sensible default value for several options.
@@ -160,18 +327,19 @@ if logfile_handler == None or not log_file:
 try:
   iscsi_proxies_list = config.get(config_main_section,'iscsi_proxies')
   iscsi_proxies = iscsi_proxies_list.split(',')
+  iscsi_proxy_name = iscsi_proxies[0]
 except ValueError:
   abort("Invalid value specified for 'iscsi_proxies' (section %s) (must be a comma-separated list)" % (config_main_section))
 
 try:
-  iscsi_proxy = iscsi_proxies[0]
-  lun_name_prefix=config.get(iscsi_proxy,'lun_namespace')
-  initiator_group=config.get(iscsi_proxy,'initiator_group')
+  lun_name_prefix=config.get(iscsi_proxy_name,'lun_namespace')
+  initiator_group=config.get(iscsi_proxy_name,'initiator_group')
+  snapshot_parent=config.get(iscsi_proxy_name,'snapshot_parent')
 except:
-  abort("Section %s missing or incomplete in configuration" % (iscsi_proxy))
+  abort("Section %s missing or incomplete in configuration" % (iscsi_proxy_name))
 
 try:
-  mgt_user_name=config.get(iscsi_proxy,'mgt_user_name')  
+  mgt_user_name=config.get(iscsi_proxy_name,'mgt_user_name')  
 except:
   try:
     mgt_user_name=config.get(config_main_section,'mgt_user_name')  
@@ -179,85 +347,46 @@ except:
     abort("User name to use for connecting to iSCSI proxy undefined")
   
 try:
-  mgt_user_private_key=config.get(iscsi_proxy,'mgt_user_private_key')  
+  mgt_user_private_key=config.get(iscsi_proxy_name,'mgt_user_private_key')  
 except:
   try:
     mgt_user_private_key=config.get(config_main_section,'mgt_user_private_key')  
   except:
     abort("SSH private key to use for connecting to iSCSI proxy undefined")
-  
-if options.action == '':
-  abort('No action specified (use --action to do it).')
-elif not options.action in valid_actions:
-  abort('Invalid action specified (%s). Valid actions are: %s.' % (options.action,valid_actions_str))
-  
-  
-# Build command to execute based on action requested.
-# This includes parsing special keyword in command string that have to be replaced by arguments
 
-command_list = []
+
+# Create iSCSI proxy object
+
+iscsi_proxy = NetAppProxy(iscsi_proxy_name,mgt_user_name,mgt_user_private_key,lun_name_prefix,initiator_group,snapshot_parent)
+    
+
+# Execute requested action
+
 if options.action == 'check':
   debug(1,"Checking LUN existence...")
-  command_list.append('check')
+  lun = LUN(args[0],proxy=iscsi_proxy)
+  lun.check()
 elif options.action == 'create':
   debug(1,"Creating LUN...")
-  command_list.append('create')
-  command_list.append('map')
+  lun = LUN(args[0],size=args[1],proxy=iscsi_proxy)
+  lun.create()
+  lun.map()
 elif options.action == 'delete':
   debug(1,"Deleting LUN...")
-  command_list.append('unmap')
-  command_list.append('delete')
+  lun = LUN(args[0],proxy=iscsi_proxy)
+  lun.unmap()
+  lun.delete()
 elif options.action == 'rebase':
   debug(1,"Rebasing LUN...")
-  command_list.append('rebase')
-elif options.action == 'rebase':
+  lun = LUN(args[0],proxy=iscsi_proxy)
+  snapshot_lun = LUN(args[1],proxy=iscsi_proxy)
+  lun.rebase(snapshot_lun)
+elif options.action == 'snapshot':
   debug(1,"Doing a LUN snapshot...")
-  command_list.append('snapshot')
+  lun = LUN(args[1],proxy=iscsi_proxy)
+  snapshot_lun = LUN(args[0],proxy=iscsi_proxy)
+  lun.snapshot(snapshot_lun)
+  snapshot_lun.map()
 else:
   abort ("Internal error: unimplemented action (%s)" % (options.action))
-
-# Execute all commands in command_list one by one
-    
-for command in command_list:
-  # Build command to execute
-  action_cmd = []
-  action_cmd.extend(lun_cmd_prefix)
-  action_cmd.extend(lun_cmds[command])
-  for i in range(len(action_cmd)):
-    if action_cmd[i] == '%%SIZE%%':
-      action_cmd[i] = "%sg" % lun_size
-    elif action_cmd[i] == '%%INITIATORGRP%%':
-      action_cmd[i] = initiator_group
-    elif action_cmd[i] == '%%LUNOS%%':
-      action_cmd[i] = lun_os
-    elif action_cmd[i] == '%%NAME%%':
-      action_cmd[i] = lun_name_prefix + '/' + lun_guid
-    elif action_cmd[i] == '%%PRIVKEY%%':
-      action_cmd[i] = mgt_user_private_key
-    elif action_cmd[i] == '%%ISCSI_PROXY%%':
-      action_cmd[i] = "%s@%s" % (mgt_user_name,iscsi_proxy)
   
-  # Execute command: NetApp command don't return an exit code. When a command is sucessful,
-  # its output is empty.
-  debug(1,"Executing command: '%s'" % (' '.join(action_cmd)))
-  try:
-    proc = Popen(action_cmd, shell=False, stdout=PIPE, stderr=STDOUT)
-    retcode = proc.wait()
-    output = proc.communicate()[0]
-    if retcode != 0:
-        abort('Failed to execute %s action (error=%s). Command output:\n%s' % (options.action,retcode,output))
-    else:
-        # Need to check if the command is expected to return an output when successfull
-        success = True
-        if command in success_msg_pattern:
-          if not re.search(success_msg_pattern[command],output):
-            success = False
-        else:
-          if len(output) != 0:
-            success = False
-        if success:
-            debug(1,'%s action completed successfully.' % (options.action))
-        else:
-            debug(0,'Failed to execute %s action. Command output:\n%s' % (options.action,output))
-  except OSError, details:
-    abort('Failed to execute %s action: %s' % (options.action,details))  

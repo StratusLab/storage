@@ -28,10 +28,14 @@ mgt_user_private_key=/some/dir/key.rsa
 
 [nfsserv21]
 lun_namespace = /iscsi/stratuslab
+# snapshot_parent must match an existing snapshot of the volume containing the LUNs
+snapshot_parent = pdisk_clones
 initiator_group = linux_servers
 
 [nfsserv22]
 lun_namespace = /iscsi/stratuslab
+# snapshot_parent must match an existing snapshot of the volume containing the LUNs
+snapshot_parent = pdisk_clones
 initiator_group = linux_servers
 ------------------------------------------
 
