@@ -286,13 +286,20 @@ public class DiskResource extends DiskBaseResource {
 	}
 
 	private void deleteDisk(String uuid) {
-		DiskUtils.removeDisk(uuid);
 		Disk disk = Disk.load(uuid);
 		String parentUuid = disk.getBaseDiskUuid();
+		disk.remove();
+
+		try {
+			DiskUtils.removeDisk(uuid);			
+		}
+		catch (ResourceException ex) {
+			disk.store();
+		}
+		
 		if(parentUuid != null) {
 			Disk parent = Disk.load(parentUuid);
 			parent.decrementUserCount();
 		}
-		disk.remove();
 	}
 }
