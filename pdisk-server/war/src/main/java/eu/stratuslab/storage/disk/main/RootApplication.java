@@ -35,6 +35,7 @@ import org.restlet.data.Protocol;
 import org.restlet.ext.freemarker.ContextTemplateLoader;
 import org.restlet.resource.Directory;
 import org.restlet.routing.Router;
+import org.restlet.routing.TemplateRoute;
 import org.restlet.security.ChallengeAuthenticator;
 
 import eu.stratuslab.storage.disk.resources.DiskResource;
@@ -103,6 +104,9 @@ public class RootApplication extends Application {
         Router router = new RootRouter(context, configuration,
                 freeMarkerConfiguration);
 
+        TemplateRoute route = router.attach("/disks/{uuid}/mounts/{mountid}?metadata_only={" + MountResource.METADATA_ONLY_QUERY_PARAMETER + "}", MountResource.class);
+        route.setMatchingQuery(true);
+        
         router.attach("/disks/{uuid}/mounts/{mountid}/", MountResource.class);
         router.attach("/disks/{uuid}/mounts/{mountid}", MountResource.class);
 
