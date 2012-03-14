@@ -5,6 +5,7 @@ import static org.restlet.data.MediaType.TEXT_HTML;
 
 import java.util.Map;
 
+import org.restlet.data.Form;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;
@@ -123,9 +124,12 @@ public class MountResource extends BaseResource {
 
 		String diskTarget = disk.diskTarget(mount.getId());
 
-		// Only force the dismount if this was mounted through the
-		// storage service.
-		if (!diskTarget.equals(Disk.STATIC_DISK_TARGET)) {
+		Form form = new Form(getRequestEntity());
+		boolean metadataOnly = form.getFirstValue("metadata_only") != null ? true : false;
+		
+		boolean updateMetadataOnly = metadataOnly || diskTarget.equals(Disk.STATIC_DISK_TARGET);
+		
+		if (!updateMetadataOnly) {
 			
 			try {
 				DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node,
