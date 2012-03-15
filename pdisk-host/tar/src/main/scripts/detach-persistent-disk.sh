@@ -22,9 +22,9 @@ then
     exit 1
 fi
 
-deregister_disks() {
-    local NODE=$(host $(hostname) | awk '{print $4}')
-    local DEREGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} -X DELETE https://${PORTAL}:${PORTAL_PORT}/disks/${DISK_UUID}/mounts/${VM_ID}-${NODE}"
+pdisk_delete_mount() {
+    # Only username/password authentication is supported for the pdisk user.
+    local DEREGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} -X DELETE https://${PORTAL}:${PORTAL_PORT}/pswd/disks/${DISK_UUID}/mounts/${DISK_UUID}_${VM_ID}?metadata_only=true"
     echo "$DEREGISTER_CMD"
     $DEREGISTER_CMD
 }
@@ -82,7 +82,7 @@ detach_all_disks() {
     do
         echo "detach_${SHARE_TYPE} $DISK_INFO"
         detach_${SHARE_TYPE} $DISK_INFO
-        deregister_disks
+        pdisk_delete_mount
     done
 }
 
