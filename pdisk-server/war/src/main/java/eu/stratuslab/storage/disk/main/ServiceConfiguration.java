@@ -81,6 +81,9 @@ public class ServiceConfiguration {
 	public final String CLOUD_NODE_VM_DIR;
 	public final String CLOUD_SERVICE_USER;
 
+	public final String NETAPP_CONFIG;
+	public final String NETAPP_CMD;
+
 	private ServiceConfiguration() {
 
 		CONFIGURATION = readConfigFile();
@@ -103,7 +106,6 @@ public class ServiceConfiguration {
 			LVM_GROUP_PATH = getConfigValue("disk.store.lvm.device");
 			LVCHANGE_CMD = getCommand("disk.store.lvm.lvchange");
 			DMSETUP_CMD = getCommand("disk.store.lvm.dmsetup");
-
 			checkLVMGroupExists(LVM_GROUP_PATH);
 		} else {
 			ISCSI_CONFIG = new File("dummy.txt");
@@ -114,6 +116,14 @@ public class ServiceConfiguration {
 			LVM_GROUP_PATH = "";
 			LVCHANGE_CMD = "";
 			DMSETUP_CMD = "";
+		}
+
+		if (ISCSI_DISK_TYPE.equals(DiskType.NETAPP)) {
+			NETAPP_CMD = getCommand("disk.store.netapp.cmd");
+			NETAPP_CONFIG = getConfigValue("disk.store.netapp.config");
+		} else {
+			NETAPP_CMD = "";
+			NETAPP_CONFIG = "";
 		}
 
 		STORAGE_LOCATION = getDiskLocation();

@@ -1,0 +1,11 @@
+[main]
+log_file =
+iscsi_proxies=nfsserv21,nfsserv22
+
+[nfsserv21]
+lun_namespace = /vol/iscsi_data/stratuslab
+initiator_group = serveur_linux
+
+[nfsserv22]
+lun_namespace = /vol/iscsi_data/stratuslab
+initiator_group = serveur_linux
