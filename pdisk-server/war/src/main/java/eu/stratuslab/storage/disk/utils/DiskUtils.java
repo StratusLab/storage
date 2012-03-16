@@ -55,7 +55,9 @@ public final class DiskUtils {
 		case LVM:
 			return new LvmStorage();
 		case NETAPP:
-			return new NetAppStorage();
+			return new NetAppStorage(
+					RootApplication.CONFIGURATION.NETAPP_CONFIG,
+					RootApplication.CONFIGURATION.NETAPP_CMD);
 		default:
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL);
 		}

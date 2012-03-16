@@ -4,11 +4,14 @@ import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
 public final class NetAppStorage implements DiskStorage {
 
-	private static final String NETAPP_CMD_DIR = "/Users/loomis/netapp/";
-	private static final String NETAPP_CONFIG = NETAPP_CMD_DIR
-			+ "pdisk-management.conf";
-	private static final String NETAPP_CMD = NETAPP_CMD_DIR
-			+ "persistent-disk-management.py";
+	private String NETAPP_CONFIG = "";
+	private String NETAPP_CMD = "";
+
+	public NetAppStorage(String netappConfig, String netappCmd) {
+
+		NETAPP_CONFIG = netappConfig;
+		NETAPP_CMD = netappCmd;
+	}
 
 	public void create(String uuid, int size) {
 
