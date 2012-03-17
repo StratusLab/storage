@@ -23,7 +23,7 @@
 Script to manage a iSCSI LUN on a NetApp filer
 """
 
-__version__ = "0.9.0-1dev"
+__version__ = "0.9.1-1"
 __author__  = "Michel Jouvin <jouvin@lal.in2p3.fr>"
 
 import sys
@@ -111,7 +111,7 @@ class NetAppProxy:
   # success.
   # Keys must match an existing key in netapp_cmds
   success_msg_pattern = { 'check':'online',
-                          'snapshot':'^creating snapshot'
+                          'snapshot':['^creating snapshot','^Snapshot already exists.']
                         }
   # Would be great to have it configurable as NetApp needs to know the client OS
   lunOS = 'linux'
@@ -129,7 +129,8 @@ class NetAppProxy:
   # Generator function returning:
   #    - the command corresponding to the action as a list of tokens, with iSCSI proxy related
   #      variables parsed.
-  #    - the expected message pattern in case of success if the command output is not empty
+  #    - the expected message patterns in case of success if the command output is not empty. This is returned as
+  #      a list of patterns (a simple string is converted to a list).
   # This function must be called from an iteration loop control statement
   def getCmd(self,lun_action):
     if lun_action in self.lun_netapp_cmd_mapping:
@@ -145,11 +146,13 @@ class NetAppProxy:
         abort("Internal error: action '%s' unknown" % (action))
   
       if action in self.success_msg_pattern:
-        success_pattern = self.success_msg_pattern[action]
+        success_patterns = self.success_msg_pattern[action]
+        if isinstance(success_patterns,str):
+          success_patterns = [ success_patterns ]
       else:
-        success_pattern = None
+        success_patterns = None
         
-      yield parsed_command,success_pattern
+      yield parsed_command,success_patterns
     
   # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
   # Return parsed command as a list of token.
@@ -237,10 +240,10 @@ class LUN:
     
 class Command:
   
-  def __init__(self,action,cmd,successMsg=None):
+  def __init__(self,action,cmd,successMsgs=None):
     self.action = action
     self.action_cmd = cmd
-    self.successMsg = successMsg
+    self.successMsgs = successMsgs
     self.proc = None
 
   def execute(self):
@@ -263,13 +266,15 @@ class Command:
           abort('An error occured during %s action (error=%s). Command output:\n%s' % (self.action,retcode,output))
       else:
           # Need to check if the command is expected to return an output when successfull
-          success = True
-          if self.successMsg:
-            if not re.search(self.successMsg,output):
-              success = False
+          success = False
+          if self.successMsgs:
+            for successPattern in self.successMsgs:
+              if re.search(successPattern,output):
+                success = True
+                break
           else:
-            if len(output) != 0:
-              success = False
+            if len(output) == 0:
+              success = True
           if success:
             debug(1,'%s action completed successfully.' % (self.action))
           else:
