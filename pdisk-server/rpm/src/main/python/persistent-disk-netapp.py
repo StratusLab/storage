@@ -23,7 +23,7 @@
 Script to manage a iSCSI LUN on a NetApp filer
 """
 
-__version__ = "0.0.9-1dev"
+__version__ = "0.0.9-2dev"
 __author__  = "Michel Jouvin <jouvin@lal.in2p3.fr>"
 
 import sys
@@ -64,66 +64,98 @@ mgt_user_name=root
 #mgt_user_private_key=/some/file.rsa
 
 #[filer.example.org]
-# LUN name prefix
-#lun_namespace=/iscsi/stratuslab
 # Initiator group the LUN must be mapped to
 #initiator_group = linux_servers
+# Name appended to the volume name to build the LUN path (a / will be appended)
+#lun_namespace=stratuslab
+# Volume name where LUNs will be created
+#volume_name = /vol/iscsi
+# Name prefix to use to build the volume snapshot used as a LUN clone snapshot parent
+# (a _ will be appended)
+#volume_snapshot_prefix=pdisk_clone
 
 """)
 
 
 class NetAppProxy:
-  lun_cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
-  lun_cmds = {'check':[ 'lun', 'show', '%%NAME%%' ],
-              'create':[ 'lun', 'create', '-s', '%%SIZE%%', '-t', '%%LUNOS%%', '%%NAME%%' ],
-              'delete':[ 'lun', 'destroy', '%%NAME%%' ],
-              'map':[ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ],
-              'rebase':[ 'iscsi', 'connection', 'show' ],
-              'snapshot':[ 'lun', 'clone', 'create', '%%SNAP_NAME%%', '-b', '%%NAME%%', '%%SNAP_PARENT%%'  ],
-              'unmap':[ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
-              }
+  # Command to connect to NetApp filer
+  cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
+  
+  # Table defining mapping of LUN actions to NetApp actions.
+  # This is a 1 to n mapping (several NetApp commands may be needed for one LUN action).
+  # map and unmap are necessary as separate actions as they are not necessary executed on
+  # the same LUN as the other operations (eg. snapshot action).
+  lun_netapp_cmd_mapping = { 'check':['check'],
+                            'create':['create','map'],
+                            'delete':['unmap','delete'],
+                            'map':['map'],
+                            'rebase':['rebase'],
+                            'snapshot':['snapshot','clone'],
+                            'unmap':['unmap']
+                            }
+  
+  # Definitions of NetApp commands used to implement actions
+  netapp_cmds = {'check':[ 'lun', 'show', '%%NAME%%' ],
+                 'clone':[ 'lun', 'clone', 'create', '%%SNAP_NAME%%', '-b', '%%NAME%%', '%%SNAP_PARENT%%'  ],
+                 'create':[ 'lun', 'create', '-s', '%%SIZE%%', '-t', '%%LUNOS%%', '%%NAME%%' ],
+                 'delete':[ 'lun', 'destroy', '%%NAME%%' ],
+                 'map':[ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ],
+                 'rebase':[ 'iscsi', 'connection', 'show' ],
+                 'snapshot':[ 'snap', 'create', '%%VOLUME_NAME%%', '%%SNAP_PARENT%%'  ],
+                 'unmap':[ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
+                 }
 
   # Most commands are expected to return nothing when they succeeded. The following
   # dictionnary lists exceptions and provides a pattern matching output in case of
   # success.
-  # Keys must match an existing key in lun_cmds
-  success_msg_pattern = { 'check':'online' 
-                      }
+  # Keys must match an existing key in netapp_cmds
+  success_msg_pattern = { 'check':'online',
+                          'snapshot':'^creating snapshot'
+                        }
   # Would be great to have it configurable as NetApp needs to know the client OS
   lunOS = 'linux'
   
-  def __init__(self,proxy,mgtUser,mgtPrivKey,namespace,initiatorGroup,snapshotParent):
+  def __init__(self,proxy,mgtUser,mgtPrivKey,volume,namespace,initiatorGroup,snapshotPrefix):
     self.proxyHost = proxy
     self.mgtUser = mgtUser
     self.mgtPrivKey = mgtPrivKey
-    self.namespace = namespace
+    self.volumePath = volume
+    self.volumeName = volume.split('/')[-1]
+    self.namespace = "%s/%s" % (self.volumePath,namespace)
     self.initiatorGroup = initiatorGroup
-    self.snapshotParent = snapshotParent
+    self.snapshotPrefix = snapshotPrefix
 
-  # Return values:
+  # Generator function returning:
   #    - the command corresponding to the action as a list of tokens, with iSCSI proxy related
   #      variables parsed.
   #    - the expected message pattern in case of success if the command output is not empty
-  def getCmd(self,action):
-    if action in self.lun_cmds.keys():
-      command = self.lun_cmds[action]
-      parsed_command = self.parse(command)
+  # This function must be called from an iteration loop control statement
+  def getCmd(self,lun_action):
+    if lun_action in self.lun_netapp_cmd_mapping:
+      netapp_actions = self.lun_netapp_cmd_mapping[lun_action]
     else:
-      abort("Internal error: action '%s' unknown" % (action))
-
-    if action in self.success_msg_pattern:
-      success_pattern = self.success_msg_pattern[action]
-    else:
-      success_pattern = None
+      abort("Internal error: LUN action '%s' unknown" % (lun_action))
       
-    return parsed_command,success_pattern
+    for action in netapp_actions:
+      if action in self.netapp_cmds.keys():
+        command = self.netapp_cmds[action]
+        parsed_command = self.parse(command)
+      else:
+        abort("Internal error: action '%s' unknown" % (action))
+  
+      if action in self.success_msg_pattern:
+        success_pattern = self.success_msg_pattern[action]
+      else:
+        success_pattern = None
+        
+      yield parsed_command,success_pattern
     
   # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
   # Return parsed command as a list of token.
   def parse(self,command):    
     # Build command to execute
     action_cmd = []
-    action_cmd.extend(self.lun_cmd_prefix)
+    action_cmd.extend(self.cmd_prefix)
     action_cmd.extend(command)
     for i in range(len(action_cmd)):
       if action_cmd[i] == '%%INITIATORGRP%%':
@@ -135,11 +167,13 @@ class NetAppProxy:
       elif action_cmd[i] == '%%ISCSI_PROXY%%':
         action_cmd[i] = "%s@%s" % (self.mgtUser,self.proxyHost)
       elif action_cmd[i] == '%%SNAP_PARENT%%':
-        action_cmd[i] = self.snapshotParent
+        action_cmd[i] = self.snapshotPrefix + '_%%UUID%%'
       elif action_cmd[i] == '%%NAME%%':
         action_cmd[i] = self.namespace + "/%%UUID%%"
       elif action_cmd[i] == '%%SNAP_NAME%%':
         action_cmd[i] = self.namespace + "/%%SNAP_UUID%%"
+      elif action_cmd[i] == '%%VOLUME_NAME%%':
+        action_cmd[i] = self.volumeName
     return action_cmd
     
 
@@ -153,36 +187,39 @@ class LUN:
     self.snapshotLUN = None
     
   def check(self):
-    self.__executeCmd__('check')
+    self.__executeAction__('check')
     
   def create(self):
-    self.__executeCmd__('create')
+    self.__executeAction__('create')
     
   def delete(self):
-    self.__executeCmd__('delete')
+    self.__executeAction__('delete')
     
   def map(self):
-    self.__executeCmd__('map')
+    self.__executeAction__('map')
     
   def rebase(self,snapshot_lun):
     self.snapshotLUN = snapshot_lun
-    self.__executeCmd__('rebase')
+    self.__executeAction__('rebase')
     
   def snapshot(self,snapshot_lun):
     self.snapshotLUN = snapshot_lun
-    self.__executeCmd__('snapshot')
+    self.__executeAction__('snapshot')
     
   def unmap(self):
-    self.__executeCmd__('unmap')
+    self.__executeAction__('unmap')
     
-  # Execute command on LUN.
+    
+  # Execute an action on a LUN.
+  # An action may involve several actual commands : getCmd() method of proxy is a generator returning
+  # the commands to execute one by one.
   # In case an error occurs during one command, try to continue...
   # TODO: stop rather than continue if an error occurs? Also risky if there is no revert of action done...
-  def __executeCmd__(self,action):
-    cmd_toks,successMsg = self.proxy.getCmd(action)
-    command = Command(action,self.parse(cmd_toks),successMsg)
-    command.execute()
-    command.checkStatus()
+  def __executeAction__(self,action):
+    for cmd_toks,successMsg in self.proxy.getCmd(action):
+      command = Command(action,self.parse(cmd_toks),successMsg)
+      command.execute()
+      command.checkStatus()
 
   # Parse all variables related to current LUN in the command (passed and returned as a list of tokens).  
   def parse(self,action_cmd):
@@ -352,9 +389,10 @@ except ValueError:
   abort("Invalid value specified for 'iscsi_proxies' (section %s) (must be a comma-separated list)" % (config_main_section))
 
 try:
-  lun_name_prefix=config.get(iscsi_proxy_name,'lun_namespace')
+  volume_name=config.get(iscsi_proxy_name,'volume_name')
+  lun_namespace=config.get(iscsi_proxy_name,'lun_namespace')
   initiator_group=config.get(iscsi_proxy_name,'initiator_group')
-  snapshot_parent=config.get(iscsi_proxy_name,'snapshot_parent')
+  snapshot_prefix=config.get(iscsi_proxy_name,'volume_snapshot_prefix')
 except:
   abort("Section %s missing or incomplete in configuration" % (iscsi_proxy_name))
 
@@ -377,7 +415,7 @@ except:
 
 # Create iSCSI proxy object
 
-iscsi_proxy = NetAppProxy(iscsi_proxy_name,mgt_user_name,mgt_user_private_key,lun_name_prefix,initiator_group,snapshot_parent)
+iscsi_proxy = NetAppProxy(iscsi_proxy_name,mgt_user_name,mgt_user_private_key,volume_name,lun_namespace,initiator_group,snapshot_prefix)
     
 
 # Execute requested action
@@ -390,11 +428,9 @@ elif options.action == 'create':
   debug(1,"Creating LUN...")
   lun = LUN(args[0],size=args[1],proxy=iscsi_proxy)
   lun.create()
-  lun.map()
 elif options.action == 'delete':
   debug(1,"Deleting LUN...")
   lun = LUN(args[0],proxy=iscsi_proxy)
-  lun.unmap()
   lun.delete()
 elif options.action == 'rebase':
   debug(1,"Rebasing LUN...")

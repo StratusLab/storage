@@ -33,17 +33,30 @@ iscsi_proxies=nfsserv21,nfsserv22
 mgt_user_name=root
 mgt_user_private_key=/some/dir/key.rsa
 
+# First filer
 [nfsserv21]
-lun_namespace = /iscsi/stratuslab
-# snapshot_parent must match an existing snapshot of the volume containing the LUNs
-snapshot_parent = pdisk_clones
+# Initiator group the LUN must be mapped to
 initiator_group = linux_servers
+# Name appended to the volume name to build the LUN path (a / will be appended)
+lun_namespace=stratuslab
+# Volume name where LUNs will be created
+volume_name = /vol/iscsi
+# Name prefix to use to build the volume snapshot used as a LUN clone snapshot parent
+# (a _ will be appended)
+volume_snapshot_prefix=pdisk_clone
 
+# Second filer : values can be identical or different to previous server
+# depending on site actual configuration choices
 [nfsserv22]
-lun_namespace = /iscsi/stratuslab
-# snapshot_parent must match an existing snapshot of the volume containing the LUNs
-snapshot_parent = pdisk_clones
+# Initiator group the LUN must be mapped to
 initiator_group = linux_servers
+# Name appended to the volume name to build the LUN path (a / will be appended)
+lun_namespace=stratuslab
+# Volume name where LUNs will be created
+volume_name = /vol/iscsi2
+# Name prefix to use to build the volume snapshot used as a LUN clone snapshot parent
+# (a _ will be appended)
+volume_snapshot_prefix=pdisk_clone
 ------------------------------------------
 
 ++++++++++++++++++
