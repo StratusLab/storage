@@ -42,6 +42,7 @@ import ConfigParser
 verbosity = 0
 logger = None
 action_default = ''
+status = 0           # Assume success
 
 # Keys are supported actions, values are the number of arguments required for the each action
 valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':3, 'snapshot':2 }
@@ -187,39 +188,40 @@ class LUN:
     self.snapshotLUN = None
     
   def check(self):
-    self.__executeAction__('check')
+    return self.__executeAction__('check')
     
   def create(self):
-    self.__executeAction__('create')
+    return self.__executeAction__('create')
     
   def delete(self):
-    self.__executeAction__('delete')
+    return self.__executeAction__('delete')
     
   def map(self):
-    self.__executeAction__('map')
+    return self.__executeAction__('map')
     
   def rebase(self,snapshot_lun):
     self.snapshotLUN = snapshot_lun
-    self.__executeAction__('rebase')
+    return self.__executeAction__('rebase')
     
   def snapshot(self,snapshot_lun):
     self.snapshotLUN = snapshot_lun
-    self.__executeAction__('snapshot')
+    return self.__executeAction__('snapshot')
     
   def unmap(self):
-    self.__executeAction__('unmap')
+    return self.__executeAction__('unmap')
     
     
   # Execute an action on a LUN.
   # An action may involve several actual commands : getCmd() method of proxy is a generator returning
   # the commands to execute one by one.
   # In case an error occurs during one command, try to continue...
-  # TODO: stop rather than continue if an error occurs? Also risky if there is no revert of action done...
+  # Return the status of the last command executed
   def __executeAction__(self,action):
     for cmd_toks,successMsg in self.proxy.getCmd(action):
       command = Command(action,self.parse(cmd_toks),successMsg)
       command.execute()
-      command.checkStatus()
+      status = command.checkStatus()
+    return status
 
   # Parse all variables related to current LUN in the command (passed and returned as a list of tokens).  
   def parse(self,action_cmd):
@@ -258,7 +260,7 @@ class Command:
       retcode = self.proc.wait()
       output = self.proc.communicate()[0]
       if retcode != 0:
-          abort('Failed to execute %s action (error=%s). Command output:\n%s' % (self.action,retcode,output))
+          abort('An error occured during %s action (error=%s). Command output:\n%s' % (self.action,retcode,output))
       else:
           # Need to check if the command is expected to return an output when successfull
           success = True
@@ -272,7 +274,7 @@ class Command:
             debug(1,'%s action completed successfully.' % (self.action))
           else:
             retcode = -1
-            debug(0,'Failed to execute %s action. Command output:\n%s' % (self.action,output))
+            debug(0,'An error occured during %s action. Command output:\n%s' % (self.action,output))
     except OSError, details:
       abort('Failed to execute %s action: %s' % (self.action,details))  
     return retcode
@@ -423,26 +425,28 @@ iscsi_proxy = NetAppProxy(iscsi_proxy_name,mgt_user_name,mgt_user_private_key,vo
 if options.action == 'check':
   debug(1,"Checking LUN existence...")
   lun = LUN(args[0],proxy=iscsi_proxy)
-  lun.check()
+  status = lun.check()
 elif options.action == 'create':
   debug(1,"Creating LUN...")
   lun = LUN(args[0],size=args[1],proxy=iscsi_proxy)
-  lun.create()
+  status = lun.create()
 elif options.action == 'delete':
   debug(1,"Deleting LUN...")
   lun = LUN(args[0],proxy=iscsi_proxy)
-  lun.delete()
+  status = lun.delete()
 elif options.action == 'rebase':
   debug(1,"Rebasing LUN...")
   lun = LUN(args[0],proxy=iscsi_proxy)
   snapshot_lun = LUN(args[1],proxy=iscsi_proxy)
-  lun.rebase(snapshot_lun)
+  status = lun.rebase(snapshot_lun)
 elif options.action == 'snapshot':
   debug(1,"Doing a LUN snapshot...")
   lun = LUN(args[1],proxy=iscsi_proxy)
   snapshot_lun = LUN(args[0],proxy=iscsi_proxy)
-  lun.snapshot(snapshot_lun)
-  snapshot_lun.map()
+  # Only the last error is returned
+  status = lun.snapshot(snapshot_lun)
+  status = snapshot_lun.map()
 else:
   abort ("Internal error: unimplemented action (%s)" % (options.action))
   
+sys.exit(status)
