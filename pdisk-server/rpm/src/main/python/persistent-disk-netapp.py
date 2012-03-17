@@ -23,7 +23,7 @@
 Script to manage a iSCSI LUN on a NetApp filer
 """
 
-__version__ = "0.0.9-2dev"
+__version__ = "0.9.0-1dev"
 __author__  = "Michel Jouvin <jouvin@lal.in2p3.fr>"
 
 import sys
