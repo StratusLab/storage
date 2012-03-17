@@ -5,13 +5,13 @@ mgt_user_name=root
 mgt_user_private_key=/some/dir/key.rsa
 
 [nfsserv21]
-lun_namespace = /iscsi/stratuslab
-# snapshot_parent must match an existing snapshot of the volume containing the LUNs
-snapshot_parent = pdisk_clones
-initiator_group = linux_servers
+volume_name = /vol/iscsi_data
+lun_namespace = stratuslab
+volume_snapshot_prefix = pdisk_clone
+initiator_group = serveur_linux
 
 [nfsserv22]
-lun_namespace = /iscsi/stratuslab
-# snapshot_parent must match an existing snapshot of the volume containing the LUNs
-snapshot_parent = pdisk_clones
-initiator_group = linux_servers
+volume_name = /vol/iscsi_data
+lun_namespace = stratuslab
+volume_snapshot_prefix = pdisk_clone
+initiator_group = serveur_linux
