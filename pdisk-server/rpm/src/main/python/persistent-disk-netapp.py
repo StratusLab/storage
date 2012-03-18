@@ -23,7 +23,7 @@
 Script to manage a iSCSI LUN on a NetApp filer
 """
 
-__version__ = "1.0.0-1"
+__version__ = "1.1.0-1"
 __author__  = "Michel Jouvin <jouvin@lal.in2p3.fr>"
 
 import sys
@@ -45,10 +45,10 @@ action_default = ''
 status = 0           # Assume success
 
 # Supported iSCSI proxy variants
-iscsi_supported_variants = [ 'netapp' ]
+iscsi_supported_variants = [ 'lvm', 'netapp' ]
 
 # Keys are supported actions, values are the number of arguments required for the each action
-valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':3, 'snapshot':2 }
+valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':2, 'snapshot':3 }
 valid_actions_str = ', '.join(valid_actions.keys())
 
 config_file_default = '/opt/stratuslab/etc/persistent-disk-backend.conf'
@@ -59,7 +59,7 @@ config_defaults = StringIO.StringIO("""
 [main]
 # Define the list of iSCSI proxies that can be used.
 # One section per proxy must also exists to define parameters specific to the proxy.
-#iscsi_proxies=filer.example.org
+#iscsi_proxies=netapp.example.org
 # Log file for persistent disk management
 log_file=/var/log/stratuslab-persistent-disk.log
 # User name to use to connect the filer (may also be defined in the filer section)
@@ -67,8 +67,8 @@ mgt_user_name=root
 # SSH private key to use for 'mgt_user_name' authorisation
 #mgt_user_private_key=/some/file.rsa
 
-#[filer.example.org]
-# iSCSI proxy type (case insensitive, currently only NetApp is supported and this is the default)
+#[netapp.example.org]
+# iSCSI back-end type (case insensitive)
 #type=NetApp
 # Initiator group the LUN must be mapped to
 #initiator_group = linux_servers
@@ -80,6 +80,12 @@ mgt_user_name=root
 # (a _ will be appended)
 #volume_snapshot_prefix=pdisk_clone
 
+#[lvm.example.org]
+# iSCSI back-end type (case insensitive)
+#type=LVM
+# LVM volume group to use for creating LUNs
+#volume_name = /dev/iscsi.01
+
 """)
 
 
@@ -87,7 +93,7 @@ mgt_user_name=root
 # Class describing a NetApp iSCSI back-end #
 ############################################
 
-class NetAppProxy:
+class NetAppBackend:
   # Command to connect to NetApp filer
   cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
   
@@ -95,7 +101,7 @@ class NetAppProxy:
   # This is a 1 to n mapping (several NetApp commands may be needed for one LUN action).
   # map and unmap are necessary as separate actions as they are not necessary executed on
   # the same LUN as the other operations (eg. snapshot action).
-  lun_netapp_cmd_mapping = { 'check':['check'],
+  lun_backend_cmd_mapping = { 'check':['check'],
                             'create':['create','map'],
                             # Attemtp to delete volume snapshot associated with the LUN if it is no longer used (no more LUN clone exists)
                             'delete':['unmap','delete','snapdel'],
@@ -106,24 +112,24 @@ class NetAppProxy:
                             }
   
   # Definitions of NetApp commands used to implement actions.
-  netapp_cmds = {'check':[ 'lun', 'show', '%%NAME%%' ],
-                 'clone':[ 'lun', 'clone', 'create', '%%SNAP_NAME%%', '-b', '%%NAME%%', '%%SNAP_PARENT%%'  ],
-                 'create':[ 'lun', 'create', '-s', '%%SIZE%%', '-t', '%%LUNOS%%', '%%NAME%%' ],
-                 'delete':[ 'lun', 'destroy', '%%NAME%%' ],
-                 'map':[ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ],
-                 'snapdel':[ 'snap', 'delete', '%%VOLUME_NAME%%', '%%SNAP_PARENT%%' ],
-                 'snapshot':[ 'snap', 'create', '%%VOLUME_NAME%%', '%%SNAP_PARENT%%'  ],
-                 'unmap':[ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
-                 }
+  backend_cmds = {'check':[ 'lun', 'show', '%%NAME%%' ],
+                  'clone':[ 'lun', 'clone', 'create', '%%SNAP_NAME%%', '-b', '%%NAME%%', '%%SNAP_PARENT%%'  ],
+                  'create':[ 'lun', 'create', '-s', '%%SIZE%%g', '-t', '%%LUNOS%%', '%%NAME%%' ],
+                  'delete':[ 'lun', 'destroy', '%%NAME%%' ],
+                  'map':[ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ],
+                  'snapdel':[ 'snap', 'delete', '%%VOLUME_NAME%%', '%%SNAP_PARENT%%' ],
+                  'snapshot':[ 'snap', 'create', '%%VOLUME_NAME%%', '%%SNAP_PARENT%%'  ],
+                  'unmap':[ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
+                  }
 
   # Most commands are expected to return nothing when they succeeded. The following
   # dictionnary lists exceptions and provides a pattern matching output in case of
   # success.
-  # Keys must match an existing key in netapp_cmds
+  # Keys must match an existing key in backend_cmds
   success_msg_pattern = { 'check':'online',
                           # snapdel is expected to fail if there is still a LUN clone using it or if the snapshot doesnt exist
                           # (LUN never cloned or is a clone). These are not considered as an error.
-                          'snapdel':[ 'deleting snapshot\.\.\.', 'Snapshot \w+ is busy because of LUN clone','No such snapshot' ],
+                          'snapdel':[ 'deleting snapshot\.\.\.', 'Snapshot [\w\-]+ is busy because of LUN clone','No such snapshot' ],
                           'snapshot':['^creating snapshot','^Snapshot already exists.']
                         }
   # Would be great to have it configurable as NetApp needs to know the client OS
@@ -146,18 +152,21 @@ class NetAppProxy:
   #      a list of patterns (a simple string is converted to a list).
   # This function must be called from an iteration loop control statement
   def getCmd(self,lun_action):
-    if lun_action in self.lun_netapp_cmd_mapping:
-      netapp_actions = self.lun_netapp_cmd_mapping[lun_action]
+    if lun_action in self.lun_backend_cmd_mapping:
+      backend_actions = self.lun_backend_cmd_mapping[lun_action]
     else:
       abort("Internal error: LUN action '%s' unknown" % (lun_action))
 
     # If None, means that the action is not implemented
-    if netapp_actions == None:
-      yield netapp_actions,None
+    if backend_actions == None:
+      yield backend_actions,None
           
-    for action in netapp_actions:
-      if action in self.netapp_cmds.keys():
-        command = self.netapp_cmds[action]
+    # Intialize parsed_command and success_patters in case backend_actions is an empty list
+    parsed_command = []
+    success_patterns = None
+    for action in backend_actions:
+      if action in self.backend_cmds.keys():
+        command = self.backend_cmds[action]
         parsed_command = self.parse(command)
       else:
         abort("Internal error: action '%s' unknown" % (action))
@@ -202,13 +211,110 @@ class NetAppProxy:
     return 'NetApp'
 
 
+#########################################
+# Class describing a LVM iSCSI back-end #
+#########################################
+
+class LVMBackend:
+  # Command to connect to NetApp filer
+  cmd_prefix = [ ]
+  
+  # Table defining mapping of LUN actions to NetApp actions.
+  # This is a 1 to n mapping (several NetApp commands may be needed for one LUN action).
+  # map and unmap are necessary as separate actions as they are not necessary executed on
+  # the same LUN as the other operations (eg. snapshot action).
+  lun_backend_cmd_mapping = { 'check':['check'],
+                              'create':['create'],
+                              'delete':['delete'],
+                              # map is a required action for snapshot action but does nothing in LVM
+                              'map':[],
+                              'rebase':['rebase'],
+                              'snapshot':['snapshot']
+                              }
+  
+  # Definitions of LVM commands used to implement actions.
+  backend_cmds = {'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
+                  'create':[ '/sbin/lvcreate', '-L', '%%SIZE%%G', '-n', '%%UUID%%', '%%VOLUME_NAME%%' ],
+                  'delete':[ '/sbin/lvremove', '-f', '%%LOGVOL_PATH%%' ],
+                  'rebase':[ '/bin/dd', 'if=%%LOGVOL_SRC_PATH%%', 'of=%%LOGVOL_PATH%%'],
+                  'snapshot':[ '/sbin/lvcreate', '--snapshot', '-p', 'rw', '--size', '%%SIZE%%G', '-n', '%%SNAP_UUID%%', '%%LOGVOL_PATH%%'  ],
+                  }
+
+  # Most commands are expected to return nothing when they succeeded. The following
+  # dictionnary lists exceptions and provides a pattern matching output in case of
+  # success.
+  # Keys must match an existing key in backend_cmds
+  success_msg_pattern = {'create':'Logical volume "[\w\-]+" created',
+                         'delete':'Logical volume "[\w\-]+" successfully removed',
+                         'rebase':'\d+ bytes .* copied',
+                         'snapshot':'Logical volume "[\w\-]+" created'
+                        }
+  
+  def __init__(self,proxy,volume):
+    self.volumeName = volume
+
+  # Generator function returning:
+  #    - the command corresponding to the action as a list of tokens, with iSCSI proxy related
+  #      variables parsed.
+  #    - the expected message patterns in case of success if the command output is not empty. This is returned as
+  #      a list of patterns (a simple string is converted to a list).
+  # This function must be called from an iteration loop control statement
+  def getCmd(self,lun_action):
+    if lun_action in self.lun_backend_cmd_mapping:
+      backend_actions = self.lun_backend_cmd_mapping[lun_action]
+    else:
+      abort("Internal error: LUN action '%s' unknown" % (lun_action))
+
+    # If None, means that the action is not implemented
+    if backend_actions == None:
+      yield backend_actions,None
+          
+    # Intialize parsed_command and success_patters in case backend_actions is an empty list
+    parsed_command = []
+    success_patterns = None
+    for action in backend_actions:
+      if action in self.backend_cmds.keys():
+        command = self.backend_cmds[action]
+        parsed_command = self.parse(command)
+      else:
+        abort("Internal error: action '%s' unknown" % (action))
+  
+      if action in self.success_msg_pattern:
+        success_patterns = self.success_msg_pattern[action]
+        if isinstance(success_patterns,str):
+          success_patterns = [ success_patterns ]
+      else:
+        success_patterns = None
+        
+      yield parsed_command,success_patterns
+    
+  # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
+  # Return parsed command as a list of token.
+  def parse(self,command):    
+    # Build command to execute
+    action_cmd = []
+    action_cmd.extend(self.cmd_prefix)
+    action_cmd.extend(command)
+    for i in range(len(action_cmd)):
+      if re.search('%%LOGVOL_PATH%%',action_cmd[i]):
+        action_cmd[i] = re.sub('%%LOGVOL_PATH%%',self.volumeName+"/%%UUID%%",action_cmd[i])
+      elif re.search('%%LOGVOL_SRC_PATH%%',action_cmd[i]):
+        action_cmd[i] = re.sub('%%LOGVOL_SRC_PATH%%',self.volumeName+"/%%SNAP_UUID%%",action_cmd[i])
+      elif action_cmd[i] == '%%VOLUME_NAME%%':
+        action_cmd[i] = self.volumeName
+    return action_cmd
+    
+  # Return iSCSI back-end type
+  def getType(self):
+    return 'LVM'
+
+
 #################################################################
 # Class describing a LUN and implementing the supported actions #
 #################################################################
 
 class LUN:
 
-  
   def __init__(self,uuid,size=None,proxy=None):
     self.uuid = uuid
     self.size = size
@@ -227,8 +333,8 @@ class LUN:
   def map(self):
     return self.__executeAction__('map')
     
-  def rebase(self,snapshot_lun):
-    self.snapshotLUN = snapshot_lun
+  def rebase(self,src_lun):
+    self.snapshotLUN = src_lun
     return self.__executeAction__('rebase')
     
   def snapshot(self,snapshot_lun):
@@ -245,6 +351,7 @@ class LUN:
   # In case an error occurs during one command, try to continue...
   # Return the status of the last command executed
   def __executeAction__(self,action):
+    status = 0         # Assume success
     for cmd_toks,successMsg in self.proxy.getCmd(action):
       # When returned command for action is None, it means that the action is not implemented
       if cmd_toks == None:
@@ -257,8 +364,8 @@ class LUN:
   # Parse all variables related to current LUN in the command (passed and returned as a list of tokens).  
   def parse(self,action_cmd):
     for i in range(len(action_cmd)):
-      if action_cmd[i] == '%%SIZE%%':
-        action_cmd[i] = "%sg" % self.size
+      if re.search('%%SIZE%%',action_cmd[i]):
+        action_cmd[i] = re.sub('%%SIZE%%',self.size,action_cmd[i])
       elif re.search('%%UUID%%',action_cmd[i]):
         action_cmd[i] = re.sub('%%UUID%%',self.uuid,action_cmd[i])
       elif re.search('%%SNAP_UUID%%',action_cmd[i]):
@@ -439,54 +546,74 @@ except ValueError:
   abort("Invalid value specified for 'iscsi_proxies' (section %s) (must be a comma-separated list)" % (config_main_section))
 
 try:
-  proxy_variant=config.get(iscsi_proxy_name,'type')  
+  backend_variant=config.get(iscsi_proxy_name,'type')  
 except:
   abort("Section '%s' or required attribute 'type' missing" % (iscsi_proxy_name))
 
-if proxy_variant.lower() == 'netapp':
-  # Retrieve NetApp proxy mandatory attributes.
-  # Mandatory attributes should be defined as keys of proxy_attributes with an arbitrary value.
+# NetApp back-end configuration
+
+if backend_variant.lower() == 'netapp':
+  # Retrieve NetApp back-end mandatory attributes.
+  # Mandatory attributes should be defined as keys of backend_attributes with an arbitrary value.
   # Key name must match the attribute name in the configuration file.
-  proxy_attributes = {'initiator_group':'',
-                      'lun_namespace':'',
-                      'volume_name':'',
-                      'volume_snapshot_prefix':''
-                      }
+  backend_attributes = {'initiator_group':'',
+                        'lun_namespace':'',
+                        'volume_name':'',
+                        'volume_snapshot_prefix':''
+                        }
   try:
-    for attribute in proxy_attributes.keys():
-      proxy_attributes[attribute]=config.get(iscsi_proxy_name,attribute)
+    for attribute in backend_attributes.keys():
+      backend_attributes[attribute]=config.get(iscsi_proxy_name,attribute)
   except:
     abort("Section '%s' or required attribute '%s' missing" % (iscsi_proxy_name,attribute))
   
   try:
-    proxy_attributes['mgt_user_name']=config.get(iscsi_proxy_name,'mgt_user_name')  
+    backend_attributes['mgt_user_name']=config.get(iscsi_proxy_name,'mgt_user_name')  
   except:
     try:
-      proxy_attributes['mgt_user_name']=config.get(config_main_section,'mgt_user_name')  
+      backend_attributes['mgt_user_name']=config.get(config_main_section,'mgt_user_name')  
     except:
       abort("User name to use for connecting to iSCSI proxy undefined")
     
   try:
-    proxy_attributes['mgt_user_private_key']=config.get(iscsi_proxy_name,'mgt_user_private_key')  
+    backend_attributes['mgt_user_private_key']=config.get(iscsi_proxy_name,'mgt_user_private_key')  
   except:
     try:
-      proxy_attributes['mgt_user_private_key']=config.get(config_main_section,'mgt_user_private_key')  
+      backend_attributes['mgt_user_private_key']=config.get(config_main_section,'mgt_user_private_key')  
     except:
       abort("SSH private key to use for connecting to iSCSI proxy undefined")
   
-  # Create iSCSI proxy object  
-  iscsi_proxy = NetAppProxy(iscsi_proxy_name,
-                            proxy_attributes['mgt_user_name'],
-                            proxy_attributes['mgt_user_private_key'],
-                            proxy_attributes['volume_name'],
-                            proxy_attributes['lun_namespace'],
-                            proxy_attributes['initiator_group'],
-                            proxy_attributes['volume_snapshot_prefix']
-                            )
- 
- # Abort if iSCSI proxy variant specified is not supported
+  # Create iSCSI back-end object  
+  iscsi_proxy = NetAppBackend(iscsi_proxy_name,
+                              backend_attributes['mgt_user_name'],
+                              backend_attributes['mgt_user_private_key'],
+                              backend_attributes['volume_name'],
+                              backend_attributes['lun_namespace'],
+                              backend_attributes['initiator_group'],
+                              backend_attributes['volume_snapshot_prefix']
+                              )
+
+# LVM back-end configuration
+elif backend_variant.lower() == 'lvm':
+  # Retrieve NetApp back-end mandatory attributes.
+  # Mandatory attributes should be defined as keys of backend_attributes with an arbitrary value.
+  # Key name must match the attribute name in the configuration file.
+  backend_attributes = {'volume_name':'',
+                        }
+  try:
+    for attribute in backend_attributes.keys():
+      backend_attributes[attribute]=config.get(iscsi_proxy_name,attribute)
+  except:
+    abort("Section '%s' or required attribute '%s' missing" % (iscsi_proxy_name,attribute))
+  
+  # Create iSCSI back-end object  
+  iscsi_proxy = LVMBackend(iscsi_proxy_name,
+                           backend_attributes['volume_name'],
+                          )
+  
+# Abort if iSCSI back-end variant specified is not supported
 else:
-   abort("Unsupported iSCSI proxy variant '%s' (supported variants: %s)" % (proxy_variant,','.join(iscsi_supported_variants)))   
+   abort("Unsupported iSCSI back-end variant '%s' (supported variants: %s)" % (backend_variant,','.join(iscsi_supported_variants)))   
 
 
 # Execute requested action
@@ -505,12 +632,12 @@ elif options.action == 'delete':
   status = lun.delete()
 elif options.action == 'rebase':
   debug(1,"Rebasing LUN...")
-  lun = LUN(args[0],proxy=iscsi_proxy)
-  snapshot_lun = LUN(args[1],proxy=iscsi_proxy)
-  status = lun.rebase(snapshot_lun)
+  src_lun = LUN(args[0],proxy=iscsi_proxy)
+  rebased_lun = LUN(args[1],proxy=iscsi_proxy)
+  status = rebased_lun.rebase(src_lun)
 elif options.action == 'snapshot':
   debug(1,"Doing a LUN snapshot...")
-  lun = LUN(args[1],proxy=iscsi_proxy)
+  lun = LUN(args[1],size=args[2],proxy=iscsi_proxy)
   snapshot_lun = LUN(args[0],proxy=iscsi_proxy)
   # Only the last error is returned
   status = lun.snapshot(snapshot_lun)

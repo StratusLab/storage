@@ -1,4 +1,4 @@
-This module adds support for NetApp filers as a pdisk storage backend.
+This module adds support for NetApp filers and LVM as a pdisk storage backend.
 
 Support is implemented through the script
 scripts/persistent-disk-netapp.py. This script handles all pdisk
@@ -6,9 +6,11 @@ operations (create, delete, rebase, snapshot). The action to execute
 is selected with option --action. Use option --help to get the full
 list of supported options.
 
-In addition to options, the script requires up to 2 arguments
-- LUN GUID : this argument is required for all actions
-- LUN size : required only for create action (ignored by others)
+In addition to options, the script requires up to 3 arguments
+depending on the action. See --help for details.
+
+Note : as of writing, pdisk uses this scipt only for managing NetApp
+backends.
 
 +++++++++++++++++
 + Configuration +
@@ -25,7 +27,7 @@ attribute. For each iSCSI proxy, a section is required whose name must
 be the proxy name. This section lists parameters specific to the iSCSI
 proxy.
 
-A typical configuration file looks like:
+A typical configuration file for a NetApp back-end looks like:
 ------------------------------------------
 [main]
 log_file =
@@ -35,7 +37,7 @@ mgt_user_private_key=/some/dir/key.rsa
 
 # First filer
 [nfsserv21]
-# iSCSI proxy type (case insensitive, currently only NetApp is supported and this is the default)
+# iSCSI back-end type (case insensitive)
 type=NetApp
 # Initiator group the LUN must be mapped to
 initiator_group = linux_servers
@@ -50,7 +52,7 @@ volume_snapshot_prefix=pdisk_clone
 # Second filer : values can be identical or different to previous server
 # depending on site actual configuration choices
 [nfsserv22]
-# iSCSI proxy type (case insensitive, currently only NetApp is supported and this is the default)
+# iSCSI back-end type (case insensitive)
 type=NetApp
 # Initiator group the LUN must be mapped to
 initiator_group = linux_servers
@@ -62,6 +64,20 @@ volume_name = /vol/iscsi2
 # (a _ will be appended)
 volume_snapshot_prefix=pdisk_clone
 ------------------------------------------
+
+For a LVM back-end, a typical configuration file would be:
+------------------------------------------
+[main]
+log_file =
+iscsi_proxies=nfsserv11
+
+[nfsserv11]
+# iSCSI back-end type (case insensitive)
+type=LVM
+# LVM volume group to use
+volume_name = /dev/nfs.02
+------------------------------------------
+
 
 ++++++++++++++++++
 + Authentication +
