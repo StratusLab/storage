@@ -23,7 +23,7 @@
 Script to manage a iSCSI LUN on a NetApp filer
 """
 
-__version__ = "0.9.2-1"
+__version__ = "0.9.3-1"
 __author__  = "Michel Jouvin <jouvin@lal.in2p3.fr>"
 
 import sys
@@ -244,6 +244,8 @@ class LUN:
     
     
 class Command:
+  cmd_output_start = '<<<<<<<<<<'
+  cmd_output_end = '>>>>>>>>>>'
   
   def __init__(self,action,cmd,successMsgs=None):
     self.action = action
@@ -268,7 +270,7 @@ class Command:
       retcode = self.proc.wait()
       output = self.proc.communicate()[0]
       if retcode != 0:
-          abort('An error occured during %s action (error=%s). Command output:\n%s' % (self.action,retcode,output))
+          abort('An error occured during %s action (error=%s). Command output:\n%s\n%s\n%s' % (self.action,retcode,self.cmd_output_start,output,self.cmd_output_end))
       else:
           # Need to check if the command is expected to return an output when successfull
           success = False
@@ -282,9 +284,11 @@ class Command:
               success = True
           if success:
             debug(1,'%s action completed successfully.' % (self.action))
+            if len(output) > 0:
+              debug(2,'Command output:\n%s\n%s\n%s' % (self.cmd_output_start,output,self.cmd_output_end))
           else:
             retcode = -1
-            debug(0,'An error occured during %s action. Command output:\n%s' % (self.action,output))
+            debug(0,'An error occured during %s action. Command output:\n%s\n%s\n%s' % (self.action,self.cmd_output_start,output,self.cmd_output_end))
     except OSError, details:
       abort('Failed to execute %s action: %s' % (self.action,details))  
     return retcode
