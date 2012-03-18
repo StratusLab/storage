@@ -23,7 +23,7 @@
 Script to manage a iSCSI LUN on a NetApp filer
 """
 
-__version__ = "0.9.4-1"
+__version__ = "1.0.0-1"
 __author__  = "Michel Jouvin <jouvin@lal.in2p3.fr>"
 
 import sys
@@ -97,19 +97,21 @@ class NetAppProxy:
   # the same LUN as the other operations (eg. snapshot action).
   lun_netapp_cmd_mapping = { 'check':['check'],
                             'create':['create','map'],
-                            'delete':['unmap','delete'],
+                            # Attemtp to delete volume snapshot associated with the LUN if it is no longer used (no more LUN clone exists)
+                            'delete':['unmap','delete','snapdel'],
                             'map':['map'],
                             'rebase':None,
                             'snapshot':['snapshot','clone'],
                             'unmap':['unmap']
                             }
   
-  # Definitions of NetApp commands used to implement actions
+  # Definitions of NetApp commands used to implement actions.
   netapp_cmds = {'check':[ 'lun', 'show', '%%NAME%%' ],
                  'clone':[ 'lun', 'clone', 'create', '%%SNAP_NAME%%', '-b', '%%NAME%%', '%%SNAP_PARENT%%'  ],
                  'create':[ 'lun', 'create', '-s', '%%SIZE%%', '-t', '%%LUNOS%%', '%%NAME%%' ],
                  'delete':[ 'lun', 'destroy', '%%NAME%%' ],
                  'map':[ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ],
+                 'snapdel':[ 'snap', 'delete', '%%VOLUME_NAME%%', '%%SNAP_PARENT%%' ],
                  'snapshot':[ 'snap', 'create', '%%VOLUME_NAME%%', '%%SNAP_PARENT%%'  ],
                  'unmap':[ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
                  }
@@ -119,6 +121,9 @@ class NetAppProxy:
   # success.
   # Keys must match an existing key in netapp_cmds
   success_msg_pattern = { 'check':'online',
+                          # snapdel is expected to fail if there is still a LUN clone using it or if the snapshot doesnt exist
+                          # (LUN never cloned or is a clone). These are not considered as an error.
+                          'snapdel':[ 'deleting snapshot\.\.\.', 'Snapshot \w+ is busy because of LUN clone','No such snapshot' ],
                           'snapshot':['^creating snapshot','^Snapshot already exists.']
                         }
   # Would be great to have it configurable as NetApp needs to know the client OS
