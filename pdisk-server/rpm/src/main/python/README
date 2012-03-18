@@ -35,6 +35,8 @@ mgt_user_private_key=/some/dir/key.rsa
 
 # First filer
 [nfsserv21]
+# iSCSI proxy type (case insensitive, currently only NetApp is supported and this is the default)
+type=NetApp
 # Initiator group the LUN must be mapped to
 initiator_group = linux_servers
 # Name appended to the volume name to build the LUN path (a / will be appended)
@@ -48,6 +50,8 @@ volume_snapshot_prefix=pdisk_clone
 # Second filer : values can be identical or different to previous server
 # depending on site actual configuration choices
 [nfsserv22]
+# iSCSI proxy type (case insensitive, currently only NetApp is supported and this is the default)
+type=NetApp
 # Initiator group the LUN must be mapped to
 initiator_group = linux_servers
 # Name appended to the volume name to build the LUN path (a / will be appended)

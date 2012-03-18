@@ -23,7 +23,7 @@
 Script to manage a iSCSI LUN on a NetApp filer
 """
 
-__version__ = "0.9.1-1"
+__version__ = "0.9.2-1"
 __author__  = "Michel Jouvin <jouvin@lal.in2p3.fr>"
 
 import sys
@@ -43,6 +43,9 @@ verbosity = 0
 logger = None
 action_default = ''
 status = 0           # Assume success
+
+# Supported iSCSI proxy variants
+iscsi_supported_variants = [ 'netapp' ]
 
 # Keys are supported actions, values are the number of arguments required for the each action
 valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':3, 'snapshot':2 }
@@ -65,6 +68,8 @@ mgt_user_name=root
 #mgt_user_private_key=/some/file.rsa
 
 #[filer.example.org]
+# iSCSI proxy type (case insensitive, currently only NetApp is supported and this is the default)
+#type=NetApp
 # Initiator group the LUN must be mapped to
 #initiator_group = linux_servers
 # Name appended to the volume name to build the LUN path (a / will be appended)
@@ -396,34 +401,55 @@ except ValueError:
   abort("Invalid value specified for 'iscsi_proxies' (section %s) (must be a comma-separated list)" % (config_main_section))
 
 try:
-  volume_name=config.get(iscsi_proxy_name,'volume_name')
-  lun_namespace=config.get(iscsi_proxy_name,'lun_namespace')
-  initiator_group=config.get(iscsi_proxy_name,'initiator_group')
-  snapshot_prefix=config.get(iscsi_proxy_name,'volume_snapshot_prefix')
+  proxy_variant=config.get(iscsi_proxy_name,'type')  
 except:
-  abort("Section %s missing or incomplete in configuration" % (iscsi_proxy_name))
+  abort("Section '%s' or required attribute 'type' missing" % (iscsi_proxy_name))
 
-try:
-  mgt_user_name=config.get(iscsi_proxy_name,'mgt_user_name')  
-except:
+if proxy_variant.lower() == 'netapp':
+  # Retrieve NetApp proxy mandatory attributes.
+  # Mandatory attributes should be defined as keys of proxy_attributes with an arbitrary value.
+  # Key name must match the attribute name in the configuration file.
+  proxy_attributes = {'initiator_group':'',
+                      'lun_namespace':'',
+                      'volume_name':'',
+                      'volume_snapshot_prefix':''
+                      }
   try:
-    mgt_user_name=config.get(config_main_section,'mgt_user_name')  
+    for attribute in proxy_attributes.keys():
+      proxy_attributes[attribute]=config.get(iscsi_proxy_name,attribute)
   except:
-    abort("User name to use for connecting to iSCSI proxy undefined")
+    abort("Section '%s' or required attribute '%s' missing" % (iscsi_proxy_name,attribute))
   
-try:
-  mgt_user_private_key=config.get(iscsi_proxy_name,'mgt_user_private_key')  
-except:
   try:
-    mgt_user_private_key=config.get(config_main_section,'mgt_user_private_key')  
+    proxy_attributes['mgt_user_name']=config.get(iscsi_proxy_name,'mgt_user_name')  
   except:
-    abort("SSH private key to use for connecting to iSCSI proxy undefined")
-
-
-# Create iSCSI proxy object
-
-iscsi_proxy = NetAppProxy(iscsi_proxy_name,mgt_user_name,mgt_user_private_key,volume_name,lun_namespace,initiator_group,snapshot_prefix)
+    try:
+      proxy_attributes['mgt_user_name']=config.get(config_main_section,'mgt_user_name')  
+    except:
+      abort("User name to use for connecting to iSCSI proxy undefined")
     
+  try:
+    proxy_attributes['mgt_user_private_key']=config.get(iscsi_proxy_name,'mgt_user_private_key')  
+  except:
+    try:
+      proxy_attributes['mgt_user_private_key']=config.get(config_main_section,'mgt_user_private_key')  
+    except:
+      abort("SSH private key to use for connecting to iSCSI proxy undefined")
+  
+  # Create iSCSI proxy object  
+  iscsi_proxy = NetAppProxy(iscsi_proxy_name,
+                            proxy_attributes['mgt_user_name'],
+                            proxy_attributes['mgt_user_private_key'],
+                            proxy_attributes['volume_name'],
+                            proxy_attributes['lun_namespace'],
+                            proxy_attributes['initiator_group'],
+                            proxy_attributes['volume_snapshot_prefix']
+                            )
+ 
+ # Abort if iSCSI proxy variant specified is not supported
+else:
+   abort("Unsupported iSCSI proxy variant '%s' (supported variants: %s)" % (proxy_variant,','.join(iscsi_supported_variants)))   
+
 
 # Execute requested action
 
