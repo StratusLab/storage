@@ -5,12 +5,14 @@ mgt_user_name=root
 mgt_user_private_key=/some/dir/key.rsa
 
 [nfsserv21]
+type=NetApp
 volume_name = /vol/iscsi_data
 lun_namespace = stratuslab
 volume_snapshot_prefix = pdisk_clone
 initiator_group = serveur_linux
 
 [nfsserv22]
+type=NetApp
 volume_name = /vol/iscsi_data
 lun_namespace = stratuslab
 volume_snapshot_prefix = pdisk_clone
