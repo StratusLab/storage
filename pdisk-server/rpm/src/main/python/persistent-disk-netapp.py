@@ -20,10 +20,10 @@
 """
 
 """
-Script to manage a iSCSI LUN on a NetApp filer
+Script used by StratusLab pdisk to manage iSCSI LUNs
 """
 
-__version__ = "1.1.0-1"
+__version__ = "1.1.1-1"
 __author__  = "Michel Jouvin <jouvin@lal.in2p3.fr>"
 
 import sys
@@ -216,6 +216,8 @@ class NetAppBackend:
 #########################################
 
 class LVMBackend:
+  # Command prefix to use to connect through ssh
+  ssh_cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
   # Command to connect to NetApp filer
   cmd_prefix = [ ]
   
@@ -225,7 +227,7 @@ class LVMBackend:
   # the same LUN as the other operations (eg. snapshot action).
   lun_backend_cmd_mapping = { 'check':['check'],
                               'create':['create'],
-                              'delete':['delete'],
+                              'delete':['remove'],
                               # map is a required action for snapshot action but does nothing in LVM
                               'map':[],
                               'rebase':['rebase'],
@@ -235,8 +237,10 @@ class LVMBackend:
   # Definitions of LVM commands used to implement actions.
   backend_cmds = {'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
                   'create':[ '/sbin/lvcreate', '-L', '%%SIZE%%G', '-n', '%%UUID%%', '%%VOLUME_NAME%%' ],
-                  'delete':[ '/sbin/lvremove', '-f', '%%LOGVOL_PATH%%' ],
+                  'remove':[ '/sbin/lvremove', '-f', '%%LOGVOL_PATH%%' ],
                   'rebase':[ '/bin/dd', 'if=%%LOGVOL_SRC_PATH%%', 'of=%%LOGVOL_PATH%%'],
+                  # lvchange doesn't work with clone. Normally unneeded as lvremove -f (remove) does the same
+                  'setinactive':[ '/sbin/lvchange', '-a', 'n', '%%LOGVOL_PATH%%' ],
                   'snapshot':[ '/sbin/lvcreate', '--snapshot', '-p', 'rw', '--size', '%%SIZE%%G', '-n', '%%SNAP_UUID%%', '%%LOGVOL_PATH%%'  ],
                   }
 
@@ -245,13 +249,20 @@ class LVMBackend:
   # success.
   # Keys must match an existing key in backend_cmds
   success_msg_pattern = {'create':'Logical volume "[\w\-]+" created',
-                         'delete':'Logical volume "[\w\-]+" successfully removed',
+                         'remove':'Logical volume "[\w\-]+" successfully removed',
                          'rebase':'\d+ bytes .* copied',
+                         'setinactive':[ '^$', 'File descriptor .* leaked on lvchange invocation' ],
                          'snapshot':'Logical volume "[\w\-]+" created'
                         }
   
-  def __init__(self,proxy,volume):
+  def __init__(self,proxy,volume,mgtUser=None,mgtPrivKey=None):
     self.volumeName = volume
+    self.proxyHost = proxy
+    self.mgtUser = mgtUser
+    self.mgtPrivKey = mgtPrivKey
+    if self.mgtUser and self.mgtPrivKey:
+      debug(1,'SSH will be used to connect to LVM backend')
+      self.cmd_prefix = self.ssh_cmd_prefix
 
   # Generator function returning:
   #    - the command corresponding to the action as a list of tokens, with iSCSI proxy related
@@ -296,10 +307,14 @@ class LVMBackend:
     action_cmd.extend(self.cmd_prefix)
     action_cmd.extend(command)
     for i in range(len(action_cmd)):
-      if re.search('%%LOGVOL_PATH%%',action_cmd[i]):
+      if action_cmd[i] == '%%ISCSI_PROXY%%':
+        action_cmd[i] = "%s@%s" % (self.mgtUser,self.proxyHost)
+      elif re.search('%%LOGVOL_PATH%%',action_cmd[i]):
         action_cmd[i] = re.sub('%%LOGVOL_PATH%%',self.volumeName+"/%%UUID%%",action_cmd[i])
       elif re.search('%%LOGVOL_SRC_PATH%%',action_cmd[i]):
         action_cmd[i] = re.sub('%%LOGVOL_SRC_PATH%%',self.volumeName+"/%%SNAP_UUID%%",action_cmd[i])
+      elif action_cmd[i] == '%%PRIVKEY%%':
+        action_cmd[i] = self.mgtPrivKey
       elif action_cmd[i] == '%%VOLUME_NAME%%':
         action_cmd[i] = self.volumeName
     return action_cmd
@@ -605,10 +620,34 @@ elif backend_variant.lower() == 'lvm':
       backend_attributes[attribute]=config.get(iscsi_proxy_name,attribute)
   except:
     abort("Section '%s' or required attribute '%s' missing" % (iscsi_proxy_name,attribute))
-  
+
+  # 'local' is a reserved name to designate the local machine: in this case, don't use ssh to
+  # connect to backend
+  if iscsi_proxy_name == 'local':
+    backend_attributes['mgt_user_name'] = None
+    backend_attributes['mgt_user_private_key'] = None
+  else:  
+    try:
+      backend_attributes['mgt_user_name']=config.get(iscsi_proxy_name,'mgt_user_name')  
+    except:
+      try:
+        backend_attributes['mgt_user_name']=config.get(config_main_section,'mgt_user_name')  
+      except:
+        abort("User name to use for connecting to iSCSI proxy undefined")
+      
+    try:
+      backend_attributes['mgt_user_private_key']=config.get(iscsi_proxy_name,'mgt_user_private_key')  
+    except:
+      try:
+        backend_attributes['mgt_user_private_key']=config.get(config_main_section,'mgt_user_private_key')  
+      except:
+        abort("SSH private key to use for connecting to iSCSI proxy undefined")
+
   # Create iSCSI back-end object  
   iscsi_proxy = LVMBackend(iscsi_proxy_name,
                            backend_attributes['volume_name'],
+                           backend_attributes['mgt_user_name'],
+                           backend_attributes['mgt_user_private_key'],
                           )
   
 # Abort if iSCSI back-end variant specified is not supported

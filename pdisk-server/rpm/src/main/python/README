@@ -70,12 +70,17 @@ For a LVM back-end, a typical configuration file would be:
 [main]
 log_file =
 iscsi_proxies=nfsserv11
+mgt_user_name=root
+mgt_user_private_key=/some/dir/key.rsa
 
+# To use LVM on the local machine as the pdisk backend, use 'local' as the section name.
+# In other cases, SSH will be used to connect to backend and user/key must be defined
 [nfsserv11]
 # iSCSI back-end type (case insensitive)
 type=LVM
 # LVM volume group to use
 volume_name = /dev/nfs.02
+
 ------------------------------------------
 
 
@@ -90,3 +95,27 @@ account used by StratusLab pdisk and appropriate parameters
 configuration file.
 
 
++++++++++++++++++++++++++++++++++++++++++
++ Remarks on NetApp Filer Configuration +
++++++++++++++++++++++++++++++++++++++++++
+
+LUN cloning, as implemented by pdisk snapshot action, involves the creation
+of a volume snapshot backing the LUN clone. This volume snapshot must contain
+the original LUN. StratusLab creates a volume snapshot for each original LUN
+the first time it is cloned. This volume snapshot will be share by all clones of
+the original LUN. An attempt to delete the volume snapshot will be made when
+the original LUN is deleted: it will succeed only if the LUN clones have been
+deleted before. In the other cases, if may be necessary to clean the unused
+volume snapshots manually. NetApp command 'snap list' allows to list the existing
+snapshots and to show if they are busy.
+
+By default, when a volume snapshot is created, it becomes a dependendy of all the
+previously created snapshots of the same volume. As a result, it is not possible
+to delete a volume snapshot before all the LUN clones (whatever the original LUN is) and
+all the volume snapshots created after its creation have been deleted. As a result,
+the hard limit of 255 snapshots per volume may be quickly reached. To avoid this,
+it is necessary to set the volume option (command 'volume options')
+'snapshot_clone_dependency' to 'on' (it is 'off' by default). The side effect of this 
+setting is that an attempt to restore a LUN with 'snap restore' may fail. This
+should not be a problem for LUNs managed by StratusLab pdisk as this feature is
+neither used nor exposed.
