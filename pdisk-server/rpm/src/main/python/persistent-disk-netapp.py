@@ -23,7 +23,7 @@
 Script to manage a iSCSI LUN on a NetApp filer
 """
 
-__version__ = "0.9.3-1"
+__version__ = "0.9.4-1"
 __author__  = "Michel Jouvin <jouvin@lal.in2p3.fr>"
 
 import sys
@@ -83,6 +83,10 @@ mgt_user_name=root
 """)
 
 
+############################################
+# Class describing a NetApp iSCSI back-end #
+############################################
+
 class NetAppProxy:
   # Command to connect to NetApp filer
   cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
@@ -95,7 +99,7 @@ class NetAppProxy:
                             'create':['create','map'],
                             'delete':['unmap','delete'],
                             'map':['map'],
-                            'rebase':['rebase'],
+                            'rebase':None,
                             'snapshot':['snapshot','clone'],
                             'unmap':['unmap']
                             }
@@ -106,7 +110,6 @@ class NetAppProxy:
                  'create':[ 'lun', 'create', '-s', '%%SIZE%%', '-t', '%%LUNOS%%', '%%NAME%%' ],
                  'delete':[ 'lun', 'destroy', '%%NAME%%' ],
                  'map':[ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ],
-                 'rebase':[ 'iscsi', 'connection', 'show' ],
                  'snapshot':[ 'snap', 'create', '%%VOLUME_NAME%%', '%%SNAP_PARENT%%'  ],
                  'unmap':[ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
                  }
@@ -142,7 +145,11 @@ class NetAppProxy:
       netapp_actions = self.lun_netapp_cmd_mapping[lun_action]
     else:
       abort("Internal error: LUN action '%s' unknown" % (lun_action))
-      
+
+    # If None, means that the action is not implemented
+    if netapp_actions == None:
+      yield netapp_actions,None
+          
     for action in netapp_actions:
       if action in self.netapp_cmds.keys():
         command = self.netapp_cmds[action]
@@ -185,6 +192,14 @@ class NetAppProxy:
         action_cmd[i] = self.volumeName
     return action_cmd
     
+  # Return iSCSI back-end type
+  def getType(self):
+    return 'NetApp'
+
+
+#################################################################
+# Class describing a LUN and implementing the supported actions #
+#################################################################
 
 class LUN:
 
@@ -226,6 +241,9 @@ class LUN:
   # Return the status of the last command executed
   def __executeAction__(self,action):
     for cmd_toks,successMsg in self.proxy.getCmd(action):
+      # When returned command for action is None, it means that the action is not implemented
+      if cmd_toks == None:
+        abort("Action '%s' not implemented by SCSI back-end type '%s'" % (action,self.proxy.getType()))
       command = Command(action,self.parse(cmd_toks),successMsg)
       command.execute()
       status = command.checkStatus()
@@ -242,6 +260,10 @@ class LUN:
         action_cmd[i] = re.sub('%%SNAP_UUID%%',self.snapshotLUN.uuid,action_cmd[i])
     return action_cmd
     
+
+#######################################################
+# Class representing a command passed to the back-end #
+#######################################################
     
 class Command:
   cmd_output_start = '<<<<<<<<<<'
@@ -294,7 +316,9 @@ class Command:
     return retcode
 
 
-# Functions to handle logging
+###############################
+# Functions to handle logging #
+###############################
 
 def abort(msg):
     logger.error("Persistent disk operation failed:\n%s" % (msg))
@@ -307,6 +331,11 @@ def debug(level,msg):
     else:
       logger.debug(msg)
 
+
+
+#############
+# Main code #
+#############
 
 # Configure loggers and handlers.
 # Initially cnfigure only syslog and stderr handler.
@@ -340,7 +369,7 @@ Parameters:
 parser = OptionParser(usage=usage_text)
 parser.add_option('--config', dest='config_file', action='store', default=config_file_default, help='Name of the configuration file to use (D: %s)' % (config_file_default))
 parser.add_option('--action', dest='action', action='store', default=action_default, help='Action to execute. Valid actions: %s'%(valid_actions_str))
-parser.add_option('-v', '--debug', '--verbose', dest='verbosity', action='count', default=0, help='Increase verbosity level for debugging (on stderr)')
+parser.add_option('-v', '--debug', '--verbose', dest='verbosity', action='count', default=0, help='Increase verbosity level for debugging (multiple allowed)')
 parser.add_option('--version', dest='version', action='store_true', default=False, help='Display various information about this script')
 options, args = parser.parse_args()
 
