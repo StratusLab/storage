@@ -95,11 +95,12 @@ public final class ProcessUtils {
         if(i.hasNext() == false) {
         	return "";
         }
-        String ret = i.next();
+        StringBuffer res = new StringBuffer();
+        res.append(i.next());
         while (i.hasNext()) {
-                ret += glue + i.next();
+        	res.append(glue + i.next());
         }
-        return ret;
+        return res.toString();
     }	
 	
 	public static int executeGetStatus(ProcessBuilder pb) {
