@@ -89,11 +89,66 @@ mgt_user_name=root
 """)
 
 
+###############################################################
+# Superclass describing common aspect of every iSCSI backends #
+# Inherited by all iSCSI backend classes                      #
+###############################################################
+
+class iSCSIBackend:
+
+  # Generator function returning:
+  #    - the command corresponding to the action as a list of tokens, with iSCSI proxy related
+  #      variables parsed.
+  #    - the expected message patterns in case of success if the command output is not empty. This is returned as
+  #      a list of patterns (a simple string is converted to a list).
+  # This function must be called from an iteration loop control statement
+  def getCmd(self,lun_action):
+    if lun_action in self.lun_backend_cmd_mapping:
+      backend_actions = self.lun_backend_cmd_mapping[lun_action]
+    else:
+      abort("Internal error: LUN action '%s' unknown" % (lun_action))
+
+    # If None, means that the action is not implemented
+    if backend_actions == None:
+      yield backend_actions,None,None
+          
+    # Intialize parsed_command and success_patters in case backend_actions is an empty list
+    parsed_command = []
+    success_patterns = None
+    failure_command = None
+    for action in backend_actions:
+      if action in self.backend_cmds.keys():
+        parsed_command = self.parse(self.backend_cmds[action])
+      else:
+        abort("Internal error: action '%s' unknown" % (action))
+  
+      if action in self.success_msg_pattern:
+        success_patterns = self.success_msg_pattern[action]
+        if isinstance(success_patterns,str):
+          success_patterns = [ success_patterns ]
+      else:
+        success_patterns = None
+        
+      if action in self.backend_failure_cmds.keys():
+        failure_actions = self.backend_failure_cmds[action]
+        if lun_action in failure_actions:
+          command = failure_actions[lun_action]
+        # '-' is a special key value meaning the alternate command applies to all LN actions
+        elif '-' in failure_actions:
+          command = failure_actions['-']
+        else:
+          command = None
+        if command:  
+          failure_command = self.parse(command)
+
+      yield parsed_command,success_patterns,failure_command
+    
+  
 ############################################
 # Class describing a NetApp iSCSI back-end #
 ############################################
 
-class NetAppBackend:
+class NetAppBackend(iSCSIBackend):
   # Command to connect to NetApp filer
   cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
   
@@ -122,6 +177,18 @@ class NetAppBackend:
                   'unmap':[ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
                   }
 
+  # Commands to execute when a given backend command fails.
+  # This is a dictionnary where key is one of the backend_cmds key and the value is another dictionnary
+  # whose key is the name of lun action (as defined in lun_backend_cmd_mapping) that defines the
+  # context of the backend command and the value is the key of another command in backend_cmds).
+  # IF the context is '-', the alternate command will be executed in any context (lun actions) in case of errors.
+  # If the value (alternate command) is an empty string, further backend commands part of the same LUN action are skipped.
+  # If it is None,processing of further actions contnues as if there was no entry for the command in the dictionnary.
+  # IF a backup command fails and has no entry in this dictionnary, the execution continues
+  # with next command if any.
+  backend_failure_cmds = {
+                          }
+
   # Most commands are expected to return nothing when they succeeded. The following
   # dictionnary lists exceptions and provides a pattern matching output in case of
   # success.
@@ -145,41 +212,7 @@ class NetAppBackend:
     self.initiatorGroup = initiatorGroup
     self.snapshotPrefix = snapshotPrefix
 
-  # Generator function returning:
-  #    - the command corresponding to the action as a list of tokens, with iSCSI proxy related
-  #      variables parsed.
-  #    - the expected message patterns in case of success if the command output is not empty. This is returned as
-  #      a list of patterns (a simple string is converted to a list).
-  # This function must be called from an iteration loop control statement
-  def getCmd(self,lun_action):
-    if lun_action in self.lun_backend_cmd_mapping:
-      backend_actions = self.lun_backend_cmd_mapping[lun_action]
-    else:
-      abort("Internal error: LUN action '%s' unknown" % (lun_action))
 
-    # If None, means that the action is not implemented
-    if backend_actions == None:
-      yield backend_actions,None
-          
-    # Intialize parsed_command and success_patters in case backend_actions is an empty list
-    parsed_command = []
-    success_patterns = None
-    for action in backend_actions:
-      if action in self.backend_cmds.keys():
-        command = self.backend_cmds[action]
-        parsed_command = self.parse(command)
-      else:
-        abort("Internal error: action '%s' unknown" % (action))
-  
-      if action in self.success_msg_pattern:
-        success_patterns = self.success_msg_pattern[action]
-        if isinstance(success_patterns,str):
-          success_patterns = [ success_patterns ]
-      else:
-        success_patterns = None
-        
-      yield parsed_command,success_patterns
-    
   # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
   # Return parsed command as a list of token.
   def parse(self,command):    
@@ -215,7 +248,7 @@ class NetAppBackend:
 # Class describing a LVM iSCSI back-end #
 #########################################
 
-class LVMBackend:
+class LVMBackend (iSCSIBackend):
   # Command prefix to use to connect through ssh
   ssh_cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
   # Command to connect to NetApp filer
@@ -237,12 +270,25 @@ class LVMBackend:
   # Definitions of LVM commands used to implement actions.
   backend_cmds = {'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
                   'create':[ '/sbin/lvcreate', '-L', '%%SIZE%%G', '-n', '%%UUID%%', '%%VOLUME_NAME%%' ],
+                  'dmremove':[ '/sbin/dmsetup', 'remove', '%%DM_VOLUME_PATH%%' ],
                   'remove':[ '/sbin/lvremove', '-f', '%%LOGVOL_PATH%%' ],
                   'rebase':[ '/bin/dd', 'if=%%LOGVOL_SRC_PATH%%', 'of=%%LOGVOL_PATH%%'],
                   # lvchange doesn't work with clone. Normally unneeded as lvremove -f (remove) does the same
                   'setinactive':[ '/sbin/lvchange', '-a', 'n', '%%LOGVOL_PATH%%' ],
                   'snapshot':[ '/sbin/lvcreate', '--snapshot', '-p', 'rw', '--size', '%%SIZE%%G', '-n', '%%SNAP_UUID%%', '%%LOGVOL_PATH%%'  ],
                   }
+  
+  # Commands to execute when a given backend command fails.
+  # This is a dictionnary where key is one of the backend_cmds key and the value is another dictionnary
+  # whose key is the name of lun action (as defined in lun_backend_cmd_mapping) that defines the
+  # context of the backend command and the value is the key of another command in backend_cmds).
+  # IF the context is '-', the alternate command will be executed in any context (lun actions) in case of errors.
+  # If the value (alternate command) is an empty string, further backend commands part of the same LUN action are skipped.
+  # If it is None,processing of further actions contnues as if there was no entry for the command in the dictionnary.
+  # IF a backup command fails and has no entry in this dictionnary, the execution continues
+  # with next command if any.
+  backend_failure_cmds = {'remove':{'delete':'dmremove'},
+                          }
 
   # Most commands are expected to return nothing when they succeeded. The following
   # dictionnary lists exceptions and provides a pattern matching output in case of
@@ -264,41 +310,6 @@ class LVMBackend:
       debug(1,'SSH will be used to connect to LVM backend')
       self.cmd_prefix = self.ssh_cmd_prefix
 
-  # Generator function returning:
-  #    - the command corresponding to the action as a list of tokens, with iSCSI proxy related
-  #      variables parsed.
-  #    - the expected message patterns in case of success if the command output is not empty. This is returned as
-  #      a list of patterns (a simple string is converted to a list).
-  # This function must be called from an iteration loop control statement
-  def getCmd(self,lun_action):
-    if lun_action in self.lun_backend_cmd_mapping:
-      backend_actions = self.lun_backend_cmd_mapping[lun_action]
-    else:
-      abort("Internal error: LUN action '%s' unknown" % (lun_action))
-
-    # If None, means that the action is not implemented
-    if backend_actions == None:
-      yield backend_actions,None
-          
-    # Intialize parsed_command and success_patters in case backend_actions is an empty list
-    parsed_command = []
-    success_patterns = None
-    for action in backend_actions:
-      if action in self.backend_cmds.keys():
-        command = self.backend_cmds[action]
-        parsed_command = self.parse(command)
-      else:
-        abort("Internal error: action '%s' unknown" % (action))
-  
-      if action in self.success_msg_pattern:
-        success_patterns = self.success_msg_pattern[action]
-        if isinstance(success_patterns,str):
-          success_patterns = [ success_patterns ]
-      else:
-        success_patterns = None
-        
-      yield parsed_command,success_patterns
-    
   # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
   # Return parsed command as a list of token.
   def parse(self,command):    
@@ -367,13 +378,21 @@ class LUN:
   # Return the status of the last command executed
   def __executeAction__(self,action):
     status = 0         # Assume success
-    for cmd_toks,successMsg in self.proxy.getCmd(action):
+    for cmd_toks,successMsg,failure_cmd_toks in self.proxy.getCmd(action):
       # When returned command for action is None, it means that the action is not implemented
       if cmd_toks == None:
         abort("Action '%s' not implemented by SCSI back-end type '%s'" % (action,self.proxy.getType()))
       command = Command(action,self.parse(cmd_toks),successMsg)
       command.execute()
       status = command.checkStatus()
+      if status != 0 and failure_cmd_toks:
+        command = Command(action,self.parse(failure_cmd_toks),successMsg)
+        command.execute()
+        status = command.checkStatus()        
+        break
+      # If failure_cmd_toks is an amtpy string, stop LUN action processing
+      elif failure_cmd_toks == '':
+        break
     return status
 
   # Parse all variables related to current LUN in the command (passed and returned as a list of tokens).  
