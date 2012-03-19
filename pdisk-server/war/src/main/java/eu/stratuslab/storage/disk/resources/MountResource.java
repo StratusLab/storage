@@ -18,7 +18,7 @@ import eu.stratuslab.storage.persistence.Mount;
 
 public class MountResource extends BaseResource {
 
-	public static String METADATA_ONLY_QUERY_PARAMETER = "metadata_only";
+	public static final String METADATA_ONLY_QUERY_PARAMETER = "metadata_only";
 	
 	private String diskId = null;
 	private String mountId = null;
