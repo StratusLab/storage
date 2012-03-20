@@ -1,5 +1,7 @@
 package eu.stratuslab.storage.persistence;
 
+import java.util.logging.Logger;
+
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
@@ -14,7 +16,7 @@ public class PersistenceUtil {
 		try {
 			return Persistence.createEntityManagerFactory(persistenceUnit);
 		} catch (Exception ex) {
-			System.err.println("Initial EntityManagerFactory creation failed:"
+			Logger.getLogger("org.restlet").severe("Initial EntityManagerFactory creation failed:"
 					+ ex.getMessage());
 			throw new ExceptionInInitializerError(ex);
 		}
