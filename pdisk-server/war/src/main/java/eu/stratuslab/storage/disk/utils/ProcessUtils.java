@@ -20,7 +20,7 @@ public final class ProcessUtils {
 	}
 	
 	private static final Logger LOGGER = Logger.getLogger("org.restlet");
-	public static VerboseLevel verboseLevel = VerboseLevel.Debug;
+	public static final VerboseLevel verboseLevel = VerboseLevel.Debug;
 
 	private ProcessUtils() {
 
