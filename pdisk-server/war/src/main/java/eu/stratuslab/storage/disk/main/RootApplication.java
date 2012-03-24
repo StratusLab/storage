@@ -134,7 +134,7 @@ public class RootApplication extends Application {
 
     private static Directory createMediaDirectory(Context context) {
 		String mediaLocation = System.getProperty(
-				"css.content.location", "war:///media");
+				"media.content.location", "war:///media");
         Directory mediaDir = new Directory(context, mediaLocation);
         mediaDir.setNegotiatingContent(false);
         mediaDir.setIndexName("index.html");

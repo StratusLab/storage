@@ -19,7 +19,7 @@
       </#if>
       <#if disk.identifier?has_content>
         <tr>
-          <td><strong>Id</strong></td>
+          <td><strong>Image identifier</strong></td>
           <td>${disk.identifier}</td>
         </tr>
       </#if>
@@ -47,14 +47,14 @@
           <td>${disk.quarantine}</td>
         </tr>
       </#if>
-<#escape x as x?html>
-  <#assign keys=disk.properties?keys>
-    <#list keys as key>
       <tr>
-        <td><strong>${key?capitalize}</strong></td>
-        <td>${disk.properties[key]}</td>
+        <td><strong>Is original (seed)</strong></td>
+        <td><input type="checkbox" disabled="true" 
+        <#if disk.seed> 
+        checked="true"
+        </#if>
+        /></td>
       </tr>
-    </#list>
 
 <#if can_delete == true>
   <tr>
@@ -70,19 +70,5 @@
 </#if>
 
   </table>
-</#escape>
-
-  <!-- 
-  <script language="javascript" src="/css/external/jquery.min.js" type="text/javascript"></script>
-  <script language="javascript" type="text/javascript">
-    $(document).ready(function() {
-      $('td').each(function(i, element) {
-        var value = $(element).text();
-        value = value.replace('&lt;', '<').replace('&gt;', '>');
-        $(element).html(value);
-      });
-    });
-  </script>
-  -->
 
 <#include "/html/footer.ftl">

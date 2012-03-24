@@ -9,8 +9,8 @@ import org.simpleframework.xml.Root;
 @Root(name = "item")
 public class DiskView {
 
-    @Attribute
-    private String uuid;
+	@Attribute
+	private String uuid;
 
 	private String tag;
 
@@ -22,26 +22,30 @@ public class DiskView {
 
 	private String quarantine;
 
-    public DiskView(String uuid, String tag, long size, int usersCount, String owner, String quarantine) {
-    	this.uuid = uuid;
-    	this.tag = tag;
-    	this.size = size;
-    	this.usersCount = usersCount;
-    	this.owner = owner;
-    	this.quarantine = quarantine;
-    }
+	private String identifier;
 
-    @Root(name = "list")
-    public static class DiskViewList {
+	public DiskView(String uuid, String tag, long size, int usersCount,
+			String owner, String quarantine, String identifier) {
+		this.uuid = uuid;
+		this.tag = tag;
+		this.size = size;
+		this.usersCount = usersCount;
+		this.owner = owner;
+		this.quarantine = quarantine;
+		this.setIdentifier(identifier);
+	}
 
-        @SuppressWarnings("unused")
-        @ElementList(inline = true, required = false)
-        private final List<DiskView> list;
+	@Root(name = "list")
+	public static class DiskViewList {
 
-        public DiskViewList(List<DiskView> list) {
-            this.list = list;
-        }
-    }
+		@SuppressWarnings("unused")
+		@ElementList(inline = true, required = false)
+		private final List<DiskView> list;
+
+		public DiskViewList(List<DiskView> list) {
+			this.list = list;
+		}
+	}
 
 	public String getTag() {
 		return tag;
@@ -81,6 +85,14 @@ public class DiskView {
 
 	public String getQuarantine() {
 		return quarantine;
+	}
+
+	public void setIdentifier(String identifier) {
+		this.identifier = identifier;
+	}
+
+	public String getIdentifier() {
+		return identifier;
 	}
 
 }

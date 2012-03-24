@@ -10,6 +10,7 @@ import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
 import eu.stratuslab.storage.disk.utils.ProcessUtils;
+import eu.stratuslab.storage.persistence.Disk;
 
 public final class LvmStorage implements DiskStorage {
 
@@ -33,14 +34,20 @@ public final class LvmStorage implements DiskStorage {
 		}
 	}
 
-	public void rebase(String cowUuid, String rebaseUuid) {
+	public String rebase(Disk disk) {
 
-		checkDiskExists(cowUuid);
+		checkDiskExists(disk.getUuid());
 
-		String sourcePath = DiskUtils.getDevicePath() + cowUuid;
+		String rebaseUuid = DiskUtils.generateUUID();
+
+		create(rebaseUuid, disk.getSize());
+		
+		String sourcePath = DiskUtils.getDevicePath() + disk.getUuid();
 		String rebasedPath = DiskUtils.getDevicePath() + rebaseUuid;
 
 		FileUtils.copyFile(sourcePath, rebasedPath);
+		
+		return rebaseUuid;
 		
 	}
 

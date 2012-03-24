@@ -5,7 +5,6 @@ import static org.restlet.data.MediaType.TEXT_HTML;
 
 import java.util.Map;
 
-import org.restlet.data.Form;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Delete;

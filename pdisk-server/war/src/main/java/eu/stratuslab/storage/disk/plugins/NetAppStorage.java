@@ -1,6 +1,8 @@
 package eu.stratuslab.storage.disk.plugins;
 
+import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.ProcessUtils;
+import eu.stratuslab.storage.persistence.Disk;
 
 public final class NetAppStorage implements DiskStorage {
 
@@ -13,11 +15,10 @@ public final class NetAppStorage implements DiskStorage {
 		NETAPP_CMD = netappCmd;
 	}
 
-	public void create(String uuid, int size) {
+	public void create(String uuid, long size) {
 
 		ProcessBuilder pb = new ProcessBuilder(NETAPP_CMD, "--config",
-				NETAPP_CONFIG, "--action", "create", uuid,
-				Integer.toString(size));
+				NETAPP_CONFIG, "--action", "create", uuid, Long.toString(size));
 
 		ProcessUtils.execute(pb, "Unable to create volume on NetApp: " + uuid
 				+ " of size " + size);
@@ -33,22 +34,25 @@ public final class NetAppStorage implements DiskStorage {
 
 	}
 
-	public String rebase(String cowUuid, String rebaseUuid) {
+	public String rebase(Disk disk) {
+
+		String rebaseUuid = DiskUtils.generateUUID();
 
 		ProcessBuilder pb = new ProcessBuilder(NETAPP_CMD, "--config",
-				NETAPP_CONFIG, "--action", "rebase", cowUuid, rebaseUuid);
+				NETAPP_CONFIG, "--action", "rebase", disk.getUuid(), rebaseUuid);
 
-		ProcessUtils.execute(pb, "Cannot rebase image NetApp: " + cowUuid + " "
-				+ rebaseUuid);
+		ProcessUtils.execute(pb,
+				"Cannot rebase image NetApp: " + disk.getUuid() + " "
+						+ rebaseUuid);
 
 		return rebaseUuid;
 	}
 
-	public void createCopyOnWrite(String baseUuid, String cowUuid, int size) {
+	public void createCopyOnWrite(String baseUuid, String cowUuid, long size) {
 
 		ProcessBuilder pb = new ProcessBuilder(NETAPP_CMD, "--config",
 				NETAPP_CONFIG, "--action", "snapshot", baseUuid, cowUuid,
-				Integer.toString(size));
+				Long.toString(size));
 
 		ProcessUtils.execute(pb, "Cannot create copy on write volume: "
 				+ baseUuid + " " + cowUuid + " " + size);
@@ -61,4 +65,9 @@ public final class NetAppStorage implements DiskStorage {
 
 		ProcessUtils.execute(pb, "Unable to delete volume on NetApp: " + uuid);
 	}
+
+	public String getDiskLocation(String uuid) {
+		return "";
+	}
+
 }

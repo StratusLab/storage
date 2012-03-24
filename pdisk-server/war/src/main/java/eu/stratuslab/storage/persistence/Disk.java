@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
@@ -25,10 +24,10 @@ import eu.stratuslab.storage.disk.utils.DiskUtils;
 @Entity
 @SuppressWarnings("serial")
 @NamedQueries({
-		@NamedQuery(name = "allDisks", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine) FROM Disk d ORDER BY d.created DESC"),
-		@NamedQuery(name = "allDisksByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine) FROM Disk d WHERE d.owner = :user ORDER BY d.created DESC"),
-		@NamedQuery(name = "allDisksAvailableByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine) FROM Disk d WHERE d.owner = :user OR d.visibility = PUBLIC ORDER BY d.created DESC"),
-		@NamedQuery(name = "allDisksByIdentifier", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine) FROM Disk d WHERE d.identifier = :identifier AND d.owner = :user ORDER BY d.created DESC") })
+		@NamedQuery(name = "allDisks", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d ORDER BY d.created DESC"),
+		@NamedQuery(name = "allDisksByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.owner = :user ORDER BY d.created DESC"),
+		@NamedQuery(name = "allDisksAvailableByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.owner = :user OR d.visibility = PUBLIC ORDER BY d.created DESC"),
+		@NamedQuery(name = "allDisksByIdentifier", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.identifier = :identifier AND d.owner = :user ORDER BY d.created DESC") })
 public class Disk implements Serializable {
 
 	public static final String STATIC_DISK_TARGET = "static";
@@ -106,8 +105,6 @@ public class Disk implements Serializable {
 	@Id
 	private String uuid;
 
-	private Properties properties;
-
 	private String owner = "";
 	private DiskVisibility visibility = DiskVisibility.PRIVATE;
 	private String created;
@@ -118,8 +115,10 @@ public class Disk implements Serializable {
 	private long size = -1;
 	private String quarantine = ""; // quarantine start date
 
-	private String identifier; // Marketplace identifier
+	private String identifier = ""; // Marketplace identifier
 
+	private boolean seed = false; // original... don't delete!
+	
 	private String baseDiskUuid;
 	
 	@MapKey(name = "id")
@@ -207,17 +206,6 @@ public class Disk implements Serializable {
 		this.identifier = identifier;
 	}
 
-	public void setProperties(Properties properties) {
-		this.properties = properties;
-	}
-
-	public Properties getProperties() {
-		if (properties == null) {
-			properties = new Properties();
-		}
-		return properties;
-	}
-
 	public int incrementUserCount() {
 		EntityManager em = PersistenceUtil.createEntityManager();
 		EntityTransaction transaction = em.getTransaction();
@@ -273,6 +261,14 @@ public class Disk implements Serializable {
 
 	public void setQuarantine(String quarantineStartDate) {
 		this.quarantine = quarantineStartDate;
+	}
+
+	public void setSeed(boolean isSeed) {
+		this.seed = isSeed;
+	}
+
+	public boolean isSeed() {
+		return seed;
 	}
 
 }

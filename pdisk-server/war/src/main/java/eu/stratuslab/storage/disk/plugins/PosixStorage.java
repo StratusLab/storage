@@ -1,11 +1,13 @@
 package eu.stratuslab.storage.disk.plugins;
 
 import java.io.File;
+
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.utils.FileUtils;
+import eu.stratuslab.storage.persistence.Disk;
 
 public final class PosixStorage implements DiskStorage {
 
@@ -38,7 +40,8 @@ public final class PosixStorage implements DiskStorage {
 	public void createCopyOnWrite(String baseUuid, String cowUuid, long size) {
 	}
 
-	public void rebase(String uuid, String rebaseUuid) {
+	public String rebase(Disk disk) {
+		return null;
 	}
 
 	public String getDiskLocation(String uuid) {

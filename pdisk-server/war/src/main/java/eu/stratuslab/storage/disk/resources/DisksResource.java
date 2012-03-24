@@ -54,7 +54,7 @@ import eu.stratuslab.storage.persistence.DiskView;
 public class DisksResource extends DiskBaseResource {
 
 	private Form form = null;
-	
+
 	@Get("html")
 	public Representation getAsHtml() {
 
@@ -128,11 +128,11 @@ public class DisksResource extends DiskBaseResource {
 		validateDisk(disk);
 
 		DiskUtils.createReadOnlyDisk(disk);
+		disk.setSeed(true);
 
 		createDisk(disk);
 
-		redirectSeeOther(getBaseUrl() + "/disks/"
-				+ disk.getUuid() + "/");
+		redirectSeeOther(getBaseUrl() + "/disks/" + disk.getUuid());
 
 	}
 
@@ -150,7 +150,7 @@ public class DisksResource extends DiskBaseResource {
 		RestletFileUpload upload = new RestletFileUpload(factory);
 
 		List<FileItem> items;
-		
+
 		try {
 			items = upload.parseRequest(getRequest());
 		} catch (FileUploadException e) {
@@ -168,14 +168,15 @@ public class DisksResource extends DiskBaseResource {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					"empty file uploaded");
 		}
-		
+
 		// Return only the last uuid
 		return disk;
 	}
 
 	protected Disk inflateAndProcessImage(FileItem fi) {
 		Disk disk = initializeDisk();
-		String compressedFilename = FileUtils.getCompressedDiskLocation(disk.getUuid());
+		String compressedFilename = FileUtils.getCompressedDiskLocation(disk
+				.getUuid());
 
 		File file = new File(compressedFilename);
 
@@ -185,11 +186,13 @@ public class DisksResource extends DiskBaseResource {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					"no valid file uploaded");
 		}
-		String cachedDiskLocation = FileUtils.getCachedDiskLocation(disk.getUuid());
+		String cachedDiskLocation = FileUtils.getCachedDiskLocation(disk
+				.getUuid());
 		long size = inflateFile(file, cachedDiskLocation);
 		disk.setSize(size);
 		try {
-			disk.setIdentifier(DiskUtils.calculateHash(new File(cachedDiskLocation)));
+			disk.setIdentifier(DiskUtils.calculateHash(new File(
+					cachedDiskLocation)));
 		} catch (FileNotFoundException e) {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					e.getMessage());
@@ -217,15 +220,15 @@ public class DisksResource extends DiskBaseResource {
 					e.getMessage());
 		} finally {
 			try {
-				if(in != null) {
-					in.close();					
+				if (in != null) {
+					in.close();
 				}
 			} catch (IOException e) {
 				// it's ok
 			}
 			try {
-				if(out != null) {
-					out.close();					
+				if (out != null) {
+					out.close();
 				}
 			} catch (IOException e) {
 				// it's ok
@@ -235,16 +238,16 @@ public class DisksResource extends DiskBaseResource {
 	}
 
 	private Map<String, Object> listDisks() {
-		Map<String, Object> info = createInfoStructure("Disks list");
+		Map<String, Object> info = createInfoStructure("Disks");
 
 		addCreateFormDefaults(info);
 
 		String username = getUsername(getRequest());
 		List<DiskView> disks;
-		if(isSuperUser(username)){
+		if (isSuperUser(username)) {
 			disks = Disk.listAll();
 		} else {
-			disks = Disk.listAllByUser(username);			
+			disks = Disk.listAllByUser(username);
 		}
 		info.put("disks", disks);
 
