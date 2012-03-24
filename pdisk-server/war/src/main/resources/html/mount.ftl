@@ -5,8 +5,8 @@
   <table>
     <tbody>
       <tr>
-        <td><strong>Disk UUID</strong></td>
-        <td>${diskId}</td>
+        <td><strong>Disk ID</strong></td>
+        <td><p><a href="${baseurl}/disks/${diskId}">${diskId}</a></p></td>
       </tr>
       <tr>
         <td><strong>Mount ID</strong></td>
@@ -17,12 +17,12 @@
         <td>${vmId}</td>
       </tr>
       <tr>
-        <td><strong>Node</strong></td>
-        <td>${node}</td>
+        <td><strong>Device</strong></td>
+        <td>${device}</td>
       </tr>
       <tr>
         <td>
-          <form action="${url}?method=delete" 
+          <form action="${currenturl}?method=delete" 
                 enctype="application/x-www-form-urlencoded" 
                 method="post">
             <input type="submit" value="Unmount"></p>

@@ -23,7 +23,6 @@ import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -35,14 +34,12 @@ import org.restlet.resource.ServerResource;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
-import eu.stratuslab.storage.disk.utils.DiskProperties;
+import eu.stratuslab.storage.persistence.Disk;
 import freemarker.template.Configuration;
 
 public class BaseResource extends ServerResource {
 
     private static final String CLIENT_CERTS_ATTR = "org.restlet.https.clientCertificates";
-
-    protected final DiskProperties zk;
 
     public enum DiskVisibility {
         PRIVATE,
@@ -52,46 +49,6 @@ public class BaseResource extends ServerResource {
         public static DiskVisibility valueOfIgnoreCase(String value) {
             return valueOf(value.toUpperCase());
         }
-    }
-
-    public BaseResource() {
-        super();
-        zk = new DiskProperties();
-    }
-
-    @Override
-    protected void doRelease() {
-        if (zk != null) {
-            zk.close();
-        }
-        super.doRelease();
-    }
-
-    private Configuration getFreeMarkerConfiguration() {
-        return ((RootApplication) getApplication())
-                .getFreeMarkerConfiguration();
-    }
-
-    protected TemplateRepresentation createTemplateRepresentation(String tpl,
-            Map<String, Object> info, MediaType mediaType) {
-
-        Configuration freeMarkerConfig = getFreeMarkerConfiguration();
-        return createTemplateRepresentation(freeMarkerConfig, tpl, info,
-                mediaType);
-
-    }
-
-    public static TemplateRepresentation createTemplateRepresentation(
-            Configuration freeMarkerConfig, String tpl,
-            Map<String, Object> info, MediaType mediaType) {
-
-        return new TemplateRepresentation(tpl, freeMarkerConfig, info,
-                mediaType);
-    }
-
-    protected Map<String, Object> createInfoStructure(String title) {
-
-        return createInfoStructure(title, getRequest(), getBaseUrl());
     }
 
     public static Map<String, Object> createInfoStructure(String title,
@@ -181,33 +138,9 @@ public class BaseResource extends ServerResource {
         return (queryString != null && queryString.equals(key));
     }
 
-    protected Boolean hasSufficientRightsToView(Properties properties) {
-        String username = getUsername(getRequest());
-        if (properties.get(DiskProperties.DISK_OWNER_KEY).toString()
-                .equals(username)
-                || isSuperUser(username)) {
-            return true;
-        }
-
-        String visibility = properties
-                .getProperty(DiskProperties.DISK_VISIBILITY_KEY);
-
-        DiskVisibility currentVisibility = DiskVisibility
-                .valueOfIgnoreCase(visibility);
-
-        return (currentVisibility == DiskVisibility.PUBLIC);
-    }
-
     protected boolean isSuperUser(String username) {
         return RootApplication.CONFIGURATION.CLOUD_SERVICE_USER
                 .equals(username);
-    }
-
-    protected Boolean hasSufficientRightsToDelete(Properties properties) {
-        String username = getUsername(getRequest());
-        return properties.get(DiskProperties.DISK_OWNER_KEY).toString()
-                .equals(username)
-                || isSuperUser(username);
     }
 
     protected String serviceName() {
@@ -248,5 +181,46 @@ public class BaseResource extends ServerResource {
             return null;
         }
     }
+
+    protected TemplateRepresentation createTemplateRepresentation(String tpl,
+            Map<String, Object> info, MediaType mediaType) {
+
+        Configuration freeMarkerConfig = getFreeMarkerConfiguration();
+        return createTemplateRepresentation(freeMarkerConfig, tpl, info,
+                mediaType);
+
+    }
+
+	private Configuration getFreeMarkerConfiguration() {
+		return ((RootApplication) getApplication())
+				.getFreeMarkerConfiguration();
+	}
+    public static TemplateRepresentation createTemplateRepresentation(
+			Configuration freeMarkerConfig, String tpl,
+			Map<String, Object> info, MediaType mediaType) {
+		return new TemplateRepresentation(tpl, freeMarkerConfig, info,
+				mediaType);
+	}
+
+	protected Map<String, Object> createInfoStructure(String title) {
+
+		return createInfoStructure(title, getRequest(), getBaseUrl());
+	}
+
+	protected Boolean hasSufficientRightsToView(Disk disk) {
+		String username = getUsername(getRequest());
+		if (username.equals(disk.getOwner()) || isSuperUser(username)) {
+			return true;
+		}
+
+		DiskVisibility visibility = disk.getVisibility();
+
+		return visibility == DiskVisibility.PUBLIC;
+	}
+
+	protected Boolean hasSufficientRightsToDelete(Disk disk) {
+		String username = getUsername(getRequest());
+		return username.equals(disk.getOwner()) || isSuperUser(username);
+	}
 
 }

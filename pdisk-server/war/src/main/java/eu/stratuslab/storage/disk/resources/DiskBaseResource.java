@@ -22,152 +22,162 @@ package eu.stratuslab.storage.disk.resources;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import org.restlet.data.Form;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
-import eu.stratuslab.storage.disk.utils.DiskProperties;
-import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.disk.utils.CompressedDiskRemoval;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
+import eu.stratuslab.storage.persistence.Disk;
 
 public class DiskBaseResource extends BaseResource {
 
-    protected Properties getExistingProperties() {
-        return zk.getDiskProperties(getDiskId());
-    }
+	private static final String SIZE_KEY = "size";
+	private static final String VISIBILITY_KEY = "visibility";
+	private static final String TAG_KEY = "tag";
+	private static final String OWNER_KEY = "owner";
+	private static final String QUARANTINE_START_DATE_KEY = "quarantine";
 
-    protected Properties getDiskProperties(Form form) {
+	protected Disk getDisk(Form form) {
 
-        Properties diskProperties = processWebFormWithDefaults(form);
+		return processWebForm(form);
+	}
 
-        return diskProperties;
-    }
+	protected Disk processWebForm(Form form) {
+		Disk disk = initializeDisk();
+		return processWebForm(disk, form);
+	}
 
-    protected Properties getDiskProperties(Form form,
-            Properties initialProperties) {
+	protected Disk processWebForm(Disk disk, Form form) {
 
-        Properties diskProperties = processWebForm(initialProperties, form);
+		String sizeInForm = form.getFirstValue(SIZE_KEY);
+		if (sizeInForm != null) {
 
-        return diskProperties;
-    }
+			long size;
+			try {
+				size = Long.parseLong(sizeInForm);
+			} catch (NumberFormatException e) {
+				throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+						"Error parsing size: " + e.getMessage());
+			}
 
-    private Properties getEmptyFormProperties() {
-        Properties properties = new Properties();
+			disk.setSize(size);
+		}
 
-        properties.put(DiskProperties.DISK_SIZE_KEY, "");
-        properties.put(DiskProperties.DISK_TAG_KEY, "");
-        properties.put(DiskProperties.DISK_VISIBILITY_KEY, "private");
-        properties.put(DiskProperties.DISK_READ_ONLY_KEY, false);
-        properties.put(DiskProperties.DISK_COW_BASE_KEY, false);
+		String visibilityInForm = form.getFirstValue(VISIBILITY_KEY);
+		if (visibilityInForm != null) {
+			DiskVisibility visibility;
+			try {
+				visibility = DiskVisibility.valueOf(visibilityInForm
+						.toUpperCase());
+			} catch (IllegalArgumentException ex) {
+				throw (new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+						"Invalid value for form element visibility: "
+								+ ex.getMessage()));
+			}
 
-        return properties;
-    }
+			disk.setVisibility(visibility);
+		}
 
-    private Properties processWebFormWithDefaults(Form form) {
-        Properties initialProperties = initializeProperties();
-        return processWebForm(initialProperties, form);
-    }
+		String tagInForm = form.getFirstValue(TAG_KEY);
+		if (tagInForm != null) {
+			disk.setTag(tagInForm);
+		}
 
-    protected Properties processWebForm(Form form) {
-        return processWebForm(new Properties(), form);
-    }
+		String ownerInForm = form.getFirstValue(OWNER_KEY);
+		if (ownerInForm != null) {
+			disk.setOwner(ownerInForm);
+		}
 
-    private Properties processWebForm(Properties initialProperties, Form form) {
-        Properties properties = initialProperties;
+		String quarantineStartDate = form.getFirstValue(QUARANTINE_START_DATE_KEY);
+		if (quarantineStartDate != null) {
+			disk.setQuarantine(quarantineStartDate);
+		}
 
-        for (String name : form.getNames()) {
-            String value = form.getFirstValue(name);
-            if (value != null) {
-                properties.put(name, value);
-            }
-        }
+		return disk;
+	}
 
-        return properties;
-    }
+	protected Disk initializeDisk() {
+		Disk disk = new Disk();
+		disk.setOwner(getUsername(getRequest()));
+		disk.setCreated(MiscUtils.getTimestamp());
+		disk.setUsersCount(0);
 
-    protected Properties initializeProperties() {
-        Properties properties = getEmptyFormProperties();
-        properties.put(DiskProperties.UUID_KEY, DiskUtils.generateUUID());
-        properties
-                .put(DiskProperties.DISK_OWNER_KEY, getUsername(getRequest()));
-        properties.put(DiskProperties.DISK_CREATION_DATE_KEY,
-                MiscUtils.getTimestamp());
-        properties.put(DiskProperties.DISK_USERS_KEY, "0");
+		return disk;
+	}
 
-        return properties;
-    }
+	protected void validateDisk(Disk disk) {
+		List<String> errors = new LinkedList<String>();
 
-    protected void validateDiskProperties(Properties diskProperties) {
-        List<String> errors = new LinkedList<String>();
+		if (Disk.identifierExists(disk.getIdentifier(), disk.getOwner())) {
+			errors.add("image already registered");
+		}
 
-        String visibility = "none";
-        try {
-            visibility = diskProperties.getProperty("visibility", "none");
-            DiskVisibility.valueOfIgnoreCase(visibility);
-        } catch (IllegalArgumentException e) {
-            errors.add("invalid disk visibility: " + visibility);
-        }
+		long gigabytes = disk.getSize();
 
-        try {
-            String size = diskProperties.getProperty("size", "None");
-            int gigabytes = Integer.parseInt(size);
+		if (gigabytes < ServiceConfiguration.DISK_SIZE_MIN
+				|| gigabytes > ServiceConfiguration.DISK_SIZE_MAX) {
+			errors.add("Size must be an integer between "
+					+ ServiceConfiguration.DISK_SIZE_MIN + " and "
+					+ ServiceConfiguration.DISK_SIZE_MAX);
+		}
 
-            if (gigabytes < ServiceConfiguration.DISK_SIZE_MIN
-                    || gigabytes > ServiceConfiguration.DISK_SIZE_MAX) {
-                errors.add("Size must be an integer between "
-                        + ServiceConfiguration.DISK_SIZE_MIN + " and "
-                        + ServiceConfiguration.DISK_SIZE_MAX);
-            }
-        } catch (NumberFormatException e) {
-            errors.add("Size must be a valid positive integer");
-        }
+		if (errors.size() > 0) {
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+					MiscUtils.join(errors, "\", \""));
+		}
+	}
 
-        if (errors.size() > 0) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    MiscUtils.join(errors, "\", \""));
-        }
-    }
+	protected Disk updateDisk(Disk disk) {
+		disk.store();
+		return disk;
+	}
 
-    protected void registerDisk(Properties properties) {
-        zk.saveDiskProperties(properties);
-    }
+	protected int incrementUserCount(String uuid) {
+		return Disk.load(uuid).incrementUserCount();
+	}
 
-    protected Properties updateDisk(Properties properties) {
-        String uuid = properties.get(DiskProperties.UUID_KEY).toString();
-        zk.updateDiskProperties(uuid, properties);
-        return zk.getDiskProperties(uuid);
-    }
+	protected Disk loadExistingDisk() {
+		Disk disk = Disk.load(getDiskId());
+		if (disk == null) {
+			throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
+					+ getDiskId() + ") does not exist");
+		}
+		return disk;
+	}
 
-    protected int incrementUserCount(String uuid) {
-        return zk.incrementUserCount(uuid);
-    }
+	protected String getDiskId() {
+		Map<String, Object> attributes = getRequest().getAttributes();
 
-    protected void checkExistance() {
-        if (!zk.diskExists(getDiskId())) {
-            throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
-                    + getDiskId() + ") does not exist");
-        }
-    }
+		return attributes.get("uuid").toString();
+	}
 
-    protected String getDiskId() {
-        Map<String, Object> attributes = getRequest().getAttributes();
+	protected void checkIsSuper() {
+		if (!isSuperUser(getUsername(getRequest()))) {
+			throw (new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
+					"Only super user can perform this operation"));
+		}
 
-        return attributes.get("uuid").toString();
-    }
+	}
 
-    protected void createDisk(Properties properties) {
-        DiskUtils.createDisk(zk, properties);
-    }
+	protected void cleanCache(String uuid) {
+		CompressedDiskRemoval deleteDisk = new CompressedDiskRemoval(uuid);
 
-    protected void checkIsSuper() {
-        if (!isSuperUser(getUsername(getRequest()))) {
-            throw (new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
-                    "Only super user can perform this operation"));
-        }
+		getLogger().info("DiskResource toZip: " + uuid);
 
-    }
+		Disk disk = loadExistingDisk();
+		checkViewRightsOrError(disk);
+
+		deleteDisk.run();
+	}
+
+	private void checkViewRightsOrError(Disk disk) {
+		if (!hasSufficientRightsToView(disk)) {
+			throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "disk ("
+					+ disk.getUuid() + ") does not exist");
+		}
+	}
 
 }

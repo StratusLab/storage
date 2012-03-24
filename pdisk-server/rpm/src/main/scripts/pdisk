@@ -154,40 +154,12 @@ TMPDIR=${TMPDIR:-/tmp}
 JETTY_INSTALL_TRACE_FILE="etc/jetty.xml"
 
 ##################################################
-# ZooKeeper server location
+# Start tgtd
 ##################################################
-# (boolean) Apply same action on ZooKeeper as on Jetty
-AUTORUN_ZOOKEEPER=1 
-ZOOKEEPER_SERVER_CMD=/opt/stratuslab/storage/pdisk/zookeeper/bin/zkServer.sh
-
-
-##################################################
-# ZooKeeper management
-##################################################
-zookeeper_action() {
-    local ACT=$1
-    if [ $AUTORUN_ZOOKEEPER -eq 1 ]
-    then
-        if [ "x$ACT" != "xrestart" ]
-        then
-            echo -n "Trying to $ACT ZooKeeper service... "
-            /bin/sh $ZOOKEEPER_SERVER_CMD $ACT &>> /var/log/zookeeper.log
-            [ $? -gt 0 ] && echo "FAILED" || echo "OK"
-        fi
-    fi
-}
-
-#
-# Automatically migrate zookeeper information on an upgrade.
-# Note: Upgrade should be done WITHOUT rebooting the system.
-#
-zookeeper_migrate() {
-    if [ -d "/tmp/zookeeper" ]; then
-        if [ ! -e "var/lib/zookeeper-pdisk" ]; then
-            mkdir -p /var/lib/zookeeper-pdisk
-            mv /tmp/zookeeper/* /var/lib/zookeeper-pdisk/
-        fi
-    fi
+start_tgtd() {
+    TGT_SERV="/etc/init.d/tgtd"
+    $TGT_SERV status &>/dev/null
+    [ $? -gt 0 ] && $TGT_SERV start 
 }
 
 
@@ -477,8 +449,7 @@ case "$ACTION" in
       fi
 
       echo "STARTED Jetty `date`" 
-      zookeeper_migrate
-      zookeeper_action start
+      start_tgtd
     fi
 
     ;;
@@ -514,7 +485,6 @@ case "$ACTION" in
 
       rm -f "$JETTY_PID"
       echo OK
-      zookeeper_action stop
     fi
 
     ;;

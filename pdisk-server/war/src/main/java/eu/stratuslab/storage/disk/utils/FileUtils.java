@@ -15,6 +15,8 @@ import java.nio.charset.Charset;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
+import eu.stratuslab.storage.disk.main.RootApplication;
+
 public final class FileUtils {
 
     private FileUtils() {
@@ -158,4 +160,61 @@ public final class FileUtils {
         return new BufferedReader(new InputStreamReader(new FileInputStream(
                 file), Charset.defaultCharset()));
     }
+
+	public static void createZeroFile(File file, long sizeInGB) {
+		OutputStream ostream = null;
+
+		try {
+			ostream = new FileOutputStream(file);
+
+			// Create 1 MB buffer of zeros.
+			byte[] buffer = new byte[1024000];
+
+			for (int i = 0; i < 1000 * sizeInGB; i++) {
+				ostream.write(buffer);
+			}
+		} catch (IOException e) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"An error occured while creating a block file "
+							+ file.getName());
+		} finally {
+			if (ostream != null) {
+				try {
+					ostream.close();
+				} catch (IOException consumed) {
+					throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+							"An error occured while closing block file "
+									+ file.getName());
+				}
+			}
+		}
+
+	}
+
+	public static void copyFile(String src, String dst) {
+		ProcessBuilder pb = new ProcessBuilder("dd", "if=" + src, "of=" + dst);
+		ProcessUtils.execute(pb, "Unable to copy file " + src + " to " + dst);
+	}
+	
+	public static String getCachedDiskLocation(String uuid) {
+		return RootApplication.CONFIGURATION.CACHE_LOCATION + "/"
+				+ uuid;
+	}
+
+	public static String getCompressedDiskLocation(String uuid) {
+		return getCachedDiskLocation(uuid) + ".gz";
+	}
+
+	public static Boolean isCachedDiskExists(String uuid) {
+		File cachedDisk = new File(getCachedDiskLocation(uuid));
+		
+		return cachedDisk.exists() && cachedDisk.canRead();
+	}
+	
+	public static Boolean isCompressedDiskExists(String uuid) {
+		File cachedDisk = new File(getCompressedDiskLocation(uuid));
+		
+		return cachedDisk.exists() && cachedDisk.canRead();
+	}
+	
 }

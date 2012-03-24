@@ -7,12 +7,13 @@ import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
 import eu.stratuslab.storage.disk.utils.ProcessUtils;
 
 public final class LvmStorage implements DiskStorage {
 
-	public void create(String uuid, int size) {
+	public void create(String uuid, long size) {
 
 		String lvmSize = size + "G";
 		ProcessBuilder pb = new ProcessBuilder(
@@ -32,22 +33,18 @@ public final class LvmStorage implements DiskStorage {
 		}
 	}
 
-	public String rebase(String cowUuid, String rebaseUuid) {
+	public void rebase(String cowUuid, String rebaseUuid) {
 
 		checkDiskExists(cowUuid);
 
 		String sourcePath = DiskUtils.getDevicePath() + cowUuid;
 		String rebasedPath = DiskUtils.getDevicePath() + rebaseUuid;
 
-		ProcessBuilder pb = new ProcessBuilder("dd", "if=" + sourcePath, "of="
-				+ rebasedPath);
-
-		ProcessUtils.execute(pb, "Unable to rebase the LVM volume");
-
-		return rebaseUuid;
+		FileUtils.copyFile(sourcePath, rebasedPath);
+		
 	}
 
-	public void createCopyOnWrite(String baseUuid, String cowUuid, int size) {
+	public void createCopyOnWrite(String baseUuid, String cowUuid, long size) {
 		// lvcreate --snapshot -p rw --size $PDISKID_COPY_SIZE
 		// --name $PDISKID_COPY $VGPATH/$PDISKID
 
@@ -97,4 +94,9 @@ public final class LvmStorage implements DiskStorage {
 			}
 		}
 	}
+
+	public String getDiskLocation(String uuid) {
+		return RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/" + uuid;
+	}
+	
 }

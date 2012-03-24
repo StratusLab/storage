@@ -1,14 +1,14 @@
 package eu.stratuslab.storage.disk.utils;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 
 import org.restlet.data.Status;
@@ -24,7 +24,12 @@ import eu.stratuslab.storage.disk.plugins.IscsiSharing;
 import eu.stratuslab.storage.disk.plugins.LvmStorage;
 import eu.stratuslab.storage.disk.plugins.NetAppStorage;
 import eu.stratuslab.storage.disk.plugins.PosixStorage;
+import eu.stratuslab.storage.persistence.Disk;
 
+/**
+ * For unit tests see {@link DiskUtilsTest}
+ *
+ */
 public final class DiskUtils {
 
 	private DiskUtils() {
@@ -63,67 +68,54 @@ public final class DiskUtils {
 		}
 	}
 
-	public static void createDisk(DiskProperties zk, Properties properties) {
-		String uuid = properties.getProperty(DiskProperties.UUID_KEY)
-				.toString();
+	public static void createDisk(Disk disk) {
 
 		DiskSharing diskSharing = getDiskSharing();
 		DiskStorage diskStorage = getDiskStorage();
 
-		diskSharing.preDiskCreationActions(uuid);
+		diskSharing.preDiskCreationActions(disk.getUuid());
 
-		diskStorage.create(uuid, getSize(properties));
-
-		properties.put(DiskProperties.UUID_KEY, uuid);
-
-		zk.saveDiskProperties(properties);
-
-		diskSharing.postDiskCreationActions(uuid);
+		diskStorage.create(disk.getUuid(), disk.getSize());
+		
+		disk.store();
+		
+		diskSharing.postDiskCreationActions(disk.getUuid());
 	}
 
-	public static String createCoWDisk(DiskProperties zk, Properties properties) {
-		String uuid = properties.getProperty(DiskProperties.UUID_KEY)
-				.toString();
+	public static String createCoWDisk(Disk disk) {
 
 		DiskSharing diskSharing = getDiskSharing();
 		DiskStorage diskStorage = getDiskStorage();
 
-		String cowUuid = generateUUID();
+		Disk cowDisk = createCowDisk(disk);
 
-		diskSharing.preDiskCreationActions(cowUuid);
+		diskSharing.preDiskCreationActions(cowDisk.getUuid());
+		
+		diskStorage.createCopyOnWrite(disk.getUuid(), cowDisk.getUuid(), disk.getSize());
 
-		diskStorage.createCopyOnWrite(uuid, cowUuid, getSize(properties));
+		cowDisk.store();
 
-		// TODO: refactor
-		properties.put(DiskProperties.UUID_KEY, cowUuid);
-		String baseDiskHref = String.format("<a href='%s'>basedisk<a/>",
-				DiskProperties.getDiskPath(uuid));
-		properties.put(DiskProperties.DISK_COW_BASE_KEY, baseDiskHref);
+		diskSharing.postDiskCreationActions(cowDisk.getUuid());
 
-		zk.saveDiskProperties(properties);
-
-		diskSharing.postDiskCreationActions(cowUuid);
-
-		return cowUuid;
+		return cowDisk.getUuid();
 	}
 
-	public static String rebaseDisk(Properties properties) {
-		String uuid = properties.getProperty(DiskProperties.UUID_KEY)
-				.toString();
+	protected static Disk createCowDisk(Disk disk) {
+		Disk cowDisk = new Disk();
+		cowDisk.setIscow(true);
+		cowDisk.setBaseDiskUuid(disk.getUuid());
+		cowDisk.setSize(disk.getSize());
+		cowDisk.setUsersCount(1);
+		cowDisk.setIdentifier(disk.getIdentifier());
+		disk.incrementUserCount();
+		return cowDisk;
+	}
+
+	public static String rebaseDisk(Disk disk) {
 
 		DiskStorage diskStorage = getDiskStorage();
 
-		String rebaseUuid = DiskUtils.generateUUID();
-
-		diskStorage.create(rebaseUuid, getSize(properties));
-
-		String rebasedUuid = diskStorage.rebase(uuid, rebaseUuid);
-
-		return rebasedUuid;
-	}
-
-	protected static int getSize(Properties properties) {
-		return Integer.parseInt(properties.getProperty("size"));
+		return diskStorage.rebase(disk);
 	}
 
 	public static void removeDisk(String uuid) {
@@ -204,6 +196,21 @@ public final class DiskUtils {
 
 		InputStream fis = new FileInputStream(getDevicePath() + uuid);
 
+		return calculateHash(fis);
+
+	}
+
+	public static String calculateHash(File file) throws FileNotFoundException {
+
+		InputStream fis = new FileInputStream(file);
+
+		return calculateHash(fis);
+
+	}
+
+	public static String calculateHash(InputStream fis)
+			throws FileNotFoundException {
+
 		Map<String, BigInteger> info = MetadataUtils.streamInfo(fis);
 
 		BigInteger sha1Digest = info.get("SHA-1");
@@ -218,18 +225,52 @@ public final class DiskUtils {
 		return RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
 	}
 
-	public static List<String> getAllDisks() {
-		DiskProperties zk = null;
-		List<String> disks = Collections.emptyList();
-		try {
-			zk = new DiskProperties();
-			disks = zk.getDisks();
-		} finally {
-			if (zk != null) {
-				zk.close();
-			}
+	public static void createReadOnlyDisk(Disk disk) {
+		DiskStorage diskStorage = getDiskStorage();
+		String uuid = disk.getUuid();
+		String diskLocation = diskStorage.getDiskLocation(uuid);
+		String cachedDisk = FileUtils.getCachedDiskLocation(uuid);
+
+		FileUtils.copyFile(cachedDisk, diskLocation);
+
+		File cachedDiskFile = new File(cachedDisk);
+		boolean success = cachedDiskFile.delete();
+		if (!success) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Failed deleting inflated file: " + cachedDisk);
 		}
-		return disks;
+		disk.setIsreadonly(true);
+	}
+
+	public static void createCompressedDisk(String uuid) {
+		DiskStorage diskStorage = getDiskStorage();
+		String diskLocation = diskStorage.getDiskLocation(uuid);
+		String cachedDisk = FileUtils.getCachedDiskLocation(uuid);
+
+		FileUtils.copyFile(diskLocation, cachedDisk);
+
+		ProcessBuilder pb = new ProcessBuilder(
+				RootApplication.CONFIGURATION.GZIP_CMD, "-f", cachedDisk);
+		ProcessUtils.execute(pb, "Unable to compress disk " + uuid);
+	}
+
+	public static String getCompressedDiskLocation(String uuid) {
+		return RootApplication.CONFIGURATION.CACHE_LOCATION + "/" + uuid
+				+ ".gz";
+	}
+
+	public static Boolean isCompressedDiskBuilding(String uuid) {
+		return FileUtils.isCachedDiskExists(uuid);
+	}
+
+	public static Boolean hasCompressedDiskExpire(String uuid) {
+		File zip = new File(FileUtils.getCompressedDiskLocation(uuid));
+		return hasCompressedDiskExpire(zip);
+	}
+
+	public static Boolean hasCompressedDiskExpire(File disk) {
+		Calendar cal = Calendar.getInstance();
+		return (cal.getTimeInMillis() > (disk.lastModified() + ServiceConfiguration.CACHE_EXPIRATION_DURATION));
 	}
 
 }

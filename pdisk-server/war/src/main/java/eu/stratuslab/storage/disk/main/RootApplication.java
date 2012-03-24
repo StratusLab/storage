@@ -20,6 +20,7 @@
 package eu.stratuslab.storage.disk.main;
 
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.restlet.Application;
 import org.restlet.Component;
@@ -29,15 +30,18 @@ import org.restlet.Response;
 import org.restlet.Restlet;
 import org.restlet.data.ChallengeScheme;
 import org.restlet.data.LocalReference;
+import org.restlet.data.MediaType;
 import org.restlet.data.Protocol;
 import org.restlet.ext.freemarker.ContextTemplateLoader;
 import org.restlet.resource.Directory;
 import org.restlet.routing.Router;
+import org.restlet.routing.TemplateRoute;
 import org.restlet.security.ChallengeAuthenticator;
 
 import eu.stratuslab.storage.disk.resources.DiskResource;
 import eu.stratuslab.storage.disk.resources.DisksResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
+import eu.stratuslab.storage.disk.resources.InstancesResource;
 import eu.stratuslab.storage.disk.resources.MountResource;
 import eu.stratuslab.storage.disk.resources.MountsResource;
 import eu.stratuslab.storage.disk.utils.DummyVerifier;
@@ -45,6 +49,8 @@ import freemarker.template.Configuration;
 
 public class RootApplication extends Application {
 
+	private static final Logger logger = Logger.getLogger("org.restlet");
+	
     public static final String SVC_CONFIGURATION_KEY = "PDISK_SVC_CONFIG";
     public static final String FM_CONFIGURATION_KEY = "PDISK_FM_CONFIG";
 
@@ -68,10 +74,10 @@ public class RootApplication extends Application {
 			component.start();
 		} catch (Exception e) {
 			e.printStackTrace();
-			//System.err.println("\nStarting StratusLab Storage Server FAILED!\n");
+			logger.severe("Starting StratusLab Storage Server FAILED!");
 			System.exit(1);
 		}
-		//System.out.println("\nStratusLab Storage Server started!\n");
+		logger.info("StratusLab Storage Server started!");
 	}
     
     
@@ -84,6 +90,8 @@ public class RootApplication extends Application {
         setStatusService(new CommonStatusService());
 
         getTunnelService().setUserAgentTunnel(true);
+
+		getMetadataService().addExtension("gzip", MediaType.APPLICATION_GNU_ZIP, true);
     }
 
     @Override
@@ -96,6 +104,9 @@ public class RootApplication extends Application {
         Router router = new RootRouter(context, configuration,
                 freeMarkerConfiguration);
 
+        TemplateRoute route = router.attach("/disks/{uuid}/mounts/{mountid}?metadata_only={" + MountResource.METADATA_ONLY_QUERY_PARAMETER + "}", MountResource.class);
+        route.setMatchingQuery(true);
+        
         router.attach("/disks/{uuid}/mounts/{mountid}/", MountResource.class);
         router.attach("/disks/{uuid}/mounts/{mountid}", MountResource.class);
 
@@ -107,6 +118,12 @@ public class RootApplication extends Application {
 
         router.attach("/disks/", DisksResource.class);
         router.attach("/disks", DisksResource.class);
+
+        router.attach("/instances/{vmid}/", InstancesResource.class);
+        router.attach("/instances/{vmid}", InstancesResource.class);
+
+        router.attach("/instances/", InstancesResource.class);
+        router.attach("/instances", InstancesResource.class);
 
         router.attach("/", HomeResource.class);
 

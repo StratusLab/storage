@@ -46,6 +46,7 @@ public class ServiceConfiguration {
 	}
 
 	// Configuration file
+	public static final String SYSTEM_PROPERTY_CONFIG_FILENAME = "pdisk.config.filename";		
 	public static final String DEFAULT_CFG_FILENAME = "pdisk.cfg";
 	public static final String DEFAULT_CFG_LOCATION = "/etc/stratuslab/";
 	public static final String DEFAULT_ISCSI_CONFIG_FILENAME = "/etc/stratuslab/iscsi.conf";
@@ -54,12 +55,12 @@ public class ServiceConfiguration {
 	// Disk size limits (in GiBs)
 	public static final int DISK_SIZE_MIN = 1;
 	public static final int DISK_SIZE_MAX = 1024;
-
+	
+	public static final int CACHE_EXPIRATION_DURATION = 2000;
+	
 	public final Properties CONFIGURATION;
 
 	public final ShareType SHARE_TYPE;
-
-	public final String ZK_ADDRESSES;
 
 	public final DiskType ISCSI_DISK_TYPE;
 	public final File ISCSI_CONFIG;
@@ -84,13 +85,18 @@ public class ServiceConfiguration {
 	public final String NETAPP_CONFIG;
 	public final String NETAPP_CMD;
 
+	public final String CACHE_LOCATION;
+	
+	public final String GZIP_CMD;
+	public final String GUNZIP_CMD;
+
+	public final int UPLOAD_COMPRESSED_IMAGE_MAX_BYTES;
+
 	private ServiceConfiguration() {
 
 		CONFIGURATION = readConfigFile();
 
 		SHARE_TYPE = getShareType();
-
-		ZK_ADDRESSES = getConfigValue("disk.store.zookeeper.address");
 
 		ISCSI_DISK_TYPE = getDiskType();
 
@@ -135,6 +141,12 @@ public class ServiceConfiguration {
 		CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
 		CLOUD_SERVICE_USER = getConfigValue("disk.store.cloud.service.user");
 
+		CACHE_LOCATION = getCacheLocation();
+		
+		GZIP_CMD = getCommand("disk.store.utils.gzip");
+		GUNZIP_CMD = getCommand("disk.store.utils.gunzip");
+		
+		UPLOAD_COMPRESSED_IMAGE_MAX_BYTES = 10240000;
 	}
 
 	public static ServiceConfiguration getInstance() {
@@ -203,16 +215,20 @@ public class ServiceConfiguration {
 
 		if (!confHandler.isFile()) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Unable to find ISCSI configuration file.");
+					"Unable to find ISCSI configuration file " + confHandler.getAbsolutePath());
 		}
 
-		// Add include instruction in conf file in not
-		if (!FileUtils
-				.fileHasLine(confHandler, includeConfig.replace("\n", ""))) {
+		if (!isPdiskIscsiConfigInGlobalIscsiConfig(confHandler, includeConfig)) {
 			FileUtils.appendToFile(confHandler, includeConfig);
 		}
 
 		return stratusConf;
+	}
+
+	private Boolean isPdiskIscsiConfigInGlobalIscsiConfig(File confHandler,
+			String includeConfig) {
+		return FileUtils
+				.fileHasLine(confHandler, includeConfig.replace("\n", ""));
 	}
 
 	private String getConfigValue(String key) {
@@ -251,6 +267,31 @@ public class ServiceConfiguration {
 		}
 
 		return diskStoreHandler;
+	}
+
+	private String getCacheLocation() {
+		String cache = getConfigValue("disk.store.cache.location");
+		File cacheDir = new File(cache);
+
+		if (cacheDir.exists()) {
+			if (!cacheDir.isDirectory()) {
+				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+						"Cache location " + cacheDir.getAbsolutePath()
+								+ " already in use");
+			} else if (!cacheDir.canWrite()) {
+				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+						"Cannot write cache location "
+								+ cacheDir.getAbsolutePath());
+			}
+		} else {
+			if (!cacheDir.mkdirs()) {
+				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+						"Unable to create cache location "
+								+ cacheDir.getAbsolutePath());
+			}
+		}
+
+		return cache;
 	}
 
 	private String getCommand(String configName) {
