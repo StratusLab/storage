@@ -18,4 +18,18 @@
     </New>
   </Set>
 
+  <Call class="java.lang.System" name="setProperties">
+    <Arg>
+      <New class="java.util.Properties">
+        <Call name="putAll">
+          <Arg><Call class="java.lang.System" name="getProperties"/></Arg>
+        </Call>
+        <Call name="setProperty">
+          <Arg>persistence.unit</Arg>
+          <Arg>mysql-schema</Arg>
+        </Call>
+      </New>
+    </Arg>
+  </Call>
+  
 </Configure>
