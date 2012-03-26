@@ -45,7 +45,7 @@ public final class ProcessUtils {
 			process = pb.start();
 
 			BufferedReader stdOutErr = new BufferedReader(
-					new InputStreamReader(process.getInputStream()));
+					new InputStreamReader(process.getInputStream(), "UTF-8"));
 			String line;
 			while ((line = stdOutErr.readLine()) != null) {
 				outputBuf.append(line);
