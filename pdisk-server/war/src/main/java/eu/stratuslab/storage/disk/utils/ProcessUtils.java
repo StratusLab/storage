@@ -29,63 +29,63 @@ public final class ProcessUtils {
 	}
 
 	public static void execute(ProcessBuilder pb, String errorMsg) {
-//		int returnCode = 1;
-//		String stdout = "";
-//		String stderr = "";
-//		Process process;
-//		StringBuffer outputBuf = new StringBuffer();
-//
-//		pb.redirectErrorStream(true);
+		int returnCode = 1;
+		String stdout = "";
+		String stderr = "";
+		Process process;
+		StringBuffer outputBuf = new StringBuffer();
+
+		pb.redirectErrorStream(true);
 
 		if(verboseLevel == VerboseLevel.Debug) {
 			info(pb);
 		}
 		
-//		try {
-//			process = pb.start();
-//
-//			BufferedReader stdOutErr = new BufferedReader(
-//					new InputStreamReader(process.getInputStream()));
-//			String line;
-//			while ((line = stdOutErr.readLine()) != null) {
-//				outputBuf.append(line);
-//				outputBuf.append("\n");
-//			}
-//
-//			processWait(process);
-//
-//			stdOutErr.close();
-//
-//			returnCode = process.exitValue();
-//			stdout = streamToString(process.getInputStream());
-//			stderr = streamToString(process.getErrorStream());
-//		} catch (IOException e) {
-//
-//			String msg = "An error occurred while executing command: "
-//					+ MiscUtils.join(pb.command(), " ") + ".\n" + errorMsg
-//					+ ".";
-//
-//			LOGGER.severe(msg);
-//			LOGGER.severe(e.getMessage());
-//
-//			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, msg);
-//		}
-//
-//		if (returnCode != 0) {
-//
-//			process.getErrorStream();
-//
-//			String msg = "An error occurred while executing command: "
-//					+ MiscUtils.join(pb.command(), " ") + ".\n"
-//					+ outputBuf.toString() + "\n" + errorMsg
-//					+ ".\nReturn code was: " + String.valueOf(returnCode);
-//
-//			LOGGER.severe(msg);
-//			LOGGER.severe("Standard Output: \n" + stdout + "\n");
-//			LOGGER.severe("Standard Error: \n" + stderr + "\n");
-//
-//			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, msg);
-//		}
+		try {
+			process = pb.start();
+
+			BufferedReader stdOutErr = new BufferedReader(
+					new InputStreamReader(process.getInputStream()));
+			String line;
+			while ((line = stdOutErr.readLine()) != null) {
+				outputBuf.append(line);
+				outputBuf.append("\n");
+			}
+
+			processWait(process);
+
+			stdOutErr.close();
+
+			returnCode = process.exitValue();
+			stdout = streamToString(process.getInputStream());
+			stderr = streamToString(process.getErrorStream());
+		} catch (IOException e) {
+
+			String msg = "An error occurred while executing command: "
+					+ MiscUtils.join(pb.command(), " ") + ".\n" + errorMsg
+					+ ".";
+
+			LOGGER.severe(msg);
+			LOGGER.severe(e.getMessage());
+
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, msg);
+		}
+
+		if (returnCode != 0) {
+
+			process.getErrorStream();
+
+			String msg = "An error occurred while executing command: "
+					+ MiscUtils.join(pb.command(), " ") + ".\n"
+					+ outputBuf.toString() + "\n" + errorMsg
+					+ ".\nReturn code was: " + String.valueOf(returnCode);
+
+			LOGGER.severe(msg);
+			LOGGER.severe("Standard Output: \n" + stdout + "\n");
+			LOGGER.severe("Standard Error: \n" + stderr + "\n");
+
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, msg);
+		}
 	}
 
 	private static void info(ProcessBuilder processBuilder) {
