@@ -45,6 +45,10 @@ public final class NetAppStorage implements DiskStorage {
 				"Cannot rebase image NetApp: " + disk.getUuid() + " "
 						+ rebaseUuid);
 
+		disk.setQuarantine("");
+		disk.setSeed(true);
+		disk = disk.store();
+		
 		return rebaseUuid;
 	}
 
