@@ -47,7 +47,7 @@ public final class NetAppStorage implements DiskStorage {
 
 		disk.setQuarantine("");
 		disk.setSeed(true);
-		disk = disk.store();
+		disk.store();
 		
 		return rebaseUuid;
 	}
