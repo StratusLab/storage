@@ -90,6 +90,9 @@ public class Disk implements Serializable {
 
 	@SuppressWarnings("unchecked")
 	public static boolean identifierExists(String identifier, String user) {
+		if("".equals(identifier)) {
+			return false;
+		}
 		EntityManager em = PersistenceUtil.createEntityManager();
 		Query q = em.createNamedQuery("allDisksByIdentifier");
 		q.setParameter("identifier", identifier);
