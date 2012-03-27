@@ -119,6 +119,8 @@ public class Disk implements Serializable {
 	private String quarantine = ""; // quarantine start date
 
 	private String identifier = ""; // Marketplace identifier
+	
+	private String homeUrl = ""; // Marketplace url
 
 	private boolean seed = false; // original... don't delete!
 	
@@ -272,6 +274,14 @@ public class Disk implements Serializable {
 
 	public boolean isSeed() {
 		return seed;
+	}
+
+	public String getHomeUrl() {
+		return homeUrl;
+	}
+
+	public void setHomeUrl(String homeUrl) {
+		this.homeUrl = homeUrl;
 	}
 
 }
