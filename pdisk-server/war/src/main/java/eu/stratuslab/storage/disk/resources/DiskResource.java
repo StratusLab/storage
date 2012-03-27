@@ -268,23 +268,19 @@ public class DiskResource extends DiskBaseResource {
 					+ disk.getUuid() + ") is in use and can't be deleted");
 		}
 
-        deleteDisk();
+        deleteDisk(disk);
     }
 
-    private void deleteDisk() {
-        deleteDisk(getDiskId());
-    }
-
-	private void deleteDisk(String uuid) {
-		Disk disk = Disk.load(uuid);
+	private void deleteDisk(Disk disk) {
 		String parentUuid = disk.getBaseDiskUuid();
 		disk.remove();
 
 		try {
-			DiskUtils.removeDisk(uuid);			
+			DiskUtils.removeDisk(disk.getUuid());			
 		}
 		catch (ResourceException ex) {
 			disk.store();
+			throw(ex);
 		}
 		
 		if(parentUuid != null) {
