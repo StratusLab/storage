@@ -39,6 +39,7 @@ public class DiskBaseResource extends BaseResource {
 	private static final String TAG_KEY = "tag";
 	private static final String OWNER_KEY = "owner";
 	private static final String QUARANTINE_START_DATE_KEY = "quarantine";
+	private static final String IDENTIFIER_KEY = "identifier";
 
 	protected Disk getDisk(Form form) {
 
@@ -96,15 +97,17 @@ public class DiskBaseResource extends BaseResource {
 			disk.setQuarantine(quarantineStartDate);
 		}
 
+		String identifier = form.getFirstValue(IDENTIFIER_KEY);
+		if (identifier != null) {
+			disk.setIdentifier(identifier);
+		}
+
 		return disk;
 	}
 
 	protected Disk initializeDisk() {
 		Disk disk = new Disk();
 		disk.setOwner(getUsername(getRequest()));
-		disk.setCreated(MiscUtils.getTimestamp());
-		disk.setUsersCount(0);
-
 		return disk;
 	}
 
