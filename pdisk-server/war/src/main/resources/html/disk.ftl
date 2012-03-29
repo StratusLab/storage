@@ -55,6 +55,14 @@
         </#if>
         /></td>
       </tr>
+      <tr>
+        <td><strong>Disk type</strong></td>
+          <td>${disk.type}</td>
+      </tr>
+      <tr>
+        <td><strong>Disk visibility</strong></td>
+          <td>${disk.visibility}</td>
+      </tr>
 
 <#if can_delete == true>
   <tr>
