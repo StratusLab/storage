@@ -20,14 +20,15 @@ import org.simpleframework.xml.ElementMap;
 
 import eu.stratuslab.storage.disk.resources.BaseResource.DiskVisibility;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.disk.utils.MiscUtils;
 
 @Entity
 @SuppressWarnings("serial")
 @NamedQueries({
-		@NamedQuery(name = "allDisks", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d ORDER BY d.created DESC"),
-		@NamedQuery(name = "allDisksByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.owner = :user ORDER BY d.created DESC"),
-		@NamedQuery(name = "allDisksAvailableByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.owner = :user OR d.visibility = PUBLIC ORDER BY d.created DESC"),
-		@NamedQuery(name = "allDisksByIdentifier", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.identifier = :identifier AND d.owner = :user ORDER BY d.created DESC") })
+		@NamedQuery(name = "allDisks", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d ORDER BY d.creation DESC"),
+		@NamedQuery(name = "allDisksByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.owner = :user ORDER BY d.creation DESC"),
+		@NamedQuery(name = "allDisksAvailableByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.owner = :user OR d.visibility = PUBLIC ORDER BY d.creation DESC"),
+		@NamedQuery(name = "allDisksByIdentifier", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.identifier = :identifier AND d.owner = :user ORDER BY d.creation DESC") })
 public class Disk implements Serializable {
 
 	public static final String STATIC_DISK_TARGET = "static";
@@ -110,8 +111,8 @@ public class Disk implements Serializable {
 
 	private String owner = "";
 	private DiskVisibility visibility = DiskVisibility.PRIVATE;
-	private String created;
-	private int usersCount;
+	private String creation = MiscUtils.getTimestamp();
+	private int usersCount = 0;
 	private boolean isreadonly = false;
 	private boolean iscow = false;
 	private String tag = "";
@@ -155,12 +156,8 @@ public class Disk implements Serializable {
 		this.visibility = visibility;
 	}
 
-	public String getCreated() {
-		return created;
-	}
-
-	public void setCreated(String created) {
-		this.created = created;
+	public String getCreation() {
+		return creation;
 	}
 
 	public int getUsersCount() {
