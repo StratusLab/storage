@@ -88,7 +88,7 @@ public class DisksResource extends DiskBaseResource {
 
 		createDisk(disk);
 
-		redirectSeeOther(getBaseUrl() + "/disks/" + disk.getUuid() + "/");
+		redirectSeeOther(getBaseUrl() + "/disks/" + disk.getUuid());
 
 		return null;
 	}
