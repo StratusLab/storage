@@ -268,6 +268,11 @@ public class DiskResource extends DiskBaseResource {
 					+ disk.getUuid() + ") is in use and can't be deleted");
 		}
 
+		if (disk.getUsersCount() > 0) {
+			throw new ResourceException(Status.CLIENT_ERROR_CONFLICT, "disk ("
+					+ disk.getUuid() + ") is in use and can't be deleted");
+		}
+
         deleteDisk(disk);
     }
 
@@ -279,7 +284,7 @@ public class DiskResource extends DiskBaseResource {
 			DiskUtils.removeDisk(disk.getUuid());			
 		}
 		catch (ResourceException ex) {
-			disk.store();
+			disk.store(); // store it back since remove failed
 			throw(ex);
 		}
 		
