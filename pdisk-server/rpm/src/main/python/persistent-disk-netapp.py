@@ -23,7 +23,7 @@
 Script used by StratusLab pdisk to manage iSCSI LUNs
 """
 
-__version__ = "1.1.1-1"
+__version__ = "1.2.1-1"
 __author__  = "Michel Jouvin <jouvin@lal.in2p3.fr>"
 
 import sys
@@ -48,7 +48,7 @@ status = 0           # Assume success
 iscsi_supported_variants = [ 'lvm', 'netapp' ]
 
 # Keys are supported actions, values are the number of arguments required for the each action
-valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':2, 'snapshot':3 }
+valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':1, 'snapshot':3 }
 valid_actions_str = ', '.join(valid_actions.keys())
 
 config_file_default = '/opt/stratuslab/etc/persistent-disk-backend.conf'
@@ -154,14 +154,17 @@ class NetAppBackend(iSCSIBackend):
   
   # Table defining mapping of LUN actions to NetApp actions.
   # This is a 1 to n mapping (several NetApp commands may be needed for one LUN action).
-  # map and unmap are necessary as separate actions as they are not necessary executed on
+  # map and unmap are necessary as separate actions as they are not necessarily executed on
   # the same LUN as the other operations (eg. snapshot action).
+  # Special values for commands are:
+  #  - None: action is not implemented
+  #  - empty list: action does nothing
   lun_backend_cmd_mapping = { 'check':['check'],
                             'create':['create','map'],
                             # Attemtp to delete volume snapshot associated with the LUN if it is no longer used (no more LUN clone exists)
                             'delete':['unmap','delete','snapdel'],
                             'map':['map'],
-                            'rebase':None,
+                            'rebase':[],
                             'snapshot':['snapshot','clone'],
                             'unmap':['unmap']
                             }
@@ -256,8 +259,11 @@ class LVMBackend (iSCSIBackend):
   
   # Table defining mapping of LUN actions to NetApp actions.
   # This is a 1 to n mapping (several NetApp commands may be needed for one LUN action).
-  # map and unmap are necessary as separate actions as they are not necessary executed on
+  # map and unmap are necessary as separate actions as they are not necessarily executed on
   # the same LUN as the other operations (eg. snapshot action).
+  # Special values for commands are:
+  #  - None: action is not implemented
+  #  - empty list: action does nothing
   lun_backend_cmd_mapping = { 'check':['check'],
                               'create':['create'],
                               'delete':['remove'],
@@ -341,6 +347,13 @@ class LVMBackend (iSCSIBackend):
 
 class LUN:
 
+  # Some LUN commands (e.g. rebase) needs to return information as a string on stdout
+  # that will be captured by pdisk. The string is defined using the same tokens as commands.
+  # By default, a command returns nothing on stdout.
+  # This information is returned only on successful execution of action.
+  action_output = {'rebase':'%%SNAP_UUID%%',
+                   }
+  
   def __init__(self,uuid,size=None,proxy=None):
     self.uuid = uuid
     self.size = size
@@ -375,36 +388,48 @@ class LUN:
   # An action may involve several actual commands : getCmd() method of proxy is a generator returning
   # the commands to execute one by one.
   # In case an error occurs during one command, try to continue...
-  # Return the status of the last command executed
+  # Return the status of the last command executed and optionally a string on stdout.
+  # Special values for commands are:
+  #  - None: action is not implemented
+  #  - empty list: action does nothing  
   def __executeAction__(self,action):
     status = 0         # Assume success
     for cmd_toks,successMsg,failure_cmd_toks in self.proxy.getCmd(action):
       # When returned command for action is None, it means that the action is not implemented
       if cmd_toks == None:
         abort("Action '%s' not implemented by SCSI back-end type '%s'" % (action,self.proxy.getType()))
-      command = Command(action,self.parse(cmd_toks),successMsg)
+      command = Command(action,self.parseCmd(cmd_toks),successMsg)
       command.execute()
       status = command.checkStatus()
       if status != 0 and failure_cmd_toks:
-        command = Command(action,self.parse(failure_cmd_toks),successMsg)
+        command = Command(action,self.parseCmd(failure_cmd_toks),successMsg)
         command.execute()
         status = command.checkStatus()        
         break
       # If failure_cmd_toks is an amtpy string, stop LUN action processing
       elif failure_cmd_toks == '':
         break
+      
+    if status == 0 and action in self.action_output:
+      print self.__parse__(self.action_output[action])
+      
     return status
 
   # Parse all variables related to current LUN in the command (passed and returned as a list of tokens).  
-  def parse(self,action_cmd):
+  def parseCmd(self,action_cmd):
     for i in range(len(action_cmd)):
-      if re.search('%%SIZE%%',action_cmd[i]):
-        action_cmd[i] = re.sub('%%SIZE%%',self.size,action_cmd[i])
-      elif re.search('%%UUID%%',action_cmd[i]):
-        action_cmd[i] = re.sub('%%UUID%%',self.uuid,action_cmd[i])
-      elif re.search('%%SNAP_UUID%%',action_cmd[i]):
-        action_cmd[i] = re.sub('%%SNAP_UUID%%',self.snapshotLUN.uuid,action_cmd[i])
+      action_cmd[i] = self.__parse__(action_cmd[i])
     return action_cmd
+  
+  # Do the actual string parsing
+  def __parse__(self,string):
+    if re.search('%%SIZE%%',string):
+      string = re.sub('%%SIZE%%',self.size,string)
+    elif re.search('%%UUID%%',string):
+      string = re.sub('%%UUID%%',self.uuid,string)
+    elif re.search('%%SNAP_UUID%%',string):
+      string = re.sub('%%SNAP_UUID%%',self.snapshotLUN.uuid,string)
+    return string
     
 
 #######################################################
@@ -508,7 +533,7 @@ Parameters:
     action=check:    LUN_UUID
     action=create:   LUN_UUID LUN_Size
     action=delete:   LUN_UUID
-    action=rebase:   LUN_UUID New_LUN_UUID
+    action=rebase:   LUN_UUID (will return the rebased LUN UUID on stdout)
     action=snapshot: LUN_UUID New_LUN_UUID Snapshot_Size
 """
 
