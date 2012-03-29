@@ -31,11 +31,39 @@ import eu.stratuslab.storage.disk.utils.MiscUtils;
 		@NamedQuery(name = "allDisksByIdentifier", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.identifier = :identifier AND d.owner = :user ORDER BY d.creation DESC") })
 public class Disk implements Serializable {
 
+	public enum DiskType {
+		/**
+		 * seed/cache of machine image seed (managed by Marketplace)
+		 */
+		MACHINE_IMAGE_ORIGINE,
+		/**
+		 * snapshot / cow of machine image (managed by Marketplace)
+		 */
+		MACHINE_IMAGE_LIVE,
+		/**
+		 * seed/cache of data image seed (managed by Marketplace)
+		 */
+		DATA_IMAGE_ORIGINE,
+		/**
+		 * snapshot / cow of machine image (managed by Marketplace)
+		 */
+		DATA_IMAGE_LIVE,
+		
+		/**
+		 * simple read only data (raw data managed by user)
+		 */
+		DATA_IMAGE_RAW_READONLY,
+		/**
+		 * simple read/write data (raw data managed by user)
+		 */
+		DATA_IMAGE_RAW_READ_WRITE
+	}
+	
 	public static final String STATIC_DISK_TARGET = "static";
     public static final String UUID_KEY = "uuid";
     public static final String DISK_VISIBILITY_KEY = "visibility";
 	public static final String DISK_SIZE_KEY = "size";
-	public static final Object DISK_IDENTIFER_KEY = "Marketplace_id";
+	public static final String DISK_IDENTIFER_KEY = "Marketplace_id";
 
 	public static Disk load(String uuid) {
 		EntityManager em = PersistenceUtil.createEntityManager();
@@ -111,10 +139,12 @@ public class Disk implements Serializable {
 
 	private String owner = "";
 	private DiskVisibility visibility = DiskVisibility.PRIVATE;
+
 	private String creation = MiscUtils.getTimestamp();
+	private String deletion = ""; // deleted timestamp
+
 	private int usersCount = 0;
-	private boolean isreadonly = false;
-	private boolean iscow = false;
+	
 	private String tag = "";
 	private long size = -1;
 	private String quarantine = ""; // quarantine start date
@@ -126,6 +156,8 @@ public class Disk implements Serializable {
 	private boolean seed = false; // original... don't delete!
 	
 	private String baseDiskUuid;
+	
+	private DiskType type = DiskType.DATA_IMAGE_RAW_READ_WRITE;
 	
 	@MapKey(name = "id")
 	@OneToMany(mappedBy = "disk", fetch=FetchType.EAGER)
@@ -168,22 +200,6 @@ public class Disk implements Serializable {
 		this.usersCount = count;
 	}
 
-	public boolean getIsreadonly() {
-		return isreadonly;
-	}
-
-	public void setIsreadonly(boolean isreadonly) {
-		this.isreadonly = isreadonly;
-	}
-
-	public boolean getIscow() {
-		return iscow;
-	}
-
-	public void setIscow(boolean iscow) {
-		this.iscow = iscow;
-	}
-
 	public String getTag() {
 		return tag;
 	}
@@ -192,10 +208,16 @@ public class Disk implements Serializable {
 		this.tag = tag;
 	}
 
+	/**
+	 * In GB
+	 */
 	public long getSize() {
 		return size;
 	}
 
+	/**
+	 * @param size in GB
+	 */
 	public void setSize(long size) {
 		this.size = size;
 	}
@@ -279,6 +301,22 @@ public class Disk implements Serializable {
 
 	public void setHomeUrl(String homeUrl) {
 		this.homeUrl = homeUrl;
+	}
+
+	public String getDeletion() {
+		return deletion;
+	}
+
+	public void setDeletion(String deletion) {
+		this.deletion = deletion;
+	}
+
+	public void setType(DiskType type) {
+		this.type = type;
+	}
+
+	public DiskType getType() {
+		return type;
 	}
 
 }
