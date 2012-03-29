@@ -89,12 +89,55 @@ mgt_user_name=root
 """)
 
 
-###############################################################
-# Superclass describing common aspect of every iSCSI backends #
-# Inherited by all iSCSI backend classes                      #
-###############################################################
+####################################################################
+# Superclass describing common aspect of every iSCSI backends      #
+# Inherited by all iSCSI backend classes.                          #
+# Variable required in all backend implementationss are documented #
+# here but generally have empty defaults.                          #
+####################################################################
 
 class iSCSIBackend:
+  # Command prefix to use to connect through ssh
+  ssh_cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
+
+  # Table defining mapping of LUN actions to NetApp actions.
+  # This is a 1 to n mapping (several NetApp commands may be needed for one LUN action).
+  # map and unmap are necessary as separate actions as they are not necessarily executed on
+  # the same LUN as the other operations (eg. snapshot action).
+  # Special values for commands are:
+  #  - None: action is not implemented
+  #  - empty list: action does nothing
+  lun_backend_cmd_mapping = { 'check':None,
+                            'create':None,
+                            'delete':None,
+                            'map':None,
+                            'rebase':None,
+                            'snapshot':None,
+                            'unmap':None
+                            }
+  
+  # Definitions of NetApp commands used to implement actions.
+  backend_cmds = {
+                  }
+
+  # Commands to execute when a given backend command fails.
+  # This is a dictionnary where key is one of the backend_cmds key and the value is another dictionnary
+  # whose key is the name of lun action (as defined in lun_backend_cmd_mapping) that defines the
+  # context of the backend command and the value is the key of another command in backend_cmds).
+  # IF the context is '-', the alternate command will be executed in any context (lun actions) in case of errors.
+  # If the value (alternate command) is an empty string, further backend commands part of the same LUN action are skipped.
+  # If it is None,processing of further actions contnues as if there was no entry for the command in the dictionnary.
+  # IF a backup command fails and has no entry in this dictionnary, the execution continues
+  # with next command if any.
+  backend_failure_cmds = {
+                          }
+
+  # Most commands are expected to return nothing when they succeeded. The following
+  # dictionnary lists exceptions and provides a pattern matching output in case of
+  # success.
+  # Keys must match an existing key in backend_cmds
+  success_msg_pattern = {
+                        }
 
   # Generator function returning:
   #    - the command corresponding to the action as a list of tokens, with iSCSI proxy related
@@ -149,16 +192,9 @@ class iSCSIBackend:
 ############################################
 
 class NetAppBackend(iSCSIBackend):
-  # Command to connect to NetApp filer
-  cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
+  # The following variables define which command to execute for each action.
+  # They are documented in the superclass iSCSIBackend.
   
-  # Table defining mapping of LUN actions to NetApp actions.
-  # This is a 1 to n mapping (several NetApp commands may be needed for one LUN action).
-  # map and unmap are necessary as separate actions as they are not necessarily executed on
-  # the same LUN as the other operations (eg. snapshot action).
-  # Special values for commands are:
-  #  - None: action is not implemented
-  #  - empty list: action does nothing
   lun_backend_cmd_mapping = { 'check':['check'],
                             'create':['create','map'],
                             # Attemtp to delete volume snapshot associated with the LUN if it is no longer used (no more LUN clone exists)
@@ -169,7 +205,6 @@ class NetAppBackend(iSCSIBackend):
                             'unmap':['unmap']
                             }
   
-  # Definitions of NetApp commands used to implement actions.
   backend_cmds = {'check':[ 'lun', 'show', '%%NAME%%' ],
                   'clone':[ 'lun', 'clone', 'create', '%%SNAP_NAME%%', '-b', '%%NAME%%', '%%SNAP_PARENT%%'  ],
                   'create':[ 'lun', 'create', '-s', '%%SIZE%%g', '-t', '%%LUNOS%%', '%%NAME%%' ],
@@ -180,28 +215,16 @@ class NetAppBackend(iSCSIBackend):
                   'unmap':[ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
                   }
 
-  # Commands to execute when a given backend command fails.
-  # This is a dictionnary where key is one of the backend_cmds key and the value is another dictionnary
-  # whose key is the name of lun action (as defined in lun_backend_cmd_mapping) that defines the
-  # context of the backend command and the value is the key of another command in backend_cmds).
-  # IF the context is '-', the alternate command will be executed in any context (lun actions) in case of errors.
-  # If the value (alternate command) is an empty string, further backend commands part of the same LUN action are skipped.
-  # If it is None,processing of further actions contnues as if there was no entry for the command in the dictionnary.
-  # IF a backup command fails and has no entry in this dictionnary, the execution continues
-  # with next command if any.
   backend_failure_cmds = {
                           }
 
-  # Most commands are expected to return nothing when they succeeded. The following
-  # dictionnary lists exceptions and provides a pattern matching output in case of
-  # success.
-  # Keys must match an existing key in backend_cmds
   success_msg_pattern = { 'check':'online',
                           # snapdel is expected to fail if there is still a LUN clone using it or if the snapshot doesnt exist
                           # (LUN never cloned or is a clone). These are not considered as an error.
                           'snapdel':[ 'deleting snapshot\.\.\.', 'Snapshot [\w\-]+ is busy because of LUN clone','No such snapshot' ],
                           'snapshot':['^creating snapshot','^Snapshot already exists.']
                         }
+
   # Would be great to have it configurable as NetApp needs to know the client OS
   lunOS = 'linux'
   
@@ -214,6 +237,9 @@ class NetAppBackend(iSCSIBackend):
     self.namespace = "%s/%s" % (self.volumePath,namespace)
     self.initiatorGroup = initiatorGroup
     self.snapshotPrefix = snapshotPrefix
+    # Command to connect to NetApp filer (always ssh)
+    self.cmd_prefix = self.ssh_cmd_prefix
+  
 
 
   # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
@@ -252,18 +278,9 @@ class NetAppBackend(iSCSIBackend):
 #########################################
 
 class LVMBackend (iSCSIBackend):
-  # Command prefix to use to connect through ssh
-  ssh_cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
-  # Command to connect to NetApp filer
-  cmd_prefix = [ ]
+  # The following variables define which command to execute for each action.
+  # They are documented in the superclass iSCSIBackend.
   
-  # Table defining mapping of LUN actions to NetApp actions.
-  # This is a 1 to n mapping (several NetApp commands may be needed for one LUN action).
-  # map and unmap are necessary as separate actions as they are not necessarily executed on
-  # the same LUN as the other operations (eg. snapshot action).
-  # Special values for commands are:
-  #  - None: action is not implemented
-  #  - empty list: action does nothing
   lun_backend_cmd_mapping = { 'check':['check'],
                               'create':['create'],
                               'delete':['remove'],
@@ -273,7 +290,6 @@ class LVMBackend (iSCSIBackend):
                               'snapshot':['snapshot']
                               }
   
-  # Definitions of LVM commands used to implement actions.
   backend_cmds = {'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
                   'create':[ '/sbin/lvcreate', '-L', '%%SIZE%%G', '-n', '%%UUID%%', '%%VOLUME_NAME%%' ],
                   'dmremove':[ '/sbin/dmsetup', 'remove', '%%DM_VOLUME_PATH%%' ],
@@ -284,22 +300,9 @@ class LVMBackend (iSCSIBackend):
                   'snapshot':[ '/sbin/lvcreate', '--snapshot', '-p', 'rw', '--size', '%%SIZE%%G', '-n', '%%SNAP_UUID%%', '%%LOGVOL_PATH%%'  ],
                   }
   
-  # Commands to execute when a given backend command fails.
-  # This is a dictionnary where key is one of the backend_cmds key and the value is another dictionnary
-  # whose key is the name of lun action (as defined in lun_backend_cmd_mapping) that defines the
-  # context of the backend command and the value is the key of another command in backend_cmds).
-  # IF the context is '-', the alternate command will be executed in any context (lun actions) in case of errors.
-  # If the value (alternate command) is an empty string, further backend commands part of the same LUN action are skipped.
-  # If it is None,processing of further actions contnues as if there was no entry for the command in the dictionnary.
-  # IF a backup command fails and has no entry in this dictionnary, the execution continues
-  # with next command if any.
   backend_failure_cmds = {'remove':{'delete':'dmremove'},
                           }
 
-  # Most commands are expected to return nothing when they succeeded. The following
-  # dictionnary lists exceptions and provides a pattern matching output in case of
-  # success.
-  # Keys must match an existing key in backend_cmds
   success_msg_pattern = {'create':'Logical volume "[\w\-]+" created',
                          'remove':'Logical volume "[\w\-]+" successfully removed',
                          'rebase':'\d+ bytes .* copied',
@@ -315,6 +318,9 @@ class LVMBackend (iSCSIBackend):
     if self.mgtUser and self.mgtPrivKey:
       debug(1,'SSH will be used to connect to LVM backend')
       self.cmd_prefix = self.ssh_cmd_prefix
+    else:
+      self.cmd_prefix = [ ]
+  
 
   # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
   # Return parsed command as a list of token.
