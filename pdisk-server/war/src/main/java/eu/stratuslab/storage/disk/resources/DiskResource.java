@@ -43,30 +43,31 @@ import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
 import eu.stratuslab.storage.persistence.Disk;
+import eu.stratuslab.storage.persistence.Disk.DiskType;
 
 public class DiskResource extends DiskBaseResource {
 
 	private static final String UUID_KEY_NAME = Disk.UUID_KEY;
 
-    @Override
-    protected void doInit() throws ResourceException {
+	@Override
+	protected void doInit() throws ResourceException {
 
 		Disk disk = loadExistingDisk();
-		
+
 		if (!hasSufficientRightsToView(disk)) {
 			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
 					"insuffient access rights to view disk (" + getDiskId()
 							+ ")");
 		}
 
-    }
+	}
 
-    @Put
-    public void update(Representation entity) {
+	@Put
+	public void update(Representation entity) {
 
 		checkIsSuper();
 
-        MiscUtils.checkForNullEntity(entity);
+		MiscUtils.checkForNullEntity(entity);
 
 		Disk disk = loadExistingDisk();
 		disk = processWebForm(disk, new Form(entity));
@@ -80,21 +81,25 @@ public class DiskResource extends DiskBaseResource {
 	public void createCopyOnWriteOrRebase(Representation entity) {
 
 		Disk disk = Disk.load(getDiskId());
-		
-		if(disk == null) {
-			throw(new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "Disk " + getDiskId() + " doesn't exists"));
+
+		if (disk == null) {
+			throw (new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "Disk "
+					+ getDiskId() + " doesn't exists"));
 		}
 
 		String newUuid = null;
-		if (disk.getIscow()) {
+		if (disk.getType() == DiskType.MACHINE_IMAGE_LIVE) {
 			newUuid = rebase(disk);
-		} else {
+		}
+		if (disk.getType() == DiskType.MACHINE_IMAGE_ORIGINE) {
 			newUuid = createCoW(disk);
+		} else {
+			throw(new ResourceException(Status.CLIENT_ERROR_CONFLICT, "Invalid disk state: " + disk.getType() + ". Cannot create copy or save as new image."));
 		}
 
-        redirectSeeOther(getBaseUrl() + "/disks/" + newUuid + "/");
+		redirectSeeOther(getBaseUrl() + "/disks/" + newUuid);
 
-    }
+	}
 
 	private String createCoW(Disk disk) {
 		return DiskUtils.createCoWDisk(disk);
@@ -106,13 +111,13 @@ public class DiskResource extends DiskBaseResource {
 
 		Disk newDisk = initializeDisk();
 		newDisk.setUuid(newUuid);
-		newDisk.setIsreadonly(true);
+		newDisk.setType(DiskType.DATA_IMAGE_ORIGINE);
 		newDisk.setSize(disk.getSize());
 
 		// TODO: implement here and remove client-side implementation
 		// newProperties = calculateHashes(newProperties);
 		newDisk.store();
-		
+
 		return newUuid;
 	}
 
@@ -127,33 +132,33 @@ public class DiskResource extends DiskBaseResource {
 		}
 		properties.put(Disk.DISK_IDENTIFER_KEY, identifier);
 
-        return properties;
-    }
+		return properties;
+	}
 
-    @Get("html")
-    public Representation getAsHtml() {
+	@Get("html")
+	public Representation getAsHtml() {
 
-        getLogger().info("DiskResource getAsHtml: " + getDiskId());
+		getLogger().info("DiskResource getAsHtml: " + getDiskId());
 
-        Map<String, Object> info = loadDiskProperties();
+		Map<String, Object> info = loadDiskProperties();
 
-        addDiskUserHeader();
+		addDiskUserHeader();
 
-        return createTemplateRepresentation("html/disk.ftl", info, TEXT_HTML);
-    }
+		return createTemplateRepresentation("html/disk.ftl", info, TEXT_HTML);
+	}
 
-    @Get("json")
-    public Representation getAsJson() {
+	@Get("json")
+	public Representation getAsJson() {
 
-        getLogger().info("DiskResource getAsJson: " + getDiskId());
+		getLogger().info("DiskResource getAsJson: " + getDiskId());
 
-        Map<String, Object> info = loadDiskProperties();
+		Map<String, Object> info = loadDiskProperties();
 
-        addDiskUserHeader();
+		addDiskUserHeader();
 
-        return createTemplateRepresentation("json/disk.ftl", info,
-                APPLICATION_JSON);
-    }
+		return createTemplateRepresentation("json/disk.ftl", info,
+				APPLICATION_JSON);
+	}
 
 	@Get("gzip")
 	public Representation toZip() {
@@ -161,14 +166,15 @@ public class DiskResource extends DiskBaseResource {
 		String uuid = getDiskId();
 
 		cleanCache(uuid);
-		
+
 		if (isImageBeingCompressed(uuid)) {
 			waitWhileImageCompressed(uuid);
 		} else if (needToCompressImage(uuid)) {
 			compressImage();
 		}
 
-		Representation image = new FileRepresentation(DiskUtils.getCompressedDiskLocation(uuid),
+		Representation image = new FileRepresentation(
+				DiskUtils.getCompressedDiskLocation(uuid),
 				MediaType.APPLICATION_GNU_ZIP);
 		image.getDisposition().setType(Disposition.TYPE_ATTACHMENT);
 
@@ -177,8 +183,7 @@ public class DiskResource extends DiskBaseResource {
 
 	/**
 	 * The compression logic removes the original file after compression
-	 * therefore, if the raw file exists means that the compression
-	 * is ongoing
+	 * therefore, if the raw file exists means that the compression is ongoing
 	 */
 	protected Boolean isImageBeingCompressed(String uuid) {
 		return DiskUtils.isCompressedDiskBuilding(uuid);
@@ -192,7 +197,8 @@ public class DiskResource extends DiskBaseResource {
 	}
 
 	protected boolean needToCompressImage(String uuid) {
-		return !FileUtils.isCompressedDiskExists(uuid) || DiskUtils.hasCompressedDiskExpire(uuid);
+		return !FileUtils.isCompressedDiskExists(uuid)
+				|| DiskUtils.hasCompressedDiskExpire(uuid);
 	}
 
 	protected void compressImage() {
@@ -200,37 +206,37 @@ public class DiskResource extends DiskBaseResource {
 		DiskUtils.createCompressedDisk(getDiskId());
 	}
 
-    @Delete("html")
-    public Representation deleteDiskAsHtml() {
+	@Delete("html")
+	public Representation deleteDiskAsHtml() {
 
-        getLogger().info("DiskResource deleteDiskAsHtml: " + getDiskId());
+		getLogger().info("DiskResource deleteDiskAsHtml: " + getDiskId());
 
-        processDeleteDiskRequest();
+		processDeleteDiskRequest();
 
-        redirectSeeOther(getBaseUrl() + "/disks/");
+		redirectSeeOther(getBaseUrl() + "/disks/");
 
-        Map<String, Object> info = createInfoStructure("redirect");
-        return createTemplateRepresentation("html/redirect.ftl", info,
-                TEXT_HTML);
-    }
+		Map<String, Object> info = createInfoStructure("redirect");
+		return createTemplateRepresentation("html/redirect.ftl", info,
+				TEXT_HTML);
+	}
 
-    @Delete("json")
-    public Representation deleteDiskAsJson() {
+	@Delete("json")
+	public Representation deleteDiskAsJson() {
 
-        getLogger().info("DiskResource deleteDiskAsJson: " + getDiskId());
+		getLogger().info("DiskResource deleteDiskAsJson: " + getDiskId());
 
-        processDeleteDiskRequest();
+		processDeleteDiskRequest();
 
-        Map<String, Object> info = new HashMap<String, Object>();
-        info.put("key", UUID_KEY_NAME);
-        info.put("value", getDiskId());
+		Map<String, Object> info = new HashMap<String, Object>();
+		info.put("key", UUID_KEY_NAME);
+		info.put("value", getDiskId());
 
-        return createTemplateRepresentation("json/keyvalue.ftl", info,
-                APPLICATION_JSON);
-    }
+		return createTemplateRepresentation("json/keyvalue.ftl", info,
+				APPLICATION_JSON);
+	}
 
-    private Map<String, Object> loadDiskProperties() {
-        Map<String, Object> infos = createInfoStructure("Disk Information");
+	private Map<String, Object> loadDiskProperties() {
+		Map<String, Object> infos = createInfoStructure("Disk Information");
 
 		Disk disk = loadExistingDisk();
 
@@ -238,29 +244,30 @@ public class DiskResource extends DiskBaseResource {
 		infos.put("currenturl", getCurrentUrl());
 		infos.put("can_delete", hasSufficientRightsToDelete(disk));
 
-        return infos;
+		return infos;
 
-    }
+	}
 
-    private void addDiskUserHeader() {
-        Form diskUserHeaders = (Form) getResponse().getAttributes().get(
-                "org.restlet.http.headers");
+	private void addDiskUserHeader() {
+		Form diskUserHeaders = (Form) getResponse().getAttributes().get(
+				"org.restlet.http.headers");
 
-        if (diskUserHeaders == null) {
-            diskUserHeaders = new Form();
-            getResponse().getAttributes().put("org.restlet.http.headers",
-                    diskUserHeaders);
-        }
+		if (diskUserHeaders == null) {
+			diskUserHeaders = new Form();
+			getResponse().getAttributes().put("org.restlet.http.headers",
+					diskUserHeaders);
+		}
 
-    }
+	}
 
-    private void processDeleteDiskRequest() {
+	private void processDeleteDiskRequest() {
 
 		Disk disk = loadExistingDisk();
 
 		if (!hasSufficientRightsToDelete(disk)) {
 			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
-					"insufficient rights to delete disk (" + disk.getUuid() + ")");
+					"insufficient rights to delete disk (" + disk.getUuid()
+							+ ")");
 		}
 
 		if (disk.getMountsCount() > 0) {
@@ -273,22 +280,21 @@ public class DiskResource extends DiskBaseResource {
 					+ disk.getUuid() + ") is in use and can't be deleted");
 		}
 
-        deleteDisk(disk);
-    }
+		deleteDisk(disk);
+	}
 
 	private void deleteDisk(Disk disk) {
 		String parentUuid = disk.getBaseDiskUuid();
 		disk.remove();
 
 		try {
-			DiskUtils.removeDisk(disk.getUuid());			
-		}
-		catch (ResourceException ex) {
+			DiskUtils.removeDisk(disk.getUuid());
+		} catch (ResourceException ex) {
 			disk.store(); // store it back since remove failed
-			throw(ex);
+			throw (ex);
 		}
-		
-		if(parentUuid != null) {
+
+		if (parentUuid != null) {
 			Disk parent = Disk.load(parentUuid);
 			parent.decrementUserCount();
 		}
