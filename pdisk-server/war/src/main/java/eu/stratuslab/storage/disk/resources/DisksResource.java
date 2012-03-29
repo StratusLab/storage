@@ -80,22 +80,14 @@ public class DisksResource extends DiskBaseResource {
 	@Post("form:html")
 	public Representation createDiskRequestFromHtml(Representation entity) {
 
-		form = new Form(getRequestEntity());
-
-		Disk disk = getDisk(form);
-
-		validateDisk(disk);
-
-		createDisk(disk);
+		Disk disk = validateAndCreateDisk();
 
 		redirectSeeOther(getBaseUrl() + "/disks/" + disk.getUuid());
 
 		return null;
 	}
 
-	@Post("form:json")
-	public Representation createDiskRequestFromJson(Representation entity) {
-
+	protected Disk validateAndCreateDisk() {
 		form = new Form(getRequestEntity());
 
 		Disk disk = getDisk(form);
@@ -103,6 +95,14 @@ public class DisksResource extends DiskBaseResource {
 		validateDisk(disk);
 
 		createDisk(disk);
+		
+		return disk;
+	}
+
+	@Post("form:json")
+	public Representation createDiskRequestFromJson(Representation entity) {
+
+		Disk disk = validateAndCreateDisk();
 
 		setStatus(Status.SUCCESS_CREATED);
 
