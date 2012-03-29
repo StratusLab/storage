@@ -25,7 +25,7 @@ fi
 deregister_disks() {
     local NODE=$(host $(hostname) | awk '{print $4}')
     # Only username/password authentication is supported for the pdisk user.
-    local DEREGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} -X DELETE https://${PORTAL}:${PORTAL_PORT}/pswd/disks/${DISK_UUID}/mounts/${DISK_UUID}-${NODE}"
+    local DEREGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} -X DELETE https://${PORTAL}:${PORTAL_PORT}/pswd/disks/${DISK_UUID}/mounts/${DISK_UUID}_${VM_ID}"
     echo "$DEREGISTER_CMD"
     $DEREGISTER_CMD
 }
