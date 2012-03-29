@@ -23,10 +23,10 @@
           <td>${disk.identifier}</td>
         </tr>
       </#if>
-      <#if disk.userscount?has_content>
+      <#if disk.usersCount?has_content>
         <tr>
           <td><strong>User's count</strong></td>
-          <td>${disk.userscount}</td>
+          <td>${disk.usersCount}</td>
         </tr>
       </#if>
       <#if disk.owner?has_content>
