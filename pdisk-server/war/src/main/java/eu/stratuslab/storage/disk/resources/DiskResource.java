@@ -90,19 +90,20 @@ public class DiskResource extends DiskBaseResource {
 		String newUuid = null;
 		if (disk.getType() == DiskType.MACHINE_IMAGE_LIVE) {
 			newUuid = rebase(disk);
-		}
-		if (disk.getType() == DiskType.MACHINE_IMAGE_ORIGINE) {
-			newUuid = createCoW(disk);
+		} else if (disk.getType() == DiskType.MACHINE_IMAGE_ORIGINE) {
+			newUuid = createMachineImageCoW(disk);
 		} else {
-			throw(new ResourceException(Status.CLIENT_ERROR_CONFLICT, "Invalid disk state: " + disk.getType() + ". Cannot create copy or save as new image."));
+			throw (new ResourceException(Status.CLIENT_ERROR_CONFLICT,
+					"Invalid disk state: " + disk.getType()
+							+ ". Cannot create copy or save as new image."));
 		}
 
 		redirectSeeOther(getBaseUrl() + "/disks/" + newUuid);
 
 	}
 
-	private String createCoW(Disk disk) {
-		return DiskUtils.createCoWDisk(disk);
+	private String createMachineImageCoW(Disk disk) {
+		return DiskUtils.createMachineImageCoWDisk(disk);
 	}
 
 	private String rebase(Disk disk) {
@@ -111,7 +112,7 @@ public class DiskResource extends DiskBaseResource {
 
 		Disk newDisk = initializeDisk();
 		newDisk.setUuid(newUuid);
-		newDisk.setType(DiskType.DATA_IMAGE_ORIGINE);
+		newDisk.setType(DiskType.MACHINE_IMAGE_ORIGINE);
 		newDisk.setSize(disk.getSize());
 
 		// TODO: implement here and remove client-side implementation
