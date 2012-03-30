@@ -107,13 +107,14 @@ class iSCSIBackend:
   # Special values for commands are:
   #  - None: action is not implemented
   #  - empty list: action does nothing
-  lun_backend_cmd_mapping = { 'check':None,
-                            'create':None,
-                            'delete':None,
-                            'map':None,
-                            'rebase':None,
-                            'snapshot':None,
-                            'unmap':None
+  lun_backend_cmd_mapping = {'check':None,
+                             'create':None,
+                             'delete':None,
+                             'map':None,
+                             'rebase':None,
+                             'size':None,
+                             'snapshot':None,
+                             'unmap':None
                             }
   
   # Definitions of NetApp commands used to implement actions.
@@ -138,6 +139,15 @@ class iSCSIBackend:
   # Keys must match an existing key in backend_cmds
   success_msg_pattern = {
                         }
+  
+  # The creation of a new LUN may be required by some operations
+  # on some backends (e.g. rebase with LVM backend).
+  # This dictionnary allows to define which LUN actions (same keys
+  # as in lun_backend_cmd_mapping, value ignored).
+  # By default, this variable is empty: redefine it appropriately in
+  # the context of a particular backend if needed.
+  new_lun_required = {
+                      }
 
   # Generator function returning:
   #    - the command corresponding to the action as a list of tokens, with iSCSI proxy related
@@ -186,6 +196,14 @@ class iSCSIBackend:
 
       yield parsed_command,success_patterns,failure_command
     
+  # Method returning true if creation of a new LUN is required for a particular LUN action.
+  # LUN creation is the responsibility of the caller.
+  def newLunRequired(self,action):
+    if action in self.new_lun_required:
+      return True
+    else:
+      return False
+  
   
 ############################################
 # Class describing a NetApp iSCSI back-end #
@@ -195,15 +213,16 @@ class NetAppBackend(iSCSIBackend):
   # The following variables define which command to execute for each action.
   # They are documented in the superclass iSCSIBackend.
   
-  lun_backend_cmd_mapping = { 'check':['check'],
-                            'create':['create','map'],
-                            # Attemtp to delete volume snapshot associated with the LUN if it is no longer used (no more LUN clone exists)
-                            'delete':['unmap','delete','snapdel'],
-                            'map':['map'],
-                            'rebase':[],
-                            'snapshot':['snapshot','clone'],
-                            'unmap':['unmap']
-                            }
+  lun_backend_cmd_mapping = {'check':['check'],
+                             'create':['create','map'],
+                             # Attemtp to delete volume snapshot associated with the LUN if it is no longer used (no more LUN clone exists)
+                             'delete':['unmap','delete','snapdel'],
+                             'map':['map'],
+                             'rebase':[],
+                             'size':None,
+                             'snapshot':['snapshot','clone'],
+                             'unmap':['unmap']
+                             }
   
   backend_cmds = {'check':[ 'lun', 'show', '%%NAME%%' ],
                   'clone':[ 'lun', 'clone', 'create', '%%SNAP_NAME%%', '-b', '%%NAME%%', '%%SNAP_PARENT%%'  ],
@@ -281,22 +300,25 @@ class LVMBackend (iSCSIBackend):
   # The following variables define which command to execute for each action.
   # They are documented in the superclass iSCSIBackend.
   
-  lun_backend_cmd_mapping = { 'check':['check'],
-                              'create':['create'],
-                              'delete':['remove'],
-                              # map is a required action for snapshot action but does nothing in LVM
-                              'map':[],
-                              'rebase':['rebase'],
-                              'snapshot':['snapshot']
-                              }
+  lun_backend_cmd_mapping = {'check':['check'],
+                             'create':['create'],
+                             'delete':['remove'],
+                             # map is a required action for snapshot action but does nothing in LVM
+                             'map':[],
+                             'rebase':['rebase'],
+                             'size':['size'],
+                             'snapshot':['snapshot'],
+                             'unmap':[],
+                             }
   
   backend_cmds = {'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
                   'create':[ '/sbin/lvcreate', '-L', '%%SIZE%%G', '-n', '%%UUID%%', '%%VOLUME_NAME%%' ],
                   'dmremove':[ '/sbin/dmsetup', 'remove', '%%DM_VOLUME_PATH%%' ],
                   'remove':[ '/sbin/lvremove', '-f', '%%LOGVOL_PATH%%' ],
-                  'rebase':[ '/bin/dd', 'if=%%LOGVOL_SRC_PATH%%', 'of=%%LOGVOL_PATH%%'],
+                  'rebase':[ '/bin/dd', 'if=%%LOGVOL_PATH%%', 'of=%%NEW_LOGVOL_PATH%%'],
                   # lvchange doesn't work with clone. Normally unneeded as lvremove -f (remove) does the same
                   'setinactive':[ '/sbin/lvchange', '-a', 'n', '%%LOGVOL_PATH%%' ],
+                  'size':['/sbin/lvs', '-o', 'lv_size', '--noheadings', '%%LOGVOL_PATH%%'],
                   'snapshot':[ '/sbin/lvcreate', '--snapshot', '-p', 'rw', '--size', '%%SIZE%%G', '-n', '%%SNAP_UUID%%', '%%LOGVOL_PATH%%'  ],
                   }
   
@@ -307,8 +329,13 @@ class LVMBackend (iSCSIBackend):
                          'remove':'Logical volume "[\w\-]+" successfully removed',
                          'rebase':'\d+ bytes .* copied',
                          'setinactive':[ '^$', 'File descriptor .* leaked on lvchange invocation' ],
+                         'size':['([\d\.]+)g'],
                          'snapshot':'Logical volume "[\w\-]+" created'
                         }
+  
+  new_lun_required = {'rebase':True
+                      }
+  
   
   def __init__(self,proxy,volume,mgtUser=None,mgtPrivKey=None):
     self.volumeName = volume
@@ -334,8 +361,8 @@ class LVMBackend (iSCSIBackend):
         action_cmd[i] = "%s@%s" % (self.mgtUser,self.proxyHost)
       elif re.search('%%LOGVOL_PATH%%',action_cmd[i]):
         action_cmd[i] = re.sub('%%LOGVOL_PATH%%',self.volumeName+"/%%UUID%%",action_cmd[i])
-      elif re.search('%%LOGVOL_SRC_PATH%%',action_cmd[i]):
-        action_cmd[i] = re.sub('%%LOGVOL_SRC_PATH%%',self.volumeName+"/%%SNAP_UUID%%",action_cmd[i])
+      elif re.search('%%NEW_LOGVOL_PATH%%',action_cmd[i]):
+        action_cmd[i] = re.sub('%%NEW_LOGVOL_PATH%%',self.volumeName+"/%%SNAP_UUID%%",action_cmd[i])
       elif action_cmd[i] == '%%PRIVKEY%%':
         action_cmd[i] = self.mgtPrivKey
       elif action_cmd[i] == '%%VOLUME_NAME%%':
@@ -364,53 +391,80 @@ class LUN:
     self.uuid = uuid
     self.size = size
     self.proxy = proxy
-    self.snapshotLUN = None
+    # Another LUN involved in actions like rebase or snapshot
+    self.associatedLUN = None
     
+  def getUuid(self):
+    return self.uuid
+  
   def check(self):
-    return self.__executeAction__('check')
+    status,optInfo = self.__executeAction__('check')
+    return status
     
   def create(self):
-    return self.__executeAction__('create')
+    status,optInfo = self.__executeAction__('create')
+    return status
     
   def delete(self):
-    return self.__executeAction__('delete')
+    status,optInfo = self.__executeAction__('delete')
+    return status
+    
+  def getSize(self):
+    status,self.size = self.__executeAction__('size')
+    if status != 0:
+      abort('Failure to retrieve size of LUN %s' % (self.uuid))
+    return status
     
   def map(self):
-    return self.__executeAction__('map')
+    status,optInfo = self.__executeAction__('map')
+    return status
     
-  def rebase(self,src_lun):
-    self.snapshotLUN = src_lun
-    return self.__executeAction__('rebase')
+  def rebase(self):
+    if self.proxy.newLunRequired('rebase'):
+      #TODO: generate a UUID based on creation timestamp as in PDisk
+      new_lun_uuid = self.getUuid() + '_rebased'
+      self.getSize()
+      self.associatedLUN = LUN(new_lun_uuid,size=self.size,proxy=self.proxy)
+      if self.associatedLUN.create() != 0:
+        abort('An error occured creating a new LUN for rebasing %s' % (self.uuid))
+    else:
+      self.associatedLUN = self     # To simplify returned value
+    status,optInfo = self.__executeAction__('rebase')
+    return status
     
   def snapshot(self,snapshot_lun):
-    self.snapshotLUN = snapshot_lun
-    return self.__executeAction__('snapshot')
+    self.associatedLUN = snapshot_lun
+    status,optInfo = self.__executeAction__('snapshot')
+    return status
     
   def unmap(self):
-    return self.__executeAction__('unmap')
+    status,optInfo = self.__executeAction__('unmap')
+    return status
     
     
   # Execute an action on a LUN.
   # An action may involve several actual commands : getCmd() method of proxy is a generator returning
   # the commands to execute one by one.
   # In case an error occurs during one command, try to continue...
-  # Return the status of the last command executed and optionally a string on stdout.
+  # Return the status of the last command executed and an optional additional value returned by the command.
+  # Optionally a string is printed on stdout to allow the script to return information to the caller.
   # Special values for commands are:
   #  - None: action is not implemented
   #  - empty list: action does nothing  
   def __executeAction__(self,action):
     status = 0         # Assume success
+    optInfo = None
     for cmd_toks,successMsg,failure_cmd_toks in self.proxy.getCmd(action):
       # When returned command for action is None, it means that the action is not implemented
       if cmd_toks == None:
         abort("Action '%s' not implemented by SCSI back-end type '%s'" % (action,self.proxy.getType()))
       command = Command(action,self.parseCmd(cmd_toks),successMsg)
       command.execute()
-      status = command.checkStatus()
+      status,optInfo = command.checkStatus()
       if status != 0 and failure_cmd_toks:
         command = Command(action,self.parseCmd(failure_cmd_toks),successMsg)
         command.execute()
-        status = command.checkStatus()        
+        status,optInfo = command.checkStatus()        
         break
       # If failure_cmd_toks is an amtpy string, stop LUN action processing
       elif failure_cmd_toks == '':
@@ -419,7 +473,7 @@ class LUN:
     if status == 0 and action in self.action_output:
       print self.__parse__(self.action_output[action])
       
-    return status
+    return status,optInfo
 
   # Parse all variables related to current LUN in the command (passed and returned as a list of tokens).  
   def parseCmd(self,action_cmd):
@@ -432,9 +486,9 @@ class LUN:
     if re.search('%%SIZE%%',string):
       string = re.sub('%%SIZE%%',self.size,string)
     elif re.search('%%UUID%%',string):
-      string = re.sub('%%UUID%%',self.uuid,string)
+      string = re.sub('%%UUID%%',self.getUuid(),string)
     elif re.search('%%SNAP_UUID%%',string):
-      string = re.sub('%%SNAP_UUID%%',self.snapshotLUN.uuid,string)
+      string = re.sub('%%SNAP_UUID%%',self.associatedLUN.getUuid(),string)
     return string
     
 
@@ -465,6 +519,7 @@ class Command:
     return status
   
   def checkStatus(self):
+    optInfo = None
     try:
       retcode = self.proc.wait()
       output = self.proc.communicate()[0]
@@ -475,7 +530,12 @@ class Command:
           success = False
           if self.successMsgs:
             for successPattern in self.successMsgs:
-              if re.search(successPattern,output):
+              output_regexp = re.compile(successPattern)
+              matcher = output_regexp.search(output)
+              if matcher:
+                # Return only the first capturing group
+                if output_regexp.groups > 0:
+                  optInfo = matcher.group(1)
                 success = True
                 break
           else:
@@ -490,7 +550,7 @@ class Command:
             debug(0,'An error occured during %s action. Command output:\n%s\n%s\n%s' % (self.action,self.cmd_output_start,output,self.cmd_output_end))
     except OSError, details:
       abort('Failed to execute %s action: %s' % (self.action,details))  
-    return retcode
+    return retcode,optInfo
 
 
 ###############################
@@ -721,9 +781,8 @@ elif options.action == 'delete':
   status = lun.delete()
 elif options.action == 'rebase':
   debug(1,"Rebasing LUN...")
-  src_lun = LUN(args[0],proxy=iscsi_proxy)
-  rebased_lun = LUN(args[1],proxy=iscsi_proxy)
-  status = rebased_lun.rebase(src_lun)
+  lun = LUN(args[0],proxy=iscsi_proxy)
+  status = lun.rebase()
 elif options.action == 'snapshot':
   debug(1,"Doing a LUN snapshot...")
   lun = LUN(args[1],size=args[2],proxy=iscsi_proxy)
