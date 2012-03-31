@@ -68,8 +68,8 @@
         <checksumPolicy>fail</checksumPolicy>
       </releases>
       <snapshots>
-        <enabled>false</enabled>
-        <updatePolicy>never</updatePolicy>
+        <enabled>true</enabled>
+        <updatePolicy>always</updatePolicy>
         <checksumPolicy>fail</checksumPolicy>
       </snapshots>
       <id>StratusLabReleases</id>
