@@ -3,7 +3,7 @@
   
   <groupId>eu.stratuslab.storage</groupId>
   <artifactId>storage</artifactId>
-  <version>1.13</version>
+  <version>1.14-SNAPSHOT</version>
   <name>StratusLab Storage</name>
 
   <prerequisites>
