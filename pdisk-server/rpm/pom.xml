@@ -162,7 +162,7 @@
         <configuration>
           <release>${RELEASE}</release>
           <summary>StratusLab Persistent Disk Server</summary>
-          <name>pdisk-server</name>
+          <name>stratuslab-pdisk-server</name>
           <group>System</group>
           <vendor>StratusLab</vendor>
           <packager>StratusLab</packager>
@@ -177,6 +177,10 @@
             <require>java-1.6.0-openjdk</require>          
             <require>mysql-libs</require>          
           </requires>
+		  <conflicts>
+		    <conflict>pdisk-server</conflict>
+		  <conflicts>
+	    
           <mappings>
 
             <mapping>
