@@ -177,10 +177,9 @@
             <require>java-1.6.0-openjdk</require>          
             <require>mysql-libs</require>          
           </requires>
-		  <conflicts>
-		    <conflict>pdisk-server</conflict>
-		  <conflicts>
-	    
+          <conflicts>
+            <conflict>pdisk-server</conflict>
+          </conflicts>
           <mappings>
 
             <mapping>
