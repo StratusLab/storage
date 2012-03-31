@@ -18,10 +18,13 @@ import eu.stratuslab.storage.persistence.Mount;
 
 public class MountResource extends BaseResource {
 
+	public static final String METADATA_ONLY_QUERY_PARAMETER = "metadata_only";
+	
 	private String diskId = null;
 	private String mountId = null;
 	private String node = null;
 	private Mount mount = null;
+	private boolean metadataOnly = false;
 
 	@Override
 	public void doInit() {
@@ -48,7 +51,11 @@ public class MountResource extends BaseResource {
 		if(mount == null) {
 			setExisting(false);
 		}
-
+		
+		Object metadataOnlyValue = attributes.get(METADATA_ONLY_QUERY_PARAMETER); 
+		if(metadataOnlyValue != null) {
+			metadataOnly = true;
+		}
 	}
 
 	@Get("html")
@@ -67,7 +74,7 @@ public class MountResource extends BaseResource {
 	}
 
 	@Delete("html")
-	public Representation detachDiskAsHtml(Representation entity) {
+	public Representation detachDiskAsHtml() {
 
 		getLogger().info(
 				"DiskResource detachDiskAsHtml: " + diskId + ", " + mountId
@@ -83,7 +90,7 @@ public class MountResource extends BaseResource {
 	}
 
 	@Delete("json")
-	public Representation detachDiskAsJson(Representation entity) {
+	public Representation detachDiskAsJson() {
 
 		getLogger().info(
 				"DiskResource detachDiskAsJson: " + diskId + ", " + mountId
@@ -124,9 +131,6 @@ public class MountResource extends BaseResource {
 
 		String diskTarget = disk.diskTarget(mount.getId());
 
-		Form form = new Form(getRequestEntity());
-		boolean metadataOnly = form.getFirstValue("metadata_only") != null ? true : false;
-		
 		boolean updateMetadataOnly = metadataOnly || diskTarget.equals(Disk.STATIC_DISK_TARGET);
 		
 		if (!updateMetadataOnly) {
