@@ -83,10 +83,6 @@
       <artifactId>trustmanager</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.glite.security</groupId>
-      <artifactId>util-java</artifactId>
-    </dependency>
-    <dependency>
       <groupId>eu.stratuslab.authn</groupId>
       <artifactId>authn-ssl</artifactId>
     </dependency>
