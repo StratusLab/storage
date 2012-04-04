@@ -23,6 +23,7 @@ import eu.stratuslab.storage.disk.plugins.FileSystemSharing;
 import eu.stratuslab.storage.disk.plugins.IscsiSharing;
 import eu.stratuslab.storage.disk.plugins.LvmStorage;
 import eu.stratuslab.storage.disk.plugins.NetAppStorage;
+import eu.stratuslab.storage.disk.plugins.NoneSharing;
 import eu.stratuslab.storage.disk.plugins.PosixStorage;
 import eu.stratuslab.storage.persistence.Disk;
 import eu.stratuslab.storage.persistence.Disk.DiskType;
