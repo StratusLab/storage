@@ -43,6 +43,8 @@ public final class DiskUtils {
 			return new FileSystemSharing();
 		case ISCSI:
 			return new IscsiSharing();
+		case NONE:
+			return new NoneSharing();
 		default:
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL);
 		}
