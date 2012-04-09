@@ -32,7 +32,7 @@ public class ServiceConfiguration {
 	}
 
 	public enum ShareType {
-		ISCSI, NFS;
+		ISCSI, NFS, NONE;
 
 		public static ShareType valueOfIgnoreCase(String value) {
 			try {

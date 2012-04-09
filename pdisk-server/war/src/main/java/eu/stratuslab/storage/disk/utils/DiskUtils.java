@@ -23,12 +23,14 @@ import eu.stratuslab.storage.disk.plugins.FileSystemSharing;
 import eu.stratuslab.storage.disk.plugins.IscsiSharing;
 import eu.stratuslab.storage.disk.plugins.LvmStorage;
 import eu.stratuslab.storage.disk.plugins.NetAppStorage;
+import eu.stratuslab.storage.disk.plugins.NoneSharing;
 import eu.stratuslab.storage.disk.plugins.PosixStorage;
 import eu.stratuslab.storage.persistence.Disk;
+import eu.stratuslab.storage.persistence.Disk.DiskType;
 
 /**
  * For unit tests see {@link DiskUtilsTest}
- *
+ * 
  */
 public final class DiskUtils {
 
@@ -42,6 +44,8 @@ public final class DiskUtils {
 			return new FileSystemSharing();
 		case ISCSI:
 			return new IscsiSharing();
+		case NONE:
+			return new NoneSharing();
 		default:
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL);
 		}
@@ -76,13 +80,13 @@ public final class DiskUtils {
 		diskSharing.preDiskCreationActions(disk.getUuid());
 
 		diskStorage.create(disk.getUuid(), disk.getSize());
-		
+
 		disk.store();
-		
+
 		diskSharing.postDiskCreationActions(disk.getUuid());
 	}
 
-	public static String createCoWDisk(Disk disk) {
+	public static String createMachineImageCoWDisk(Disk disk) {
 
 		DiskSharing diskSharing = getDiskSharing();
 		DiskStorage diskStorage = getDiskStorage();
@@ -90,8 +94,11 @@ public final class DiskUtils {
 		Disk cowDisk = createCowDisk(disk);
 
 		diskSharing.preDiskCreationActions(cowDisk.getUuid());
-		
-		diskStorage.createCopyOnWrite(disk.getUuid(), cowDisk.getUuid(), disk.getSize());
+
+		diskStorage.createCopyOnWrite(disk.getUuid(), cowDisk.getUuid(),
+				disk.getSize());
+
+		cowDisk.setType(DiskType.MACHINE_IMAGE_LIVE);
 
 		cowDisk.store();
 
@@ -102,7 +109,7 @@ public final class DiskUtils {
 
 	protected static Disk createCowDisk(Disk disk) {
 		Disk cowDisk = new Disk();
-		cowDisk.setIscow(true);
+		cowDisk.setType(DiskType.DATA_IMAGE_LIVE);
 		cowDisk.setBaseDiskUuid(disk.getUuid());
 		cowDisk.setSize(disk.getSize());
 		cowDisk.setUsersCount(1);
@@ -234,12 +241,22 @@ public final class DiskUtils {
 		FileUtils.copyFile(cachedDisk, diskLocation);
 
 		File cachedDiskFile = new File(cachedDisk);
+
+		disk.setSize(convertBytesToGigaBytes(cachedDiskFile.length()));
+
 		boolean success = cachedDiskFile.delete();
 		if (!success) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 					"Failed deleting inflated file: " + cachedDisk);
 		}
-		disk.setIsreadonly(true);
+		disk.setType(DiskType.DATA_IMAGE_RAW_READONLY);
+		disk.setSeed(true);
+	}
+
+	// FIXME: need to implement this for real!
+	private static long convertBytesToGigaBytes(long sizeInBytes) {
+		long bytesInAGB = 1073741824;
+		return sizeInBytes / bytesInAGB;
 	}
 
 	public static void createCompressedDisk(String uuid) {

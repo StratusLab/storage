@@ -12,5 +12,7 @@
     <#if disk.quarantine?has_content>
     "quarantine": "${disk.quarantine}",
     </#if>
-    "size": "${disk.size}"
+    "size": "${disk.size}",
+    "type": "${disk.type}",
+    "visibility": "${disk.visibility}"
 }

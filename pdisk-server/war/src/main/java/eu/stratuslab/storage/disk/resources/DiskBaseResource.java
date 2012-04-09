@@ -31,6 +31,7 @@ import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.CompressedDiskRemoval;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
 import eu.stratuslab.storage.persistence.Disk;
+import eu.stratuslab.storage.persistence.Disk.DiskType;
 
 public class DiskBaseResource extends BaseResource {
 
@@ -40,6 +41,7 @@ public class DiskBaseResource extends BaseResource {
 	private static final String OWNER_KEY = "owner";
 	private static final String QUARANTINE_START_DATE_KEY = "quarantine";
 	private static final String IDENTIFIER_KEY = "identifier";
+	private static final String DISK_TYPE_KEY = "type";
 
 	protected Disk getDisk(Form form) {
 
@@ -100,6 +102,11 @@ public class DiskBaseResource extends BaseResource {
 		String identifier = form.getFirstValue(IDENTIFIER_KEY);
 		if (identifier != null) {
 			disk.setIdentifier(identifier);
+		}
+
+		String type = form.getFirstValue(DISK_TYPE_KEY);
+		if (type != null) {
+			disk.setType(DiskType.valueOf(type));
 		}
 
 		return disk;
