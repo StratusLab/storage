@@ -46,7 +46,7 @@ detach_iscsi() {
     DISK_UUID=`echo $UUID_URL | cut -d ':' -f 4`
 
     # Must contact the server to discover what disks are available.
-    local DISCOVER_CMD="sudo $ISCSIADM --mode discovery --type sendtargets --portal $PORTAL"
+    local DISCOVER_CMD="sudo $ISCSIADM --mode discovery --type sendtargets --portal $PORTAL -o nonpersistent"
     local DISCOVER_OUT=`$DISCOVER_CMD | grep -m 1 $DISK_UUID`
 
     if [ "x$DISCOVER_OUT" = "x" ]
@@ -68,8 +68,13 @@ detach_iscsi() {
     if [ `sudo /usr/sbin/lsof $DISK_PATH | wc -l` -eq 0 ]
     then
         local DETACH_CMD="sudo $ISCSIADM --mode node --portal $PORTAL_IP --targetname $DISK --logout"
+		  local iscsi_unregister="sudo $ISCSIADM --mode node --portal $PORTAL_IP --target $DISK -o delete"
         echo "$DETACH_CMD"
         $DETACH_CMD
+		  $iscsi_unregister
+    else
+			echo "Disk is currently used..."
+			exit 1
     fi
 }
 
