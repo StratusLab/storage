@@ -243,7 +243,7 @@ public class DiskResource extends DiskBaseResource {
 
 		infos.put("disk", disk);
 		infos.put("currenturl", getCurrentUrl());
-		infos.put("can_delete", hasSufficientRightsToDelete(disk));
+		infos.put("can_delete", hasSufficientRightsToEdit(disk));
 
 		return infos;
 
@@ -265,7 +265,7 @@ public class DiskResource extends DiskBaseResource {
 
 		Disk disk = loadExistingDisk();
 
-		if (!hasSufficientRightsToDelete(disk)) {
+		if (!hasSufficientRightsToEdit(disk)) {
 			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
 					"insufficient rights to delete disk (" + disk.getUuid()
 							+ ")");

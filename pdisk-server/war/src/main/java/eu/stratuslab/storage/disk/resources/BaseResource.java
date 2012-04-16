@@ -218,7 +218,7 @@ public class BaseResource extends ServerResource {
 		return visibility == DiskVisibility.PUBLIC;
 	}
 
-	protected Boolean hasSufficientRightsToDelete(Disk disk) {
+	protected Boolean hasSufficientRightsToEdit(Disk disk) {
 		String username = getUsername(getRequest());
 		return username.equals(disk.getOwner()) || isSuperUser(username);
 	}
