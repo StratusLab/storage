@@ -164,14 +164,6 @@ public class DiskBaseResource extends BaseResource {
 		return attributes.get("uuid").toString();
 	}
 
-	protected void checkIsSuper() {
-		if (!isSuperUser(getUsername(getRequest()))) {
-			throw (new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
-					"Only super user can perform this operation"));
-		}
-
-	}
-
 	protected void cleanCache(String uuid) {
 		CompressedDiskRemoval deleteDisk = new CompressedDiskRemoval(uuid);
 
