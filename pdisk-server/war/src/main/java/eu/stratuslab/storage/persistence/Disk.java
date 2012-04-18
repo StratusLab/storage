@@ -138,6 +138,7 @@ public class Disk implements Serializable {
 	private String uuid;
 
 	private String owner = "";
+	private String user = "";
 	private DiskVisibility visibility = DiskVisibility.PRIVATE;
 
 	private String creation = MiscUtils.getTimestamp();
@@ -317,6 +318,14 @@ public class Disk implements Serializable {
 
 	public DiskType getType() {
 		return type;
+	}
+
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	public String getUser() {
+		return user;
 	}
 
 }
