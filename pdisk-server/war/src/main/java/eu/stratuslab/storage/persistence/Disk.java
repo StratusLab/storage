@@ -27,8 +27,7 @@ import eu.stratuslab.storage.disk.utils.MiscUtils;
 @NamedQueries({
 		@NamedQuery(name = "allDisks", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d ORDER BY d.creation DESC"),
 		@NamedQuery(name = "allDisksByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.owner = :user ORDER BY d.creation DESC"),
-		@NamedQuery(name = "allDisksAvailableByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.owner = :user OR d.visibility = PUBLIC ORDER BY d.creation DESC"),
-		@NamedQuery(name = "allDisksByIdentifier", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.identifier = :identifier AND d.owner = :user ORDER BY d.creation DESC") })
+		@NamedQuery(name = "allDisksByIdentifier", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.identifier = :identifier ORDER BY d.creation DESC") })
 public class Disk implements Serializable {
 
 	public enum DiskType {
@@ -48,7 +47,6 @@ public class Disk implements Serializable {
 		 * snapshot / cow of machine image (managed by Marketplace)
 		 */
 		DATA_IMAGE_LIVE,
-		
 		/**
 		 * simple read only data (raw data managed by user)
 		 */
@@ -118,14 +116,13 @@ public class Disk implements Serializable {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static boolean identifierExists(String identifier, String user) {
+	public static boolean identifierExists(String identifier) {
 		if("".equals(identifier)) {
 			return false;
 		}
 		EntityManager em = PersistenceUtil.createEntityManager();
 		Query q = em.createNamedQuery("allDisksByIdentifier");
 		q.setParameter("identifier", identifier);
-		q.setParameter("user", user);
 		List<DiskView> list = q.getResultList();
 		return list.size() > 0;
 	}
