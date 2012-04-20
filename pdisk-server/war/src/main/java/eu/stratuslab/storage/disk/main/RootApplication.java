@@ -50,14 +50,14 @@ import freemarker.template.Configuration;
 public class RootApplication extends Application {
 
 	private static final Logger logger = Logger.getLogger("org.restlet");
-	
-    public static final String SVC_CONFIGURATION_KEY = "PDISK_SVC_CONFIG";
-    public static final String FM_CONFIGURATION_KEY = "PDISK_FM_CONFIG";
 
-    public static final ServiceConfiguration CONFIGURATION = ServiceConfiguration
-            .getInstance();
+	public static final String SVC_CONFIGURATION_KEY = "PDISK_SVC_CONFIG";
+	public static final String FM_CONFIGURATION_KEY = "PDISK_FM_CONFIG";
 
-    private Configuration freeMarkerConfiguration = null;
+	public static final ServiceConfiguration CONFIGURATION = ServiceConfiguration
+			.getInstance();
+
+	private Configuration freeMarkerConfiguration = null;
 
 	public static void main(String[] args) throws Exception {
 
@@ -79,125 +79,136 @@ public class RootApplication extends Application {
 		}
 		logger.info("StratusLab Storage Server started!");
 	}
-    
-    
-    public RootApplication() {
-        setName("StratusLab Persistent Disk Server");
-        setDescription("StratusLab server for persistent disk storage.");
-        setOwner("StratusLab");
-        setAuthor("Charles Loomis");
 
-        setStatusService(new CommonStatusService());
+	public RootApplication() {
+		setName("StratusLab Persistent Disk Server");
+		setDescription("StratusLab server for persistent disk storage.");
+		setOwner("StratusLab");
+		setAuthor("Charles Loomis");
 
-        getTunnelService().setUserAgentTunnel(true);
+		setStatusService(new CommonStatusService());
 
-		getMetadataService().addExtension("gzip", MediaType.APPLICATION_GNU_ZIP, true);
-    }
+		getTunnelService().setUserAgentTunnel(true);
 
-    @Override
-    public Restlet createInboundRoot() {
-        Context context = getContext();
+		getMetadataService().addExtension("gzip",
+				MediaType.APPLICATION_GNU_ZIP, true);
+	}
 
-        freeMarkerConfiguration = createFreeMarkerConfig(context);
+	@Override
+	public Restlet createInboundRoot() {
+		Context context = getContext();
 
-        ServiceConfiguration configuration = ServiceConfiguration.getInstance();
-        Router router = new RootRouter(context, configuration,
-                freeMarkerConfiguration);
+		freeMarkerConfiguration = createFreeMarkerConfig(context);
 
-        TemplateRoute route = router.attach("/disks/{uuid}/mounts/{mountid}?metadata_only={" + MountResource.METADATA_ONLY_QUERY_PARAMETER + "}", MountResource.class);
-        route.setMatchingQuery(true);
-        
-        router.attach("/disks/{uuid}/mounts/{mountid}/", MountResource.class);
-        router.attach("/disks/{uuid}/mounts/{mountid}", MountResource.class);
+		ServiceConfiguration configuration = ServiceConfiguration.getInstance();
+		Router router = new RootRouter(context, configuration,
+				freeMarkerConfiguration);
 
-        router.attach("/disks/{uuid}/mounts/", MountsResource.class);
-        router.attach("/disks/{uuid}/mounts", MountsResource.class);
+		TemplateRoute route = router.attach(
+				"/disks/{uuid}/mounts/{mountid}?metadata_only={"
+						+ MountResource.METADATA_ONLY_QUERY_PARAMETER + "}",
+				MountResource.class);
+		route.setMatchingQuery(true);
 
-        router.attach("/disks/{uuid}/", DiskResource.class);
-        router.attach("/disks/{uuid}", DiskResource.class);
+		router.attach("/disks/{uuid}/mounts/{mountid}/", MountResource.class);
+		router.attach("/disks/{uuid}/mounts/{mountid}", MountResource.class);
 
-        router.attach("/disks/", DisksResource.class);
-        router.attach("/disks", DisksResource.class);
+		router.attach("/disks/{uuid}/mounts/", MountsResource.class);
+		router.attach("/disks/{uuid}/mounts", MountsResource.class);
 
-        router.attach("/instances/{vmid}/", InstancesResource.class);
-        router.attach("/instances/{vmid}", InstancesResource.class);
+		route = router.attach("/disks/{uuid}/?edit={"
+				+ DiskResource.EDIT_QUERY_VALUE + "}", DiskResource.class);
+		route.setMatchingQuery(true);
 
-        router.attach("/instances/", InstancesResource.class);
-        router.attach("/instances", InstancesResource.class);
+		route = router.attach("/disks/{uuid}?edit={"
+				+ DiskResource.EDIT_QUERY_VALUE + "}", DiskResource.class);
+		route.setMatchingQuery(true);
 
-        router.attach("/", HomeResource.class);
+		router.attach("/disks/{uuid}/", DiskResource.class);
+		router.attach("/disks/{uuid}", DiskResource.class);
 
-        router.attach("/media/", createMediaDirectory(context));
+		router.attach("/disks/", DisksResource.class);
+		router.attach("/disks", DisksResource.class);
 
-        return createGuard(context, router);
-    }
+		router.attach("/instances/{vmid}/", InstancesResource.class);
+		router.attach("/instances/{vmid}", InstancesResource.class);
 
-    private static Directory createMediaDirectory(Context context) {
-		String mediaLocation = System.getProperty(
-				"media.content.location", "war:///media");
-        Directory mediaDir = new Directory(context, mediaLocation);
-        mediaDir.setNegotiatingContent(false);
-        mediaDir.setIndexName("index.html");
+		router.attach("/instances/", InstancesResource.class);
+		router.attach("/instances", InstancesResource.class);
 
-        return mediaDir;
-    }
+		router.attach("/", HomeResource.class);
 
-    //
-    // This guard is needed although JAAS is doing all of the
-    // authentication. This allows the authentication information
-    // to be retrieved from the request through the challenge
-    // request.
-    //
-    private static ChallengeAuthenticator createGuard(Context context,
-            Router next) {
-        DummyVerifier verifier = new DummyVerifier();
-        ChallengeAuthenticator guard = new ChallengeAuthenticator(context,
-                ChallengeScheme.HTTP_BASIC,
-                "Stratuslab Persistent Disk Storage");
-        guard.setVerifier(verifier);
-        guard.setNext(next);
-        return guard;
-    }
+		router.attach("/media/", createMediaDirectory(context));
 
-    private static Configuration createFreeMarkerConfig(Context context) {
+		return createGuard(context, router);
+	}
 
-        Configuration fmCfg = new Configuration();
-        fmCfg.setLocalizedLookup(false);
+	private static Directory createMediaDirectory(Context context) {
+		String mediaLocation = System.getProperty("media.content.location",
+				"war:///media");
+		Directory mediaDir = new Directory(context, mediaLocation);
+		mediaDir.setNegotiatingContent(false);
+		mediaDir.setIndexName("index.html");
 
-        LocalReference fmBaseRef = LocalReference.createClapReference("/");
-        fmCfg.setTemplateLoader(new ContextTemplateLoader(context, fmBaseRef));
+		return mediaDir;
+	}
 
-        return fmCfg;
-    }
+	//
+	// This guard is needed although JAAS is doing all of the
+	// authentication. This allows the authentication information
+	// to be retrieved from the request through the challenge
+	// request.
+	//
+	private static ChallengeAuthenticator createGuard(Context context,
+			Router next) {
+		DummyVerifier verifier = new DummyVerifier();
+		ChallengeAuthenticator guard = new ChallengeAuthenticator(context,
+				ChallengeScheme.HTTP_BASIC,
+				"Stratuslab Persistent Disk Storage");
+		guard.setVerifier(verifier);
+		guard.setNext(next);
+		return guard;
+	}
 
-    public Configuration getFreeMarkerConfiguration() {
-        return freeMarkerConfiguration;
-    }
+	private static Configuration createFreeMarkerConfig(Context context) {
 
-    public static class RootRouter extends Router {
+		Configuration fmCfg = new Configuration();
+		fmCfg.setLocalizedLookup(false);
 
-        ServiceConfiguration configuration = null;
-        Configuration freeMarkerConfiguration = null;
+		LocalReference fmBaseRef = LocalReference.createClapReference("/");
+		fmCfg.setTemplateLoader(new ContextTemplateLoader(context, fmBaseRef));
 
-        public RootRouter(Context context, ServiceConfiguration configuration,
-                Configuration freeMarkerConfiguration) {
-            super(context);
-            this.configuration = configuration;
-            this.freeMarkerConfiguration = freeMarkerConfiguration;
-        }
+		return fmCfg;
+	}
 
-        @Override
-        public void doHandle(Restlet next, Request request, Response response) {
+	public Configuration getFreeMarkerConfiguration() {
+		return freeMarkerConfiguration;
+	}
 
-            Map<String, Object> attributes = request.getAttributes();
+	public static class RootRouter extends Router {
 
-            attributes.put(SVC_CONFIGURATION_KEY, configuration);
-            attributes.put(FM_CONFIGURATION_KEY, freeMarkerConfiguration);
-            request.setAttributes(attributes);
+		ServiceConfiguration configuration = null;
+		Configuration freeMarkerConfiguration = null;
 
-            super.doHandle(next, request, response);
-        }
+		public RootRouter(Context context, ServiceConfiguration configuration,
+				Configuration freeMarkerConfiguration) {
+			super(context);
+			this.configuration = configuration;
+			this.freeMarkerConfiguration = freeMarkerConfiguration;
+		}
 
-    }
+		@Override
+		public void doHandle(Restlet next, Request request, Response response) {
+
+			Map<String, Object> attributes = request.getAttributes();
+
+			attributes.put(SVC_CONFIGURATION_KEY, configuration);
+			attributes.put(FM_CONFIGURATION_KEY, freeMarkerConfiguration);
+			request.setAttributes(attributes);
+
+			super.doHandle(next, request, response);
+		}
+
+	}
 
 }
