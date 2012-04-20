@@ -24,6 +24,7 @@ public final class NetAppStorage implements DiskStorage {
 				+ " of size " + size);
 	}
 
+	// TODO: expose this
 	protected void checkDiskExists(String baseUuid) {
 
 		ProcessBuilder pb = new ProcessBuilder(NETAPP_CMD, "--config",
@@ -32,6 +33,17 @@ public final class NetAppStorage implements DiskStorage {
 		ProcessUtils
 				.execute(pb, "Volume does not exist on NetApp: " + baseUuid);
 
+	}
+
+	// TODO: expose this
+	public String getTurl(String baseUuid) {
+
+		ProcessBuilder pb = new ProcessBuilder(NETAPP_CMD, "--config",
+				NETAPP_CONFIG, "--action", "getturl", baseUuid);
+
+		return ProcessUtils.executeWithOutput(pb,
+				"Cannot find transport URL (turl) for uuid: " + baseUuid);
+		
 	}
 
 	public String rebase(Disk disk) {
@@ -48,7 +60,7 @@ public final class NetAppStorage implements DiskStorage {
 		disk.setQuarantine("");
 		disk.setSeed(true);
 		disk.store();
-		
+
 		return rebaseUuid;
 	}
 
