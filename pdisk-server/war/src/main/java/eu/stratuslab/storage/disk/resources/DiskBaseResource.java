@@ -19,6 +19,7 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,6 @@ import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.CompressedDiskRemoval;
-import eu.stratuslab.storage.disk.utils.MiscUtils;
 import eu.stratuslab.storage.persistence.Disk;
 import eu.stratuslab.storage.persistence.Disk.DiskType;
 
@@ -42,6 +42,8 @@ public class DiskBaseResource extends BaseResource {
 	private static final String QUARANTINE_START_DATE_KEY = "quarantine";
 	private static final String IDENTIFIER_KEY = "identifier";
 	private static final String DISK_TYPE_KEY = "type";
+	private static final String DISK_SEED_KEY = "seed";
+	private static final String DISK_GROUP_KEY = "group";
 
 	protected Disk getDisk(Form form) {
 
@@ -94,7 +96,8 @@ public class DiskBaseResource extends BaseResource {
 			disk.setOwner(ownerInForm);
 		}
 
-		String quarantineStartDate = form.getFirstValue(QUARANTINE_START_DATE_KEY);
+		String quarantineStartDate = form
+				.getFirstValue(QUARANTINE_START_DATE_KEY);
 		if (quarantineStartDate != null) {
 			disk.setQuarantine(quarantineStartDate);
 		}
@@ -109,6 +112,18 @@ public class DiskBaseResource extends BaseResource {
 			disk.setType(DiskType.valueOf(type));
 		}
 
+		String group = form.getFirstValue(DISK_GROUP_KEY);
+		if (group != null) {
+			disk.setGroup(group);
+		}
+
+		String seed = form.getFirstValue(DISK_SEED_KEY);
+		if (seed != null) {
+			disk.setSeed("on".equals(seed)); // only sent if set (=on)
+		} else {
+			disk.setSeed(false);
+		}
+
 		return disk;
 	}
 
@@ -118,26 +133,23 @@ public class DiskBaseResource extends BaseResource {
 		return disk;
 	}
 
-	protected void validateDisk(Disk disk) {
-		List<String> errors = new LinkedList<String>();
+	protected void validateNewDisk(Disk disk) {
 
-		if (Disk.identifierExists(disk.getIdentifier(), disk.getOwner())) {
-			errors.add("image already registered");
+		if (Disk.identifierExists(disk.getIdentifier())) {
+			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
+					"Disk already registered");
 		}
 
 		long gigabytes = disk.getSize();
 
 		if (gigabytes < ServiceConfiguration.DISK_SIZE_MIN
 				|| gigabytes > ServiceConfiguration.DISK_SIZE_MAX) {
-			errors.add("Size must be an integer between "
+			String error = "Size must be an integer between "
 					+ ServiceConfiguration.DISK_SIZE_MIN + " and "
-					+ ServiceConfiguration.DISK_SIZE_MAX);
+					+ ServiceConfiguration.DISK_SIZE_MAX;
+			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, error);
 		}
 
-		if (errors.size() > 0) {
-			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-					MiscUtils.join(errors, "\", \""));
-		}
 	}
 
 	protected Disk updateDisk(Disk disk) {
