@@ -1,6 +1,7 @@
 package eu.stratuslab.storage.persistence;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -135,7 +136,7 @@ public class Disk implements Serializable {
 	private String uuid;
 
 	private String owner = "";
-	private String user = "";
+	private ArrayList<String> group_ = new ArrayList<String>();
 	private DiskVisibility visibility = DiskVisibility.PRIVATE;
 
 	private String creation = MiscUtils.getTimestamp();
@@ -317,12 +318,31 @@ public class Disk implements Serializable {
 		return type;
 	}
 
-	public void setUser(String user) {
-		this.user = user;
+	public String getGroup() {
+		String group = "";
+		for(String user : this.group_) {
+			group += user + ", ";
+		}
+		return group;
 	}
 
-	public String getUser() {
-		return user;
+	public void addGroupShare(String username) {
+		group_.add(username);
+	}
+
+	public boolean groupContainsUser(String username) {
+		return group_.contains(username);
+	}
+
+	public void setGroup(String group) {
+		ArrayList<String> list = new ArrayList<String>();
+		for(String user : group.split(",")) {
+			String trimmed = user.trim();
+			if(!"".equals(trimmed)) {
+				list.add(user.trim());
+			}
+		}
+		group_ = list;
 	}
 
 }
