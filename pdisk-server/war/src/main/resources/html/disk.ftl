@@ -47,36 +47,44 @@
           <td>${disk.quarantine}</td>
         </tr>
       </#if>
-      <tr>
-        <td><strong>Is original (seed)</strong></td>
-        <td><input type="checkbox" disabled="true" 
-        <#if disk.seed> 
-        checked="true"
-        </#if>
-        /></td>
-      </tr>
+      <!-- Seed doesn't apply to live machines -->
+      <#if disk.type != "MACHINE_IMAGE_LIVE">
+        <tr>
+          <td><strong>Is original (seed)</strong></td>
+          <td>
+            <input type="checkbox" disabled="true" 
+              <#if disk.seed>checked="true"</#if>/>
+          </td>
+        </tr>
+      </#if>
       <tr>
         <td><strong>Disk type</strong></td>
           <td>${disk.type}</td>
       </tr>
+
       <tr>
-        <td><strong>Disk visibility</strong></td>
-          <td>${disk.visibility}</td>
+        <td><strong>Share</strong></td>
+          <td>${disk.group}</td>
       </tr>
 
-<#if can_delete == true>
-  <tr>
-    <td>
-      <form action="${currenturl}?method=delete" 
-            enctype="application/x-www-form-urlencoded" 
-            method="post">
-        <input type="submit" value="Delete" />
-      </form>
-    </td>
-    <td></td>
-  </tr>
-</#if>
-
   </table>
+
+<#if can_edit == true>
+
+  <table>
+	  <tr>
+	    <td>
+	      <form action="${currenturl}?method=delete" 
+	            enctype="application/x-www-form-urlencoded" 
+	            method="post">
+	        <input type="submit" value="Delete" />
+	      </form>
+	    </td>
+	    <td>
+	      <input type="button" value="Edit" onClick="window.location='${currenturl}?edit=true'">
+	    </td>
+	  </tr>
+  </table>
+</#if>
 
 <#include "/html/footer.ftl">
