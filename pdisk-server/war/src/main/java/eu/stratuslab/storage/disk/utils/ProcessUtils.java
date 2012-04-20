@@ -28,6 +28,10 @@ public final class ProcessUtils {
 	}
 
 	public static void execute(ProcessBuilder pb, String errorMsg) {
+		executeWithOutput(pb, errorMsg);
+	}
+	
+	public static String executeWithOutput(ProcessBuilder pb, String errorMsg) {
 		int returnCode = 1;
 		String stdout = "";
 		String stderr = "";
@@ -85,6 +89,8 @@ public final class ProcessUtils {
 
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, msg);
 		}
+		
+		return stdout;
 	}
 
 	private static void info(ProcessBuilder processBuilder) {
