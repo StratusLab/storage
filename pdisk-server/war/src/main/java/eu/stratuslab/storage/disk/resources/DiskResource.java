@@ -62,14 +62,23 @@ public class DiskResource extends DiskBaseResource {
 
 	}
 
-	@Put
-	public void update(Representation entity) {
+	@Put("form")
+	public void updateForm(Representation entity) {
 
-		checkIsSuper();
+		updateJson(entity);
+
+		redirectSeeOther(getRequest().getResourceRef());
+	}
+
+	@Put("json")
+	public void updateJson(Representation entity) {
 
 		MiscUtils.checkForNullEntity(entity);
 
 		Disk disk = loadExistingDisk();
+
+		hasSufficientRightsToEdit(disk);
+
 		disk = processWebForm(disk, new Form(entity));
 
 		disk.setUuid(getDiskId());
