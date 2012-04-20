@@ -47,7 +47,9 @@ import eu.stratuslab.storage.persistence.Disk.DiskType;
 
 public class DiskResource extends DiskBaseResource {
 
+	public static final String EDIT_QUERY_VALUE = "edit";
 	private static final String UUID_KEY_NAME = Disk.UUID_KEY;
+	private boolean isEdit = false;
 
 	@Override
 	protected void doInit() throws ResourceException {
@@ -60,6 +62,10 @@ public class DiskResource extends DiskBaseResource {
 							+ ")");
 		}
 
+		if (getRequest().getAttributes().containsKey(EDIT_QUERY_VALUE)) {
+			isEdit = Boolean.parseBoolean(getRequest().getAttributes()
+					.get(EDIT_QUERY_VALUE).toString());
+		}
 	}
 
 	@Put("form")
@@ -154,7 +160,13 @@ public class DiskResource extends DiskBaseResource {
 
 		addDiskUserHeader();
 
-		return createTemplateRepresentation("html/disk.ftl", info, TEXT_HTML);
+		if (isEdit) {
+			return createTemplateRepresentation("html/disk-edit.ftl", info,
+					TEXT_HTML);
+		} else {
+			return createTemplateRepresentation("html/disk.ftl", info,
+					TEXT_HTML);
+		}
 	}
 
 	@Get("json")
