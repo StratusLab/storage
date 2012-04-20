@@ -29,7 +29,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
@@ -92,7 +91,7 @@ public class DisksResource extends DiskBaseResource {
 
 		Disk disk = getDisk(form);
 
-		validateDisk(disk);
+		validateNewDisk(disk);
 
 		createDisk(disk);
 		
@@ -125,7 +124,7 @@ public class DisksResource extends DiskBaseResource {
 
 		Disk disk = saveAndInflateFiles();
 
-		validateDisk(disk);
+		validateNewDisk(disk);
 
 		DiskUtils.createReadOnlyDisk(disk);
 		disk.setSeed(true);
@@ -197,7 +196,7 @@ public class DisksResource extends DiskBaseResource {
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
 					e.getMessage());
 		}
-		validateDisk(disk);
+		validateNewDisk(disk);
 		return disk;
 	}
 
