@@ -22,15 +22,12 @@ package eu.stratuslab.storage.disk.resources;
 import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 
-import eu.stratuslab.storage.persistence.Disk;
 import eu.stratuslab.storage.persistence.Instance;
 import eu.stratuslab.storage.persistence.InstanceView;
 
@@ -69,22 +66,6 @@ public class InstancesResource extends DiskBaseResource {
 		info.put("instances", instances);
 
 		return info;
-	}
-
-	private void addCreateFormDefaults(Map<String, Object> info) {
-		Map<String, Object> defaults = new HashMap<String, Object>();
-		defaults.put(Disk.DISK_SIZE_KEY, 1);
-		defaults.put(Disk.DISK_VISIBILITY_KEY,
-				DiskVisibility.PRIVATE.toString());
-
-		info.put("values", defaults);
-
-		List<String> visibilities = new LinkedList<String>();
-		for (DiskVisibility visibility : DiskVisibility.values()) {
-			visibilities.add(visibility.toString());
-		}
-
-		info.put("visibilities", visibilities);
 	}
 
 }
