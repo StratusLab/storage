@@ -246,15 +246,17 @@ public class DiskResource extends DiskBaseResource {
 	}
 
 	private Map<String, Object> loadDiskProperties() {
-		Map<String, Object> infos = createInfoStructure("Disk Information");
+		Map<String, Object> info = createInfoStructure("Disk Information");
+
+		addCreateFormDefaults(info);
 
 		Disk disk = loadExistingDisk();
 
-		infos.put("disk", disk);
-		infos.put("currenturl", getCurrentUrl());
-		infos.put("can_delete", hasSufficientRightsToEdit(disk));
+		info.put("disk", disk);
+		info.put("currenturl", getCurrentUrl());
+		info.put("can_edit", hasSufficientRightsToEdit(disk));
 
-		return infos;
+		return info;
 
 	}
 
