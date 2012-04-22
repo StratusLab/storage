@@ -21,6 +21,21 @@ VM_DIR=$(dirname $(dirname $DEVICE_LINK))
 VM_ID=`basename $VM_DIR`
 REGISTER_FILE="$VM_DIR/$REGISTER_FILENAME"
 
+getTurl () {
+  # Turl must begin by protocol name
+  # iscsi://portal:port/iqn
+  # nfs://server/path/to/file
+  local getTurlRequest="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} https://${PORTAL}:${PORTAL_PORT}/pswd/disks/${DISK_UUID}/turl/"
+  local turl=`$getTurlRequest`
+
+  local turl_regexp="s/^\(.*\):\/\/\(.*\)\/\(.*\)$/\1 \2 \3/"
+  local result=( $(echo $turl | sed -e "$turl_regexp" ) )
+
+  TURL_PROTOCOL=${result[0]}
+  TURL_SERVER=${result[1]}
+  TURL_DISK_PATH=${result[2]}
+}
+
 register_disk() {
     # We assume here that the disk can be mounted by the user (permission and remaining places)
     # Only username/password authentication is supported for the pdisk user.
@@ -51,8 +66,9 @@ attach_nfs() {
 }
 
 attach_iscsi() {
-    # Must contact the server to discover what disks are available.
-    local DISCOVER_CMD="sudo $ISCSIADM --mode discovery --type sendtargets --portal $PORTAL"
+    # Must contact the server to discover what disks are available. But no populate databases. If DB is populated, hypervisor will attach disk on
+    # each reboot
+    local DISCOVER_CMD="sudo $ISCSIADM --mode discovery --type sendtargets --portal $PORTAL -o nonpersistent"
     DISCOVER_OUT=`$DISCOVER_CMD | grep -m 1 $DISK_UUID`
 
     if [ "x$DISCOVER_OUT" = "x" ]
@@ -70,7 +86,9 @@ attach_iscsi() {
     local DISK_PATH="/dev/disk/by-path/ip-$PORTAL_IP-iscsi-$DISK-lun-$LUN"
 
     # Attach the iSCSI disk on the host.
+	 local iscsi_registration="sudo $ISCSIADM --mode node --portal $PORTAL_IP --targetname $DISK -o new"
     local ATTACH_CMD="sudo $ISCSIADM --mode node --portal $PORTAL_IP --targetname $DISK --login"
+	 $iscsi_registration
     $ATTACH_CMD
 
     # Ensure that the disk device aliases are setup. 
@@ -83,7 +101,9 @@ attach_iscsi() {
         REAL_DEV=`readlink -e -n $DISK_PATH`
         [ -z $REAL_DEV ] && { echo "Couldn't not get real device name behind the alias."; exit 1; }
     fi
-    local LINK_CMD="ln -fs $REAL_DEV $DEVICE_LINK"
+
+	 # Use DISK_PATH instead of real device. disk path is unique for each iSCSI device
+    local LINK_CMD="ln -fs $DISK_PATH $DEVICE_LINK"
     $LINK_CMD
 }
 

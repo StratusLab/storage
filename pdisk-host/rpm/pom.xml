@@ -94,6 +94,7 @@
               <filemode>755</filemode>
               <username>root</username>
               <groupname>root</groupname>
+              <configuration>noreplace</configuration>
               <directoryIncluded>false</directoryIncluded>
               <sources>
                 <source>
