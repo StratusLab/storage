@@ -74,6 +74,9 @@
           <description>
             Packaging of scripts needed to support persistent disks on hosts.
           </description>
+          <requires>
+               <require>stratuslab-cli-user &gt; 1.0</require>
+          </requires>
           <mappings>
 
             <mapping>
