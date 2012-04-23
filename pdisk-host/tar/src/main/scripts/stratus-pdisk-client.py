@@ -74,6 +74,9 @@ parser.add_option("--vm-disk-name", dest="disk_name",
 parser.add_option("--target", dest="target",
   help="Device name on Virtual Machine"
 )
+parser.add_option("--turl", dest="turl", metavar="TURL", default="",
+  help="Transport URL of pdisk (protocol://server/protocol-option-to-access-file)"
+)
 parser.add_option("--username", dest="username",
   help="Username use to interact with pdisk server"
 )
@@ -110,7 +113,7 @@ if not options.operation:
 	raise parser.error("--op options is mandatory")
 
 if options.attach:
-	if not options.persistent_disk_id:
+	if not options.persistent_disk_id :
 		raise parser.error("--attach option need --pdisk-id options")
 
 if options.registration:
@@ -118,8 +121,8 @@ if options.registration:
 		raise parser.error("--register need --pdisk-id and --vm-id options")
 
 if options.link:
-	if not options.persistent_disk_id or  ( not vm_dir and not options.vm_dir ) or not options.vm_id or not options.disk_name:
-		raise parser.error("--link need --pdisk-id, --vm-disk-name and --vm-id options, --vm-dir is needed if not define on configuration file ( /etc/stratuslab/pdisk-host.conf)")
+	if not options.persistent_disk_id or  ( not vm_dir and not options.vm_dir ) or not options.vm_id or not options.disk_name :
+		raise parser.error("--link need --pdisk-id, --vm-disk-name, --vm-id options are needed, --vm-dir if not define on configuration file ( /etc/stratuslab/pdisk-host.conf)")
 
 if options.mount:
 	if not options.persistent_disk_id or not options.vm_id or not options.target:
@@ -197,7 +200,7 @@ class PersistentDisk:
 	"""
 		_copy used to create a a xxxPersistentDisk object from PersistentDisk (xxxPersistentDisk is a inheritated class)
 	"""
-	def _copy(self,pdisk):
+	def __copy__(self,pdisk):
 		self.endpoint  = pdisk.endpoint
 		self.port      = pdisk.port
 		self.disk_uuid = pdisk.disk_uuid
@@ -219,43 +222,36 @@ class PersistentDisk:
 			raise CheckPersistentDiskException('Check_mount : error while check '+self.endpoint+' with url '+url)
 		io = StringIO(contents)
 		json_output = json.load(io)
-		if json_output['users'] != '0':
-			raise CheckPersistentDiskException('Check_mount : pdisk pdisk:'+ self.endpoint+':'+self.port+':'+self.disk_uuid+' is mounted')
-		return False
-
-	"""
-		_getTurl used to retrieve Transport URL ( proto://server:port/proto_options ) from pdisk id ( pdisk:endpoint:port:disk_uuid )
-	"""
-	def _getTurl(self):
-		if getTurlCallback != '':
-			getTurlcmd = getTurlCallback+" pdisk:"+self.endpoint+":"+self.port+":"+self.disk_uuid
-			uri=commands.getoutput(getTurlcmd)
-		else:
-			url = self._registration_uri()+"turl/"
-			h = httplib2.Http("/tmp/.cache")
-			h.add_credentials(login,pswd)
-			h.disable_ssl_certificate_validation=True
-			try:
-				resp, contents = h.request(url)
-			except httplib2.ServerNotFoundError:
-				raise getTurlPersistentDiskException('Server '+self.endpoint+' not found')
-			if resp != 200:
-				uri="iscsi://"+self.endpoint+":3260/iqn.2011-01.eu.stratuslab:"+self.disk_uuid+":1"
-		_uri = re.match(r"(?P<protocol>.*)://(?P<server>.*)/(?P<image>.*)", uri)
-		try :
-			self.protocol  = _uri.group('protocol')
-			self.server    = _uri.group('server')
-			self.image     = _uri.group('image')
-		except AttributeError:
-			raise URIPersistentDiskException('URI '+ uri + ' not match expression proto://server/proto-options')
-
-	def __init__(self, pdisk_id):
 		try:
-			_pdisk = re.match(r"pdisk:(?P<server>.*):(?P<port>.*):(?P<disk_uuid>.*)", pdisk_id)
-			self.endpoint  = _pdisk.group('server')
-			self.port      = _pdisk.group('port')
-			self.disk_uuid = _pdisk.group('disk_uuid')
-			self._getTurl()
+			if json_output['users'] != '0':
+				raise CheckPersistentDiskException('Check_mount : pdisk pdisk:'+ self.endpoint+':'+self.port+':'+self.disk_uuid+' is mounted')
+			return False
+		except KeyError:
+			return False
+
+	"""
+		__checkTurl__ check and split Transport URL ( proto://server:port/proto_options ) from pdisk id ( pdisk:endpoint:port:disk_uuid )
+	"""
+	def __checkTurl__(self,turl):
+		if turl == "":
+			__url__ = "iscsi://"+self.endpoint+":3260/iqn.2011-01.eu.stratuslab:"+self.disk_uuid+":1"
+		else:
+			__url__ = turl
+		__uri__ = re.match(r"(?P<protocol>.*)://(?P<server>.*)/(?P<image>.*)", __url__)
+		try :
+			self.protocol  = __uri__.group('protocol')
+			self.server    = __uri__.group('server')
+			self.image     = __uri__.group('image')
+		except AttributeError:
+			raise URIPersistentDiskException('TURL '+ turl + ' not match expression protocol://server/protocol-options')
+
+	def __init__(self, pdisk_id, turl):
+		try:
+			__pdisk__ = re.match(r"pdisk:(?P<server>.*):(?P<port>.*):(?P<disk_uuid>.*)", pdisk_id)
+			self.endpoint  = __pdisk__.group('server')
+			self.port      = __pdisk__.group('port')
+			self.disk_uuid = __pdisk__.group('disk_uuid')
+			self.__checkTurl__(turl)
 		except AttributeError:
 			raise PersistentDiskException('URI '+pdisk_id+' not match expression pdisk:endpoint:port:disk_uuid')
 			
@@ -294,18 +290,25 @@ class IscsiPersistentDisk(PersistentDisk):
 		self.iqn = _iqn.group('iqn')
 		self.lun = _iqn.group('lun')
 
-	def __init__(self,pdisk_class):
-		self._copy(pdisk_class)
+	def __init__(self,pdisk_class,turl):
+		self.__copy__(pdisk_class)
 		self._image2iqn(pdisk_class.image)
 
-class NfsPersistentDisk(PersistentDisk):
+class FilePersistentDisk(PersistentDisk):
 	def _image2file(self, str):
 		_file = re.match(r"(?P<mount_point>.*)/(?P<full_path>.*)", str)
 		self.mount_point = _file.group('mount_point')
 		self.full_path   = _file.group('full_path')
+	def image_storage(self):
+		return self.server+"/"+self.image
+	def attach(self):
+		pass
 
-	def __init__(self,pdisk_class):
-		self._copy(pdisk_class)
+	def detach(self):
+		pass
+
+	def __init__(self,pdisk_class,turl):
+		self.__copy__(pdisk_class)
 
 class PersistentDiskException(Exception):
 	def __init__(self,value):
@@ -341,16 +344,16 @@ class getTurlPersistentDiskException(PersistentDiskException):
 
 def __init__():
 	try:
-		global_pdisk = PersistentDisk(options.persistent_disk_id)
+		global_pdisk = PersistentDisk(options.persistent_disk_id,options.turl)
 	except getTurlPersistentDiskException:
 		print "Error while try to retrive %s" % options.persistent_disk_id
 		return -1
 	global vm_dir
 
 	if global_pdisk.protocol == "iscsi" :
-		pdisk = IscsiPersistentDisk(global_pdisk)
-	elif global_pdisk.protocol == "nfs" :
-		pdisk = NfsPersistentDisk(global_pdisk)
+		pdisk = IscsiPersistentDisk(global_pdisk,options.turl)
+	elif global_pdisk.protocol == "file" :
+		pdisk = FilePersistentDisk(global_pdisk,options.turl)
 	else :
 		print "Protocol "+global_pdisk.protocol+" not supported"
 

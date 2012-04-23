@@ -319,7 +319,8 @@ class FileBackend(Backend):
                   'getturl':['/bin/echo','file://%%LOGVOL_PATH%%'],
                   }
 
-  success_msg_pattern = {'getturl' : '(.*://.*)',
+  success_msg_pattern = {'create' : '.*',
+                         'getturl' : '(.*://.*)',
                          }
   def __init__(self,proxy,volume,mgtUser=None,mgtPrivKey=None):
     self.volumeName = volume
