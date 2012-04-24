@@ -143,14 +143,14 @@ if options.password:
  Metaclass for general persistent disk client
 """
 class PersistentDisk:
-	def _registration_uri(self):
+	def __registration_uri__(self):
 		return "https://"+self.endpoint+":"+self.port+"/pswd/disks/"+self.disk_uuid+"/"
 	"""
 		Register/Unregister mount on pdisk endpoint
 	"""
 	def register(self,login,pswd,vm_id):
 		node=socket.gethostbyname(socket.gethostname())
-		url = self._registration_uri()+"mounts/"
+		url = self.__registration_uri__()+"mounts/"
 		h = httplib2.Http("/tmp/.cache")
 		h.disable_ssl_certificate_validation=True
 		h.add_credentials(login,pswd)
@@ -161,7 +161,7 @@ class PersistentDisk:
 			raise RegisterPersistentDiskException('Register : Server '+self.endpoint+' not found')
 	def unregister(self,login,pswd,vm_id):
 		node=socket.gethostbyname(socket.gethostname())
-		url = self._registration_uri()+"mounts/"+vm_id+"-"+node
+		url = self.__registration_uri__()+"mounts/"+self.disk_uuid+"_"+vm_id
 		h = httplib2.Http("/tmp/.cache")
 		h.add_credentials(login,pswd)
 		h.disable_ssl_certificate_validation=True
@@ -212,7 +212,7 @@ class PersistentDisk:
 		check_mount used to check if pdisk is already used return true if pdisk is free
 	"""
 	def check_mount(self,login,pswd):
-		url = self._registration_uri()
+		url = self.__registration_uri__()
 		h = httplib2.Http("/tmp/.cache")
 		h.add_credentials(login,pswd)
 		h.disable_ssl_certificate_validation=True
@@ -222,12 +222,12 @@ class PersistentDisk:
 			raise CheckPersistentDiskException('Check_mount : error while check '+self.endpoint+' with url '+url)
 		io = StringIO(contents)
 		json_output = json.load(io)
-		try:
-			if json_output['users'] != '0':
-				raise CheckPersistentDiskException('Check_mount : pdisk pdisk:'+ self.endpoint+':'+self.port+':'+self.disk_uuid+' is mounted')
-			return False
-		except KeyError:
-			return False
+#		try:
+#		if json_output['count'] != '0':
+#			raise CheckPersistentDiskException('Check_mount : pdisk pdisk:'+ self.endpoint+':'+self.port+':'+self.disk_uuid+' is mounted')
+		return False
+#		except KeyError:
+#			return False
 
 	"""
 		__checkTurl__ check and split Transport URL ( proto://server:port/proto_options ) from pdisk id ( pdisk:endpoint:port:disk_uuid )
@@ -259,15 +259,15 @@ class PersistentDisk:
 class IscsiPersistentDisk(PersistentDisk):
 	_unix_device_path='/dev/disk/by-path/'
 	def image_storage(self):
-		_portal    = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
-		_portal_ip = socket.gethostbyname( _portal.group('server') )
-		dev = "ip-" + _portal_ip + ":" + _portal.group('port') + "-iscsi-" + self.iqn + "-lun-" + self.lun
+		__portal__    = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
+		__portal_ip__ = socket.gethostbyname( __portal__.group('server') )
+		dev = "ip-" + __portal_ip__ + ":" + __portal__.group('port') + "-iscsi-" + self.iqn + "-lun-" + self.lun
 		return self._unix_device_path+dev
 	def attach(self):
-		_portal    = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
-		_portal_ip = socket.gethostbyname(_portal.group('server'))
-		reg = "sudo "+iscsiadm + " --mode node --portal " + _portal_ip + ":" + _portal.group('port') + " --target " + self.iqn + " -o new" 
-		cmd = "sudo "+iscsiadm + " --mode node --portal " + _portal_ip + ":" + _portal.group('port') + " --target " + self.iqn + " --login" 
+		__portal__    = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
+		__portal_ip__ = socket.gethostbyname(__portal__.group('server'))
+		reg = "sudo "+iscsiadm + " --mode node --portal " + __portal_ip__ + ":" + __portal__.group('port') + " --target " + self.iqn + " -o new" 
+		cmd = "sudo "+iscsiadm + " --mode node --portal " + __portal_ip__ + ":" + __portal__.group('port') + " --target " + self.iqn + " --login" 
 		retcode = call(reg, shell=True)
 		if retcode < 0:
 			raise AttachPersistentDiskException("Error while attach iSCSI disk to hypervisor")
@@ -275,30 +275,30 @@ class IscsiPersistentDisk(PersistentDisk):
 		if retcode < 0:
 			raise AttachPersistentDiskException("Error while attach iSCSI disk to hypervisor")
 	def detach(self):
-		_portal    = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
-		_portal_ip = socket.gethostbyname(_portal.group('server'))
-		cmd   = "sudo "+iscsiadm + " --mode node --portal " + _portal_ip + ":" + _portal.group('port') + " --target " + self.iqn + " --logout" 
-		unreg = "sudo "+iscsiadm + " --mode node --portal " + _portal_ip + ":" + _portal.group('port') + " --target " + self.iqn + " -o delete" 
+		__portal__    = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
+		__portal_ip__ = socket.gethostbyname(__portal__.group('server'))
+		cmd   = "sudo "+iscsiadm + " --mode node --portal " + __portal_ip__ + ":" + __portal__.group('port') + " --target " + self.iqn + " --logout" 
+		unreg = "sudo "+iscsiadm + " --mode node --portal " + __portal_ip__ + ":" + __portal__.group('port') + " --target " + self.iqn + " -o delete" 
 		retcode = call(cmd, shell=True)
 		if retcode < 0:
 			raise AttachPersistentDiskException("Error while attach iSCSI disk to hypervisor")
 		retcode = call(unreg, shell=True)
 		if retcode < 0:
 			raise AttachPersistentDiskException("Error while attach iSCSI disk to hypervisor")
-	def _image2iqn(self, str):
-		_iqn = re.match(r"(?P<iqn>.*:.*):(?P<lun>.*)", str)
-		self.iqn = _iqn.group('iqn')
-		self.lun = _iqn.group('lun')
+	def __image2iqn__(self, str):
+		__iqn__ = re.match(r"(?P<iqn>.*:.*):(?P<lun>.*)", str)
+		self.iqn = __iqn__.group('iqn')
+		self.lun = __iqn__.group('lun')
 
 	def __init__(self,pdisk_class,turl):
 		self.__copy__(pdisk_class)
-		self._image2iqn(pdisk_class.image)
+		self.__image2iqn__(pdisk_class.image)
 
 class FilePersistentDisk(PersistentDisk):
-	def _image2file(self, str):
-		_file = re.match(r"(?P<mount_point>.*)/(?P<full_path>.*)", str)
-		self.mount_point = _file.group('mount_point')
-		self.full_path   = _file.group('full_path')
+	def __image2file__(self, str):
+		__file__ = re.match(r"(?P<mount_point>.*)/(?P<full_path>.*)", str)
+		self.mount_point = __file__.group('mount_point')
+		self.full_path   = __file__.group('full_path')
 	def image_storage(self):
 		return self.server+"/"+self.image
 	def attach(self):

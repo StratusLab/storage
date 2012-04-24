@@ -21,11 +21,6 @@ VM_DIR=$(dirname $(dirname $DEVICE_LINK))
 VM_ID=`basename $VM_DIR`
 REGISTER_FILE="$VM_DIR/$REGISTER_FILENAME"
 
-if [ "x$REAL_PORTAL" = "x" ]
-then
-  REAL_PORTAL=PORTAL
-fi
-
 getTurl () {
   # Turl must begin by protocol name
   # iscsi://portal:port/iqn
@@ -90,7 +85,7 @@ attach_iscsi() {
 	echo "!!!!! THIS IS OBSOLETE USAGE !!! Use python script instead (remove SCRIPT=shell from /etc/stratuslab/pdisk-host.cfg)"
     	# Must contact the server to discover what disks are available. But no populate databases. If DB is populated, hypervisor will attach disk on
     	# each reboot
-    	local DISCOVER_CMD="sudo $ISCSIADM --mode discovery --type sendtargets --portal $REAL_PORTAL -o nonpersistent"
+    	local DISCOVER_CMD="sudo $ISCSIADM --mode discovery --type sendtargets --portal $PORTAL -o nonpersistent"
     	DISCOVER_OUT=`$DISCOVER_CMD | grep -m 1 $DISK_UUID`
 
     	if [ "x$DISCOVER_OUT" = "x" ]

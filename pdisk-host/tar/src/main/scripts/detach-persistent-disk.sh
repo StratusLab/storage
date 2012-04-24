@@ -54,12 +54,8 @@ detach_iscsi() {
 	vms_dir=$(dirname $(dirname $VM_ID))
 	/usr/sbin/stratus-pdisk-client.py --username $PDISK_USER --password $PDISK_PSWD --pdisk-id $UUID_URL --vm-id $VM_ID --register --attach --mount --op down
     else
-    	if [ "x$REAL_PORTAL" = "x" ]
-    	then
-       		REAL_PORTAL=PORTAL
-    	fi
     	# Must contact the server to discover what disks are available.
-    	local DISCOVER_CMD="sudo $ISCSIADM --mode discovery --type sendtargets --portal $REAL_PORTAL -o nonpersistent"
+    	local DISCOVER_CMD="sudo $ISCSIADM --mode discovery --type sendtargets --portal $PORTAL -o nonpersistent"
     	local DISCOVER_OUT=`$DISCOVER_CMD | grep -m 1 $DISK_UUID`
 
     	if [ "x$DISCOVER_OUT" = "x" ]
