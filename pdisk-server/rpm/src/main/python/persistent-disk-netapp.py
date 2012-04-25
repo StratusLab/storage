@@ -369,9 +369,9 @@ class LVMBackend (Backend):
                              'delete':['remove_device', 'reload_iscsi','remove'],
                              # map is a required action for snapshot action but does nothing in LVM
                              'map':['add_device','reload_iscsi'],
-                             'rebase':['rebase'],
+                             'rebase':['rebase','add_device','reload_iscsi'],
                              'size':['size'],
-                             'snapshot':['snapshot'],
+                             'snapshot':['snapshot','add_device','reload_iscsi'],
                              'unmap':['remove_device','reload_iscsi'],
                              'getturl' : ['getturl'],
                              }
