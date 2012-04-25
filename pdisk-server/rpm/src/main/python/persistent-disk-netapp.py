@@ -48,7 +48,7 @@ status = 0           # Assume success
 iscsi_supported_variants = [ 'lvm', 'netapp' ]
 
 # Keys are supported actions, values are the number of arguments required for the each action
-valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':1, 'snapshot':3 }
+valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':1, 'snapshot':3 , 'getturl':1}
 valid_actions_str = ', '.join(valid_actions.keys())
 
 config_file_default = '/opt/stratuslab/etc/persistent-disk-backend.conf'
@@ -96,7 +96,7 @@ mgt_user_name=root
 # here but generally have empty defaults.                          #
 ####################################################################
 
-class iSCSIBackend:
+class Backend:
   # Command prefix to use to connect through ssh
   ssh_cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
 
@@ -114,7 +114,8 @@ class iSCSIBackend:
                              'rebase':None,
                              'size':None,
                              'snapshot':None,
-                             'unmap':None
+                             'unmap':None,
+                             'getturl':None,
                             }
   
   # Definitions of NetApp commands used to implement actions.
@@ -209,9 +210,9 @@ class iSCSIBackend:
 # Class describing a NetApp iSCSI back-end #
 ############################################
 
-class NetAppBackend(iSCSIBackend):
+class NetAppBackend(Backend):
   # The following variables define which command to execute for each action.
-  # They are documented in the superclass iSCSIBackend.
+  # They are documented in the superclass Backend.
   
   lun_backend_cmd_mapping = {'check':['check'],
                              'create':['create','map'],
@@ -221,7 +222,8 @@ class NetAppBackend(iSCSIBackend):
                              'rebase':[],
                              'size':None,
                              'snapshot':['snapshot','clone'],
-                             'unmap':['unmap']
+                             'unmap':['unmap'],
+                             'getturl':[],
                              }
   
   backend_cmds = {'check':[ 'lun', 'show', '%%NAME%%' ],
@@ -291,38 +293,106 @@ class NetAppBackend(iSCSIBackend):
   def getType(self):
     return 'NetApp'
 
+####################################
+# Class describing a File back-end #
+####################################
+
+class FileBackend(Backend):
+  # The following variables define which command to execute for each action.
+  # They are documented in the superclass Backend
+
+  lun_backend_cmd_mapping = {'check':['check'],
+                             'create':['create'],
+                             'delete':['delete'],
+                             'map':[],
+                             'rebase':[],
+                             'size':[],
+                             'snapshot':['copy'],
+                             'unmap':[],
+                             'getturl':['getturl'],
+                             }
+
+  backend_cmds = {'check':['/usr/bin/test','-f','%%LOGVOL_PATH%%'],
+                  'create':['/bin/dd','if=/dev/zero','of=%%LOGVOL_PATH%%','bs=1024','count=%%SIZE%%M'],
+                  'delete':['/bin/rm','-rf','%%LOGVOL_PATH%%'],
+                  'copy':['/bin/cp','%%NEW_LOGVOL_PATH%%','%%LOGVOL_PATH%%'],
+                  'getturl':['/bin/echo','file://%%LOGVOL_PATH%%'],
+                  }
+
+  success_msg_pattern = {'create' : '.*',
+                         'getturl' : '(.*://.*)',
+                         }
+  def __init__(self,proxy,volume,mgtUser=None,mgtPrivKey=None):
+    self.volumeName = volume
+    self.proxyHost  = proxy
+    self.mgtUser    = mgtUser
+    self.mgtPrivKey = mgtPrivKey
+    if self.mgtUser and self.mgtPrivKey:
+      debug(1,'SSH will be used to connect to File backend')
+      self.cmd_prefix = self.ssh_cmd_prefix
+    else:
+      self.cmd_prefix = []
+
+  # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
+  # Return parsed command as a list of token.
+  def parse(self,command):    
+    # Build command to execute
+    action_cmd = []
+    action_cmd.extend(self.cmd_prefix)
+    action_cmd.extend(command)
+    for i in range(len(action_cmd)):
+      if action_cmd[i] == '%%ISCSI_PROXY%%':
+        action_cmd[i] = "%s@%s" % (self.mgtUser,self.proxyHost)
+      elif re.search('%%LOGVOL_PATH%%',action_cmd[i]):
+        action_cmd[i] = re.sub('%%LOGVOL_PATH%%',self.volumeName+"/%%UUID%%",action_cmd[i])
+      elif re.search('%%NEW_LOGVOL_PATH%%',action_cmd[i]):
+        action_cmd[i] = re.sub('%%NEW_LOGVOL_PATH%%',self.volumeName+"/%%SNAP_UUID%%",action_cmd[i])
+      elif action_cmd[i] == '%%PRIVKEY%%':
+        action_cmd[i] = self.mgtPrivKey
+      elif action_cmd[i] == '%%VOLUME_NAME%%':
+        action_cmd[i] = self.volumeName
+    return action_cmd
+
+  def getType(self):
+    return 'File'
 
 #########################################
 # Class describing a LVM iSCSI back-end #
 #########################################
 
-class LVMBackend (iSCSIBackend):
+class LVMBackend (Backend):
   # The following variables define which command to execute for each action.
-  # They are documented in the superclass iSCSIBackend.
+  # They are documented in the superclass Backend.
   
   lun_backend_cmd_mapping = {'check':['check'],
-                             'create':['create'],
-                             'delete':['remove'],
+                             'create':['create','add_device','reload_iscsi'],
+                             'delete':['remove_device', 'reload_iscsi','remove'],
                              # map is a required action for snapshot action but does nothing in LVM
-                             'map':[],
-                             'rebase':['rebase'],
+                             'map':['add_device','reload_iscsi'],
+                             'rebase':['rebase','add_device','reload_iscsi'],
                              'size':['size'],
-                             'snapshot':['snapshot'],
-                             'unmap':[],
+                             'snapshot':['snapshot','add_device','reload_iscsi'],
+                             'unmap':['remove_device','reload_iscsi'],
+                             'getturl' : ['getturl'],
                              }
   
   backend_cmds = {'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
                   'create':[ '/sbin/lvcreate', '-L', '%%SIZE%%G', '-n', '%%UUID%%', '%%VOLUME_NAME%%' ],
                   'dmremove':[ '/sbin/dmsetup', 'remove', '%%DM_VOLUME_PATH%%' ],
+                  'add_device':[ '/bin/sed', '-i', '1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>','/etc/stratuslab/iscsi.conf' ],
+                  'reload_iscsi': [ '/usr/sbin/tgt-admin','--update','ALL'],
+                  'remove_device': [ '/bin/sed', '-i', '/<target iqn.2011-01.eu.stratuslab:.*%%UUID%%.*/,+2d', '/etc/stratuslab/iscsi.conf' ],
                   'remove':[ '/sbin/lvremove', '-f', '%%LOGVOL_PATH%%' ],
                   'rebase':[ '/bin/dd', 'if=%%LOGVOL_PATH%%', 'of=%%NEW_LOGVOL_PATH%%'],
                   # lvchange doesn't work with clone. Normally unneeded as lvremove -f (remove) does the same
                   'setinactive':[ '/sbin/lvchange', '-a', 'n', '%%LOGVOL_PATH%%' ],
                   'size':['/sbin/lvs', '-o', 'lv_size', '--noheadings', '%%LOGVOL_PATH%%'],
-                  'snapshot':[ '/sbin/lvcreate', '--snapshot', '-p', 'rw', '--size', '%%SIZE%%G', '-n', '%%SNAP_UUID%%', '%%LOGVOL_PATH%%'  ],
+                  'snapshot':[ '/sbin/lvcreate', '--snapshot', '-p', 'rw', '--size', '%%SIZE%%G', '-n', '%%UUID%%', '%%NEW_LOGVOL_PATH%%'  ],
+                  'getturl' : ['/bin/echo', 'iscsi://%%PORTAL%%/iqn.2011-01.eu.stratuslab:%%UUID%%:1' ],
                   }
   
-  backend_failure_cmds = {'remove':{'delete':'dmremove'},
+  backend_failure_cmds = {'remove': {'add_device' : [ 'sed', '-i', '1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>','/etc/stratuslab/iscsi.conf' ]}
+                                    #{'delete' : 'add_device'}
                           }
 
   success_msg_pattern = {'create':'Logical volume "[\w\-]+" created',
@@ -330,7 +400,8 @@ class LVMBackend (iSCSIBackend):
                          'rebase':'\d+ bytes .* copied',
                          'setinactive':[ '^$', 'File descriptor .* leaked on lvchange invocation' ],
                          'size':['([\d\.]+)g'],
-                         'snapshot':'Logical volume "[\w\-]+" created'
+                         'snapshot':'Logical volume "[\w\-]+" created',
+                         'getturl' : '(.*://.*/.*)'
                         }
   
   new_lun_required = {'rebase':True
@@ -367,6 +438,8 @@ class LVMBackend (iSCSIBackend):
         action_cmd[i] = self.mgtPrivKey
       elif action_cmd[i] == '%%VOLUME_NAME%%':
         action_cmd[i] = self.volumeName
+      elif re.search('%%PORTAL%%',action_cmd[i]):
+        action_cmd[i] = re.sub('%%PORTAL%%',self.proxyHost+":3260",action_cmd[i])
     return action_cmd
     
   # Return iSCSI back-end type
@@ -414,6 +487,12 @@ class LUN:
     if status != 0:
       abort('Failure to retrieve size of LUN %s' % (self.uuid))
     return status
+
+  def getTurl(self):
+    status,self.turl = self.__executeAction__('getturl')
+    if status != 0:
+      abort('Failure to retrieve Transport URL of %s' % (self.uuid))
+    return self.turl
     
   def map(self):
     status,optInfo = self.__executeAction__('map')
@@ -601,6 +680,7 @@ Parameters:
     action=delete:   LUN_UUID
     action=rebase:   LUN_UUID (will return the rebased LUN UUID on stdout)
     action=snapshot: LUN_UUID New_LUN_UUID Snapshot_Size
+    action=getturl:  LUN_UUID
 """
 
 parser = OptionParser(usage=usage_text)
@@ -759,6 +839,43 @@ elif backend_variant.lower() == 'lvm':
                            backend_attributes['mgt_user_name'],
                            backend_attributes['mgt_user_private_key'],
                           )
+
+elif backend_variant.lower() == 'file':
+  backend_attributes = {'volume_name':'',
+                        }
+  try:
+    for attribute in backend_attributes.keys():
+      backend_attributes[attribute]=config.get(iscsi_proxy_name,attribute)
+  except:
+    abort("Section '%s' or required attribute '%s' missing" % (iscsi_proxy_name,attribute))
+
+  if iscsi_proxy_name == 'local':
+    backend_attributes['mgt_user_name'] = None
+    backend_attributes['mgt_user_private_key'] = None
+  else:
+    try:
+      backend_attributes['mgt_user_name']=config.get(iscsi_proxy_name,'mgt_user_name')  
+    except:
+      try:
+        backend_attributes['mgt_user_name']=config.get(config_main_section,'mgt_user_name')  
+      except:
+        abort("User name to use for connecting to iSCSI proxy undefined")
+      
+    try:
+      backend_attributes['mgt_user_private_key']=config.get(iscsi_proxy_name,'mgt_user_private_key')  
+    except:
+      try:
+        backend_attributes['mgt_user_private_key']=config.get(config_main_section,'mgt_user_private_key')  
+      except:
+        abort("SSH private key to use for connecting to iSCSI proxy undefined")
+
+  # Create iSCSI back-end object
+  iscsi_proxy = FileBackend(iscsi_proxy_name,
+                            backend_attributes['volume_name'],
+                            backend_attributes['mgt_user_name'],
+                            backend_attributes['mgt_user_private_key'],
+                            )    
+
   
 # Abort if iSCSI back-end variant specified is not supported
 else:
@@ -790,6 +907,15 @@ elif options.action == 'snapshot':
   # Only the last error is returned
   status = lun.snapshot(snapshot_lun)
   status = snapshot_lun.map()
+elif options.action == 'getturl' :
+  debug(1,"Returning Transport URL...")
+  lun = LUN(args[0], proxy=iscsi_proxy)
+  turl = lun.getTurl()
+  if turl == "":
+    status = 1
+  else:
+    status = 0
+  print turl
 else:
   abort ("Internal error: unimplemented action (%s)" % (options.action))
   
