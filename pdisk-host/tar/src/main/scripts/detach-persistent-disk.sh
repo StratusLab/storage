@@ -49,7 +49,7 @@ detach_iscsi() {
     PORTAL_PORT=`echo $UUID_URL | cut -d ':' -f 3`
     DISK_UUID=`echo $UUID_URL | cut -d ':' -f 4`
 
-    if [ "x$SCRIPT" != "xpython" ]
+    if [ "x$SCRIPT" = "xpython" ]
     then
         vms_dir=$(dirname $(dirname $VM_ID))
         /usr/sbin/stratus-pdisk-client.py --username $PDISK_USER --password $PDISK_PSWD --pdisk-id $UUID_URL --vm-id $VM_ID --register --attach --op down
