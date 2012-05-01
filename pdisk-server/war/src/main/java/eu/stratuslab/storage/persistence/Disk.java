@@ -319,11 +319,11 @@ public class Disk implements Serializable {
 	}
 
 	public String getGroup() {
-		String group = "";
+		StringBuffer group = new StringBuffer();
 		for(String user : this.group_) {
-			group += user + ", ";
+			group.append(user + ", ");
 		}
-		return group;
+		return group.toString();
 	}
 
 	public void addGroupShare(String username) {
