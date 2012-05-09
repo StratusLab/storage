@@ -48,7 +48,7 @@ status = 0           # Assume success
 iscsi_supported_variants = [ 'lvm', 'netapp' ]
 
 # Keys are supported actions, values are the number of arguments required for the each action
-valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':1, 'snapshot':3 , 'getturl':1}
+valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':1, 'snapshot':3 , 'getturl':1 , 'map':1 , 'unmap':1}
 valid_actions_str = ', '.join(valid_actions.keys())
 
 config_file_default = '/opt/stratuslab/etc/persistent-disk-backend.conf'
@@ -215,9 +215,9 @@ class NetAppBackend(Backend):
   # They are documented in the superclass Backend.
   
   lun_backend_cmd_mapping = {'check':['check'],
-                             'create':['create','map'],
+                             'create':['create'],
                              # Attemtp to delete volume snapshot associated with the LUN if it is no longer used (no more LUN clone exists)
-                             'delete':['unmap','delete','snapdel'],
+                             'delete':['delete','snapdel'],
                              'map':['map'],
                              'rebase':[],
                              'size':None,
@@ -365,8 +365,8 @@ class LVMBackend (Backend):
   # They are documented in the superclass Backend.
   
   lun_backend_cmd_mapping = {'check':['check'],
-                             'create':['create','add_device','reload_iscsi'],
-                             'delete':['remove_device', 'reload_iscsi','remove'],
+                             'create':['create'],
+                             'delete':['remove'],
                              # map is a required action for snapshot action but does nothing in LVM
                              'map':['add_device','reload_iscsi'],
                              'rebase':['rebase','add_device','reload_iscsi'],
@@ -379,9 +379,9 @@ class LVMBackend (Backend):
   backend_cmds = {'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
                   'create':[ '/sbin/lvcreate', '-L', '%%SIZE%%G', '-n', '%%UUID%%', '%%VOLUME_NAME%%' ],
                   'dmremove':[ '/sbin/dmsetup', 'remove', '%%DM_VOLUME_PATH%%' ],
-                  'add_device':[ '/bin/sed', '-i', '1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>','/etc/stratuslab/iscsi.conf' ],
+                  'add_device':[ '/bin/sed', '-i', "'1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>'",'/etc/stratuslab/iscsi.conf' ],
                   'reload_iscsi': [ '/usr/sbin/tgt-admin','--update','ALL'],
-                  'remove_device': [ '/bin/sed', '-i', '/<target iqn.2011-01.eu.stratuslab:.*%%UUID%%.*/,+2d', '/etc/stratuslab/iscsi.conf' ],
+                  'remove_device': [ '/bin/sed', '-i', "'/<target iqn.2011-01.eu.stratuslab:.*%%UUID%%.*/,+2d'", '/etc/stratuslab/iscsi.conf' ],
                   'remove':[ '/sbin/lvremove', '-f', '%%LOGVOL_PATH%%' ],
                   'rebase':[ '/bin/dd', 'if=%%LOGVOL_PATH%%', 'of=%%NEW_LOGVOL_PATH%%'],
                   # lvchange doesn't work with clone. Normally unneeded as lvremove -f (remove) does the same
@@ -391,7 +391,7 @@ class LVMBackend (Backend):
                   'getturl' : ['/bin/echo', 'iscsi://%%PORTAL%%/iqn.2011-01.eu.stratuslab:%%UUID%%:1' ],
                   }
   
-  backend_failure_cmds = {'remove': {'add_device' : [ 'sed', '-i', '1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>','/etc/stratuslab/iscsi.conf' ]}
+  backend_failure_cmds = {'remove': {'add_device' : [ 'sed', '-i', "'1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>'",'/etc/stratuslab/iscsi.conf' ]}
                                     #{'delete' : 'add_device'}
                           }
 
@@ -589,6 +589,7 @@ class Command:
     status = 0
     # Execute command: NetApp command don't return an exit code. When a command is sucessful,
     # its output is empty.
+    action_cmd = 'echo ' + self.action_cmd
     debug(1,"Executing command: '%s'" % (' '.join(self.action_cmd)))
     try:
       self.proc = Popen(self.action_cmd, shell=False, stdout=PIPE, stderr=STDOUT)
@@ -681,6 +682,8 @@ Parameters:
     action=rebase:   LUN_UUID (will return the rebased LUN UUID on stdout)
     action=snapshot: LUN_UUID New_LUN_UUID Snapshot_Size
     action=getturl:  LUN_UUID
+    action=map:      LUN_UUID
+    action=unmap:    LUN_UUID
 """
 
 parser = OptionParser(usage=usage_text)
@@ -907,6 +910,14 @@ elif options.action == 'snapshot':
   # Only the last error is returned
   status = lun.snapshot(snapshot_lun)
   status = snapshot_lun.map()
+elif options.action == 'map':
+  debug(1,"Mapping LUN...")
+  lun = LUN(args[0],proxy=iscsi_proxy)
+  status = lun.map()
+elif options.action == 'unmap':
+  debug(1,"Unmapping LUN...")
+  lun = LUN(args[0],proxy=iscsi_proxy)
+  status = lun.unmap()
 elif options.action == 'getturl' :
   debug(1,"Returning Transport URL...")
   lun = LUN(args[0], proxy=iscsi_proxy)

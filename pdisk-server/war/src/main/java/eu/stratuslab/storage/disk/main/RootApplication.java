@@ -63,7 +63,7 @@ public class RootApplication extends Application {
 
 		Component component = new Component();
 
-		component.getServers().add(Protocol.HTTP, 8182);
+		component.getServers().add(Protocol.HTTP, ServiceConfiguration.getInstance().PDISK_SERVER_PORT);
 		component.getServers().add(Protocol.FILE);
 		component.getClients().add(Protocol.FILE);
 		component.getClients().add(Protocol.CLAP);

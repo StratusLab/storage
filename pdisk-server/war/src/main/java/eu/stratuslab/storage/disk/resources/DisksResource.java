@@ -124,13 +124,9 @@ public class DisksResource extends DiskBaseResource {
 
 		Disk disk = saveAndInflateFiles();
 
-		validateNewDisk(disk);
-
-		DiskUtils.createReadOnlyDisk(disk);
-		disk.setSeed(true);
-
-		createDisk(disk);
-
+		DiskUtils.createAndPopulateDiskLocal(disk);
+		disk.store();
+		
 		redirectSeeOther(getBaseUrl() + "/disks/" + disk.getUuid());
 
 	}
@@ -233,7 +229,7 @@ public class DisksResource extends DiskBaseResource {
 				// it's ok
 			}
 		}
-		return new File(inflatedName).length();
+		return DiskUtils.convertBytesToGigaBytes(file.length());
 	}
 
 	private Map<String, Object> listDisks() {

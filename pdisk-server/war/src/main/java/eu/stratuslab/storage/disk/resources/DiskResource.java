@@ -207,23 +207,23 @@ public class DiskResource extends DiskBaseResource {
 	 * The compression logic removes the original file after compression
 	 * therefore, if the raw file exists means that the compression is ongoing
 	 */
-	protected Boolean isImageBeingCompressed(String uuid) {
+	private Boolean isImageBeingCompressed(String uuid) {
 		return DiskUtils.isCompressedDiskBuilding(uuid);
 	}
 
-	protected void waitWhileImageCompressed(String uuid) {
+	private void waitWhileImageCompressed(String uuid) {
 		while (isImageBeingCompressed(uuid)) {
 			getLogger().info("Waiting for file to be compressed...");
 			MiscUtils.sleep(5000);
 		}
 	}
 
-	protected boolean needToCompressImage(String uuid) {
+	private boolean needToCompressImage(String uuid) {
 		return !FileUtils.isCompressedDiskExists(uuid)
 				|| DiskUtils.hasCompressedDiskExpire(uuid);
 	}
 
-	protected void compressImage() {
+	private void compressImage() {
 		getLogger().info("Creating compressed disk");
 		DiskUtils.createCompressedDisk(getDiskId());
 	}

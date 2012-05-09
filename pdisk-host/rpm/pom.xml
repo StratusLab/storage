@@ -64,7 +64,7 @@
         <configuration>
           <release>${RELEASE}</release>
           <summary>StratusLab Persistent Disk Host Package</summary>
-          <name>pdisk-host</name>
+          <name>stratuslab-pdisk-host</name>
           <group>System</group>
           <vendor>StratusLab</vendor>
           <packager>StratusLab</packager>
@@ -77,6 +77,9 @@
           <requires>
                <require>stratuslab-cli-user &gt; 1.0</require>
           </requires>
+          <conflicts>
+            <conflict>pdisk-host</conflict>
+          </conflicts>
           <mappings>
 
             <mapping>

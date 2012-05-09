@@ -190,7 +190,7 @@ public class DiskBaseResource extends BaseResource {
 		Disk disk = loadExistingDisk();
 		checkViewRightsOrError(disk);
 
-		deleteDisk.run();
+		deleteDisk.remove();
 	}
 
 	private void checkViewRightsOrError(Disk disk) {
