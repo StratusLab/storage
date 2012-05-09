@@ -175,7 +175,8 @@
           <requires>
             <require>stratuslab-authn-config</require>
             <require>java-1.6.0-openjdk</require>          
-            <require>mysql-libs</require>          
+            <require>mysql-libs</require>
+            <require>stratuslab-pdisk-host</require>
           </requires>
           <conflicts>
             <conflict>pdisk-server</conflict>
