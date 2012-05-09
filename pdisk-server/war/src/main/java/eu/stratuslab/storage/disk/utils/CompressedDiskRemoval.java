@@ -4,18 +4,17 @@ import java.io.File;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
 
-public class CompressedDiskRemoval implements Runnable {
-	String requestedCompressedDisk;
-	File diskToRemove;
+public class CompressedDiskRemoval {
+	private String requestedCompressedDisk;
 
 	public CompressedDiskRemoval(String uuid) {
 		requestedCompressedDisk = uuid + ".gz";
 	}
 
-	public void run() {
+	public void remove() {
 		logInfo("Finding disk to remove");
 
-		findDiskToRemove();
+		File diskToRemove = findDiskToRemove();
 
 		if (diskToRemove != null) {
 			logInfo("Removing compressed disk "
@@ -27,12 +26,13 @@ public class CompressedDiskRemoval implements Runnable {
 		}
 	}
 
-	private void findDiskToRemove() {
-		File cache = new File(RootApplication.CONFIGURATION.CACHE_LOCATION);
+	private File findDiskToRemove() {
+		File cacheDirectory = new File(RootApplication.CONFIGURATION.CACHE_LOCATION);
 		File testedDisk;
 		File copiedDisk;
+		File diskToRemove = null;
 
-		for (String currentDisk : cache.list()) {
+		for (String currentDisk : cacheDirectory.list()) {
 			if (currentDisk.endsWith(".gz")) {
 				copiedDisk = new File(
 						RootApplication.CONFIGURATION.CACHE_LOCATION,
@@ -43,12 +43,13 @@ public class CompressedDiskRemoval implements Runnable {
 				
 				if (!requestedCompressedDisk.equals(currentDisk)
 						&& !copiedDisk.exists()
-						&& DiskUtils.hasCompressedDiskExpire(diskToRemove)) {
+						&& DiskUtils.hasCompressedDiskExpire(testedDisk)) {
 					diskToRemove = testedDisk;
 					break;
 				}
 			}
 		}
+		return diskToRemove;
 	}
 
 	private void logInfo(String msg) {
