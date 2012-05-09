@@ -198,7 +198,7 @@ class PersistentDisk:
 		cmd="sudo /usr/bin/virsh detach-disk "+domain_name+" "+target_device
 		retcode=call(cmd,shell=True)
 	"""
-		_copy used to create a a xxxPersistentDisk object from PersistentDisk (xxxPersistentDisk is a inheritated class)
+		__copy__ used to create a a xxxPersistentDisk object from PersistentDisk (xxxPersistentDisk is a inherited class)
 	"""
 	def __copy__(self,pdisk):
 		self.endpoint  = pdisk.endpoint
