@@ -225,7 +225,7 @@
                 <source>
                   <location>src/main/python</location>
                   <includes>
-                    <include>persistent-disk-netapp.py</include>
+                    <include>persistent-disk-backend.py</include>
                   </includes>
                 </source>
               </sources>
