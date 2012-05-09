@@ -306,9 +306,9 @@
                   </includes>
                 </source>
                 <source>
-                  <location>src/main/netapp</location>
+                  <location>src/main/config</location>
                   <includes>
-                    <include>pdisk-netapp.cfg.ref</include>
+                    <include>pdisk-backend.cfg.ref</include>
                   </includes>
                 </source>
               </sources>
