@@ -302,7 +302,7 @@ class FileBackend(Backend):
   # They are documented in the superclass Backend
 
   lun_backend_cmd_mapping = {'check':['check'],
-                             'create':['create'],
+                             'create':['create','chown'],
                              'delete':['delete'],
                              'map':[],
                              'rebase':[],
@@ -314,6 +314,7 @@ class FileBackend(Backend):
 
   backend_cmds = {'check':['/usr/bin/test','-f','%%LOGVOL_PATH%%'],
                   'create':['/bin/dd','if=/dev/zero','of=%%LOGVOL_PATH%%','bs=1024','count=%%SIZE%%M'],
+                  'chown' :['/bin/chown','oneadmin:cloud','%%LOGVOL_PATH%%'],
                   'delete':['/bin/rm','-rf','%%LOGVOL_PATH%%'],
                   'copy':['/bin/cp','%%NEW_LOGVOL_PATH%%','%%LOGVOL_PATH%%'],
                   'getturl':['/bin/echo','file://%%LOGVOL_PATH%%'],
@@ -589,7 +590,7 @@ class Command:
     status = 0
     # Execute command: NetApp command don't return an exit code. When a command is sucessful,
     # its output is empty.
-    action_cmd = 'echo ' + self.action_cmd
+    #action_cmd = 'echo ' + self.action_cmd
     debug(1,"Executing command: '%s'" % (' '.join(self.action_cmd)))
     try:
       self.proc = Popen(self.action_cmd, shell=False, stdout=PIPE, stderr=STDOUT)
