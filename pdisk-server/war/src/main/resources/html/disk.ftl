@@ -62,11 +62,6 @@
           <td>${disk.type}</td>
       </tr>
 
-      <tr>
-        <td><strong>Share</strong></td>
-          <td>${disk.group}</td>
-      </tr>
-
   </table>
 
 <#if can_edit == true>
