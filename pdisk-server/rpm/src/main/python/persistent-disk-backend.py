@@ -23,9 +23,6 @@
 Script used by StratusLab pdisk to manage iSCSI LUNs
 """
 
-__version__ = "1.2.1-1"
-__author__  = "Michel Jouvin <jouvin@lal.in2p3.fr>"
-
 import sys
 import os
 import os.path
