@@ -31,8 +31,6 @@ public class ServiceConfiguration {
 	
 	public final Properties CONFIGURATION;
 
-	public final int USERS_PER_DISK;
-
 	public final String CLOUD_NODE_SSH_KEY;
 	public final String CLOUD_NODE_ADMIN;
 	public final String CLOUD_NODE_VM_DIR;
@@ -41,7 +39,6 @@ public class ServiceConfiguration {
 	public final String CACHE_LOCATION;
 	
 	public final String GZIP_CMD;
-	public final String GUNZIP_CMD;
 
 	public final int UPLOAD_COMPRESSED_IMAGE_MAX_BYTES;
 
@@ -51,8 +48,6 @@ public class ServiceConfiguration {
 
 		PDISK_SERVER_PORT = Integer.parseInt(getConfigValue(PDISK_SERVER_PORT_PARAM_NAME));
 
-		USERS_PER_DISK = getUsersPerDisks();
-
 		CLOUD_NODE_SSH_KEY = getConfigValue("disk.store.cloud.node.ssh_keyfile");
 		CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
 		CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
@@ -61,7 +56,6 @@ public class ServiceConfiguration {
 		CACHE_LOCATION = getCacheLocation();
 		
 		GZIP_CMD = getCommand("disk.store.utils.gzip");
-		GUNZIP_CMD = getCommand("disk.store.utils.gunzip");
 		
 		UPLOAD_COMPRESSED_IMAGE_MAX_BYTES = 10240000;
 	}
@@ -156,20 +150,6 @@ public class ServiceConfiguration {
 		}
 
 		return configValue;
-	}
-
-	private int getUsersPerDisks() {
-		String users = getConfigValue("disk.store.user_per_disk");
-		int userNo = 0;
-
-		try {
-			userNo = Integer.parseInt(users);
-		} catch (NumberFormatException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Unable to get user per disk value");
-		}
-
-		return userNo;
 	}
 
 }
