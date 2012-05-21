@@ -11,7 +11,7 @@ import eu.stratuslab.storage.persistence.Disk.DiskType;
 
 public final class BackEndStorage {
 
-	private String CONFIG = "/etc/stratuslab/persistent-disk-backend.cfg";
+	private String CONFIG = "/etc/stratuslab/pdisk-disk-backend.cfg";
 	private String CMD = "/usr/sbin/persistent-disk-backend.py";
 
 	public void create(String uuid, long size) {
