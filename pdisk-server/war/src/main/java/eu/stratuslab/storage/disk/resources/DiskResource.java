@@ -71,13 +71,18 @@ public class DiskResource extends DiskBaseResource {
 	@Put("form")
 	public void updateForm(Representation entity) {
 
-		updateJson(entity);
+		update(entity);
 
 		redirectSeeOther(getRequest().getResourceRef());
 	}
 
 	@Put("json")
 	public void updateJson(Representation entity) {
+
+		update(entity);
+	}
+
+	public void update(Representation entity) {
 
 		MiscUtils.checkForNullEntity(entity);
 
@@ -92,9 +97,32 @@ public class DiskResource extends DiskBaseResource {
 		updateDisk(disk);
 	}
 
-	@Post
+	@Post("form:html")
 	public void createCopyOnWriteOrRebase(Representation entity) {
 
+		Disk newDisk = createCopyOnWriteOrRebase();
+
+		redirectSeeOther(getBaseUrl() + "/disks/" + newDisk.getUuid());
+
+	}
+
+	@Post("form:json")
+	public Representation createCopyOnWriteOrRebaseAsJson(Representation entity) {
+
+		Disk newDisk = createCopyOnWriteOrRebase();
+
+		Map<String, Object> info = new HashMap<String, Object>();
+		addDiskToInfo(newDisk, info);
+
+		return createTemplateRepresentation("json/disk.ftl", info,
+				APPLICATION_JSON);
+	}
+
+	private void addDiskToInfo(Disk newDisk, Map<String, Object> info) {
+		info.put("disk", newDisk);
+	}
+
+	protected Disk createCopyOnWriteOrRebase() {
 		Disk disk = Disk.load(getDiskId());
 
 		if (disk == null) {
@@ -102,26 +130,24 @@ public class DiskResource extends DiskBaseResource {
 					+ getDiskId() + " doesn't exists"));
 		}
 
-		String newUuid = null;
+		Disk newDisk = null;
 		if (disk.getType() == DiskType.MACHINE_IMAGE_LIVE) {
-			newUuid = rebase(disk);
+			newDisk = rebase(disk);
 		} else if (disk.getType() == DiskType.MACHINE_IMAGE_ORIGINE) {
-			newUuid = createMachineImageCoW(disk);
+			newDisk = createMachineImageCoW(disk);
 		} else {
 			throw (new ResourceException(Status.CLIENT_ERROR_CONFLICT,
 					"Invalid disk state: " + disk.getType()
 							+ ". Cannot create copy or save as new image."));
 		}
-
-		redirectSeeOther(getBaseUrl() + "/disks/" + newUuid);
-
+		return newDisk;
 	}
 
-	private String createMachineImageCoW(Disk disk) {
+	private Disk createMachineImageCoW(Disk disk) {
 		return DiskUtils.createMachineImageCoWDisk(disk);
 	}
 
-	private String rebase(Disk disk) {
+	private Disk rebase(Disk disk) {
 
 		String newUuid = DiskUtils.rebaseDisk(disk);
 
@@ -134,7 +160,7 @@ public class DiskResource extends DiskBaseResource {
 		// newProperties = calculateHashes(newProperties);
 		newDisk.store();
 
-		return newUuid;
+		return newDisk;
 	}
 
 	protected Properties calculateHashes(Properties properties) {
@@ -264,7 +290,7 @@ public class DiskResource extends DiskBaseResource {
 
 		Disk disk = loadExistingDisk();
 
-		info.put("disk", disk);
+		addDiskToInfo(disk, info);
 		info.put("currenturl", getCurrentUrl());
 		info.put("can_edit", hasSufficientRightsToEdit(disk));
 

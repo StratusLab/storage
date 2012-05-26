@@ -48,7 +48,7 @@ public final class DiskUtils {
 
 	}
 
-	public static String createMachineImageCoWDisk(Disk disk) {
+	public static Disk createMachineImageCoWDisk(Disk disk) {
 
 		BackEndStorage diskStorage = getDiskStorage();
 
@@ -62,7 +62,7 @@ public final class DiskUtils {
 
 		cowDisk.store();
 
-		return cowDisk.getUuid();
+		return cowDisk;
 	}
 
 	protected static Disk createCowDisk(Disk disk) {
