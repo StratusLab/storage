@@ -56,8 +56,8 @@
   </ciManagement>
 
   <scm>
-    <connection>scm:git:ssh://apache@code.stratuslab.eu/ext/git/stratuslab-storage.git</connection>
-    <developerConnection>scm:git:ssh://apache@code.stratuslab.eu/ext/git/stratuslab-storage.git</developerConnection>
+    <connection>scm:git:ssh://git@github.com/StratusLab/storage.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/StratusLab/storage.git</developerConnection>
   </scm>
 
   <repositories>
