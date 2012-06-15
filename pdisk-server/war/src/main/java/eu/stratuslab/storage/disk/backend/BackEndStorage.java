@@ -65,7 +65,7 @@ public final class BackEndStorage {
 		String[] args = { disk.getUuid(), rebaseUuid };
 		String errorMsg = "Cannot rebase image on backend storage: " + disk.getUuid() + " "
 				+ rebaseUuid;
-		rebaseUuid = execute("rebase", errorMsg, args);
+		execute("rebase", errorMsg, args);
 
 		disk.setQuarantine("");
 		disk.setSeed(true);
