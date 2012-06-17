@@ -34,6 +34,7 @@ import logging
 import logging.handlers
 import syslog
 import ConfigParser
+import uuid
 
 # Initializations
 verbosity = 0
@@ -499,7 +500,7 @@ class LUN:
   def rebase(self):
     if self.proxy.newLunRequired('rebase'):
       #TODO: generate a UUID based on creation timestamp as in PDisk
-      new_lun_uuid = self.getUuid() + '_rebased'
+      new_lun_uuid = str(uuid.uuid4())
       self.getSize()
       self.associatedLUN = LUN(new_lun_uuid,size=self.size,proxy=self.proxy)
       if self.associatedLUN.create() != 0:
