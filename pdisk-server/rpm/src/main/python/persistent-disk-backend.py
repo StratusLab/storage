@@ -654,7 +654,7 @@ def debug(level,msg):
 #############
 
 # Configure loggers and handlers.
-# Initially cnfigure only syslog and stderr handler.
+# Initially configure only syslog and stderr handler.
 
 logging_source = 'stratuslab-pdisk'
 logger = logging.getLogger(logging_source)
