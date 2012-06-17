@@ -4,10 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
-import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.ProcessUtils;
 import eu.stratuslab.storage.persistence.Disk;
-import eu.stratuslab.storage.persistence.Disk.DiskType;
 
 public final class BackEndStorage {
 
@@ -60,19 +58,11 @@ public final class BackEndStorage {
 
 	public String rebase(Disk disk) {
 
-		String rebaseUuid = DiskUtils.generateUUID();
-
-		String[] args = { disk.getUuid(), rebaseUuid };
-		String errorMsg = "Cannot rebase image on backend storage: " + disk.getUuid() + " "
-				+ rebaseUuid;
-		execute("rebase", errorMsg, args);
-
-		disk.setQuarantine("");
-		disk.setSeed(true);
-		disk.setType(DiskType.DATA_IMAGE_ORIGINE);
-		disk.store();
-
-		return rebaseUuid;
+		String[] args = { disk.getUuid() };
+		String errorMsg = "Cannot rebase image on backend storage: " + disk.getUuid();
+		String rebasedUuid = execute("rebase", errorMsg, args);
+		
+		return rebasedUuid;
 	}
 
 	public String createCopyOnWrite(String baseUuid, String cowUuid, long size) {

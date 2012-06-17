@@ -149,12 +149,21 @@ public class DiskResource extends DiskBaseResource {
 
 	private Disk rebase(Disk disk) {
 
-		String newUuid = DiskUtils.rebaseDisk(disk);
+		String rebasedUuid = DiskUtils.rebaseDisk(disk);
 
-		Disk newDisk = initializeDisk();
-		newDisk.setUuid(newUuid);
+		Disk newDisk = null;
+
+		// some rebase implementation create new LUNs, others don't
+		if(rebasedUuid == null || "".equals(rebasedUuid)) {
+			newDisk = disk;
+		} else {
+			newDisk = initializeDisk();
+			newDisk.setUuid(rebasedUuid);
+		}
+		
 		newDisk.setType(DiskType.MACHINE_IMAGE_ORIGINE);
 		newDisk.setSize(disk.getSize());
+		newDisk.setSeed(true);
 
 		// TODO: implement here and remove client-side implementation
 		// newProperties = calculateHashes(newProperties);
