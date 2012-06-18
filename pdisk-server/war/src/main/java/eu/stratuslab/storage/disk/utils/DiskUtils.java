@@ -50,7 +50,7 @@ public final class DiskUtils {
 
 	public static Disk createMachineImageCoWDisk(Disk disk) {
 
-		BackEndStorage diskStorage = getDiskStorage();
+		BackEndStorage diskStorage = getDiskStorage();	
 
 		Disk cowDisk = createCowDisk(disk);
 
