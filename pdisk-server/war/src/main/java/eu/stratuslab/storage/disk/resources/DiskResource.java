@@ -164,26 +164,12 @@ public class DiskResource extends DiskBaseResource {
 		newDisk.setType(DiskType.MACHINE_IMAGE_ORIGINE);
 		newDisk.setSize(disk.getSize());
 		newDisk.setSeed(true);
+		newDisk.setUsersCount(0);
+		newDisk.setQuarantine("");
 
-		// TODO: implement here and remove client-side implementation
-		// newProperties = calculateHashes(newProperties);
 		newDisk.store();
 
 		return newDisk;
-	}
-
-	protected Properties calculateHashes(Properties properties) {
-		String identifier;
-		try {
-			identifier = DiskUtils.calculateHash(properties
-					.getProperty(Disk.UUID_KEY));
-		} catch (FileNotFoundException e) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					e.getMessage());
-		}
-		properties.put(Disk.DISK_IDENTIFER_KEY, identifier);
-
-		return properties;
 	}
 
 	@Get("html")
