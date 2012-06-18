@@ -1,14 +1,20 @@
 package eu.stratuslab.storage.disk.utils;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
+import eu.stratuslab.marketplace.metadata.MetadataUtils;
 import eu.stratuslab.storage.disk.backend.BackEndStorage;
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
@@ -105,7 +111,7 @@ public final class DiskUtils {
 
 		// FIXME: host is most probably wrong for the last parameter
 		attachHotplugDisk(host, port, host, tmpVmId, diskUuid, host);
-
+		
 		return tmpVmId;
 	}
 
@@ -120,8 +126,8 @@ public final class DiskUtils {
 
 		List<String> cmd = createHotPlugCommand(node);
 		cmd.add("-op down");
-		cmd.add("pdisk:" + serviceName + ":" + String.valueOf(servicePort)
-				+ ":" + diskUuid);
+		cmd.add("pdisk:" + serviceName + ":"
+				+ String.valueOf(servicePort) + ":" + diskUuid);
 		cmd.add(target);
 		cmd.add(vmId);
 
@@ -141,13 +147,48 @@ public final class DiskUtils {
 		cmd.add("StrictHostKeyChecking=no");
 		cmd.add("-i");
 		cmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
-		cmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN + "@" + node);
+		cmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN + "@"
+				+ node);
 		cmd.add("/usr/sbin/stratus-pdisk-client.py");
 		return cmd;
 	}
 
 	public static String generateUUID() {
 		return UUID.randomUUID().toString();
+	}
+
+	public static String calculateHash(String uuid)
+			throws FileNotFoundException {
+
+		InputStream fis = null;// = new FileInputStream(getDevicePath() + uuid);
+
+		return calculateHash(fis);
+
+	}
+
+	public static String calculateHash(File file) throws FileNotFoundException {
+
+		InputStream fis = new FileInputStream(file);
+
+		return calculateHash(fis);
+
+	}
+
+	public static String calculateHash(InputStream fis)
+			throws FileNotFoundException {
+
+		Map<String, BigInteger> info = MetadataUtils.streamInfo(fis);
+
+		BigInteger sha1Digest = info.get("SHA-1");
+
+		String identifier = MetadataUtils.sha1ToIdentifier(sha1Digest);
+
+		return identifier;
+
+	}
+
+	public static String getDevicePath() {
+		return "";//RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
 	}
 
 	public static void createAndPopulateDiskLocal(Disk disk) {
@@ -164,9 +205,9 @@ public final class DiskUtils {
 		int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
 		String host = "localhost";
 
-		DiskUtils.attachHotplugDisk(host, port, host, tmpVmId, disk.getUuid(),
-				host);
-
+		DiskUtils.attachHotplugDisk(host, port, host,
+				tmpVmId, disk.getUuid(), host);
+		
 		FileUtils.copyFile(cachedDisk, diskLocation);
 
 		File cachedDiskFile = new File(cachedDisk);
@@ -182,7 +223,7 @@ public final class DiskUtils {
 		}
 		disk.setType(DiskType.DATA_IMAGE_RAW_READONLY);
 		disk.setSeed(true);
-
+		
 		diskStorage.unmap(uuid);
 
 	}
@@ -195,7 +236,7 @@ public final class DiskUtils {
 	}
 
 	public static void createCompressedDisk(String uuid) {
-
+		
 		String diskLocation = attachHotplugDisk(uuid);
 		String cachedDisk = FileUtils.getCachedDiskLocation(uuid);
 
