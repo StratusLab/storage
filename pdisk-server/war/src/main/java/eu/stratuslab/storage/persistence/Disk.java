@@ -168,7 +168,7 @@ public class Disk implements Serializable {
 	}
 
 	public void setUuid(String uuid) {
-		this.uuid = uuid;
+		this.uuid = (uuid == null ? uuid : uuid.trim());
 	}
 
 	public String getOwner() {
