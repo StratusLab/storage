@@ -90,7 +90,7 @@ public final class ProcessUtils {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, msg);
 		}
 		
-		return stdout;
+		return outputBuf.toString();
 	}
 
 	private static void info(ProcessBuilder processBuilder) {
