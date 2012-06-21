@@ -1,7 +1,7 @@
 {
     "uuid": "${disk.uuid}",
     <#if disk.tag?has_content>
-    "tag": "${disk.tag}",
+    "tag": "${disk.tag?json_string}",
 <#else>    "tag": "",
     </#if>
     "count": "${disk.usersCount}",
