@@ -94,7 +94,7 @@ public final class DiskUtils {
 		String attachedDisk = getDiskLocation(vmId, diskUuid);
 
 		List<String> cmd = createHotPlugCommand(node);
-		cmd.add("-op up");
+		cmd.add("--op up");
 		cmd.add("pdisk:" + serviceName + ":"
 				+ String.valueOf(servicePort) + ":" + diskUuid);
 		cmd.add(attachedDisk);
@@ -125,7 +125,7 @@ public final class DiskUtils {
 			String node, String vmId, String diskUuid, String target) {
 
 		List<String> cmd = createHotPlugCommand(node);
-		cmd.add("-op down");
+		cmd.add("--op down");
 		cmd.add("pdisk:" + serviceName + ":"
 				+ String.valueOf(servicePort) + ":" + diskUuid);
 		cmd.add(target);
