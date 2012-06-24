@@ -192,7 +192,11 @@ public class Disk implements Serializable {
 	}
 
 	public int getUsersCount() {
-		return usersCount;
+		if(type == DiskType.MACHINE_IMAGE_ORIGINE) {
+			return usersCount;
+		} else {
+			return mounts.size();
+		}
 	}
 
 	public void setUsersCount(int count) {
