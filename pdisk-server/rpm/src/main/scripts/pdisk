@@ -146,7 +146,8 @@ done
 ##################################################
 # Set tmp if not already set.
 ##################################################
-TMPDIR=${TMPDIR:-/tmp}
+TMPDIR=${TMPDIR:-/var/tmp/stratuslab/storage}
+mkdir -p $TMPDIR
 
 ##################################################
 # Jetty's hallmark
