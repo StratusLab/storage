@@ -372,7 +372,7 @@ def __init__():
 			if options.mount:
 				pdisk.mount(options.vm_id,options.disk_name,options.target)
 		except CheckPersistentDiskException:
-			print "pdisk is market as used, please check or use --register --op down"
+			print "pdisk is marked as used, please check or use --register --op down"
 		except RegisterPersistentDiskException:
 			print "Error while try to register on pdisk"
 		except AttachPersistentDiskException:

@@ -95,9 +95,11 @@ public final class DiskUtils {
 
 		List<String> cmd = createHotPlugCommand(node);
 		cmd.add("--op up");
+		cmd.add("--pdisk-id");
 		cmd.add("pdisk:" + serviceName + ":"
 				+ String.valueOf(servicePort) + ":" + diskUuid);
 		cmd.add(attachedDisk);
+		cmd.add("--target");
 		cmd.add(target);
 
 		ProcessBuilder pb = new ProcessBuilder(cmd);
@@ -126,9 +128,11 @@ public final class DiskUtils {
 
 		List<String> cmd = createHotPlugCommand(node);
 		cmd.add("--op down");
+		cmd.add("--pdisk-id");
 		cmd.add("pdisk:" + serviceName + ":"
 				+ String.valueOf(servicePort) + ":" + diskUuid);
 		cmd.add(target);
+		cmd.add("--vm-id");
 		cmd.add(vmId);
 
 		ProcessBuilder pb = new ProcessBuilder(cmd);
