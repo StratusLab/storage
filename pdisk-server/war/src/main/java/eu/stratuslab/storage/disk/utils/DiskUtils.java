@@ -165,7 +165,6 @@ public final class DiskUtils {
 
 	protected static List<String> createHotPlugCommand(String node) {
 		List<String> cmd = new ArrayList<String>();
-		cmd.add("echo");
 		cmd.add("ssh");
 		cmd.add("-p");
 		cmd.add("22");
