@@ -1,4 +1,4 @@
-package eu.stratuslab.storage.disk.utils;
+[package eu.stratuslab.storage.disk.utils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -95,12 +95,24 @@ public final class DiskUtils {
 
 		List<String> cmd = createHotPlugCommand(node);
 		cmd.add("--op up");
+
+		cmd.add("--attach");
+		cmd.add("--link");
+		cmd.add("--mount");
+		cmd.add("--register");
+
 		cmd.add("--pdisk-id");
 		cmd.add("pdisk:" + serviceName + ":"
 				+ String.valueOf(servicePort) + ":" + diskUuid);
-		cmd.add(attachedDisk);
+
 		cmd.add("--target");
 		cmd.add(target);
+
+                cmd.add("--vm-id");
+                cmd.add(vmId);
+
+                cmd.add("--vm-disk-name");
+                cmd.add("pdisk-" + diskUuid);
 
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		ProcessUtils.execute(pb, "Unable to attach persistent disk");
@@ -128,12 +140,24 @@ public final class DiskUtils {
 
 		List<String> cmd = createHotPlugCommand(node);
 		cmd.add("--op down");
+
+		cmd.add("--attach");
+		cmd.add("--link");
+		cmd.add("--mount");
+		cmd.add("--register");
+
 		cmd.add("--pdisk-id");
 		cmd.add("pdisk:" + serviceName + ":"
 				+ String.valueOf(servicePort) + ":" + diskUuid);
+
+		cmd.add("--target");
 		cmd.add(target);
-		cmd.add("--vm-id");
-		cmd.add(vmId);
+
+                cmd.add("--vm-id");
+                cmd.add(vmId);
+
+                cmd.add("--vm-disk-name");
+                cmd.add("pdisk-" + diskUuid);
 
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		ProcessUtils.execute(pb, "Unable to detach persistent disk");
