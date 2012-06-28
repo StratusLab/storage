@@ -60,51 +60,48 @@ vm_dir=config.get("main","vm_dir")
 
 parser=OptionParser()
 parser.add_option("--pdisk-id", dest="persistent_disk_id",
-  help="Persistent disk id ( pdisk:enpoint:port:disk_uuid )", metavar="PID"
+  help="persistent disk id ( pdisk:endpoint:port:disk_uuid )", metavar="PID"
 )
 parser.add_option("--vm-id", dest="vm_id",
-  help="VM id", metavar="ID"
+  help="VM ID", metavar="ID"
 )
 parser.add_option("--vm-dir", dest="vm_dir",
-  help="Directory where device will be created", metavar="DIR"
+  help="directory where device will be created", metavar="DIR"
 )
 parser.add_option("--vm-disk-name", dest="disk_name",
-  help="Name of disk on Virtual Machine directory"
+  help="name of disk in Virtual Machine directory"
 )
 parser.add_option("--target", dest="target",
-  help="Device name on Virtual Machine"
+  help="device name on Virtual Machine"
 )
 parser.add_option("--turl", dest="turl", metavar="TURL", default="",
-  help="Transport URL of pdisk (protocol://server/protocol-option-to-access-file)"
+  help="transport URL of pdisk (protocol://server/protocol-option-to-access-file)"
 )
 parser.add_option("--username", dest="username",
-  help="Username use to interact with pdisk server"
+  help="username use to interact with pdisk server"
 )
 parser.add_option("--password", dest="password",
-  help="Password use to interact with pdisk server"
+  help="password use to interact with pdisk server"
 )
 
 action=OptionGroup(parser," Action command")
 action.add_option("--attach", dest="attach", action="store_true",
-  help="Attach/Detach backend to hypervisor"
+  help="attach/detach backend to hypervisor"
 )
 action.add_option("--register", dest="registration", action="store_true",
-  help="Register/Unregister persistent disk as used on service"
+  help="register/unregister persistent disk as used on service"
 )
 action.add_option("--link", dest="link", action="store_true",
-  help="Link/Unlink attached disk in Virtual Machine directory"
+  help="link/unlink attached disk in Virtual Machine directory"
 )
 action.add_option("--mount", dest="mount", action="store_true",
-  help="Mount/Unmount disk into Virtual Machine"
-)
-action.add_option("--status", dest="status", action="store_true",
-  help="Display status of current persistent disk"
+  help="mount/unmount disk into Virtual Machine"
 )
 action.add_option("--no-check", dest="no_check", action="store_true",
-  help="Disable check if device is used"
+  help="disable check if device is used"
 )
 action.add_option("--op", dest="operation", metavar="OP",
-  help="up : active persistent disk ( register / attach / link / mount ) -- down : desactive persistent disk ( unmount / unlink / detach / unregister )"
+  help="up : activate persistent disk ( register / attach / link / mount ) -- down : deactivate persistent disk ( unmount / unlink / detach / unregister )"
 )
 parser.add_option_group(action)
 (options, args) = parser.parse_args()
@@ -218,8 +215,8 @@ class PersistentDisk:
 		self.port      = pdisk.port
 		self.disk_uuid = pdisk.disk_uuid
 		self.protocol  = pdisk.protocol
-	self.server = pdisk.server
-        self.image  = pdisk.image
+                self.server    = pdisk.server
+                self.image     = pdisk.image
 
 	"""
 		check_mount used to check if pdisk is already used return true if pdisk is free
@@ -370,7 +367,7 @@ class CheckPersistentDiskException(PersistentDiskException):
 class getTurlPersistentDiskException(PersistentDiskException):
         pass
 
-def do_up_operations(self):
+def do_up_operations(pdisk):
         try:
                 if not options.no_check:
                         pdisk.check_mount(login,pswd)
@@ -387,13 +384,14 @@ def do_up_operations(self):
         except CheckPersistentDiskException as e:
                 print e
                 exit(1)
-        except RegisterPersistentDiskException:
+        except RegisterPersistentDiskException as e:
                 print e
                 exit(1)
-        except AttachPersistentDiskException:
-                print "Error while try to attach backend to hypervisor"
+        except AttachPersistentDiskException as e:
+                print e
                 if options.registration:
                         pdisk.unregister(login,pswd,options.vm_id)
+                exit(1)
         except LinkPersistentDiskException:
                 print e
                 if options.attach:
@@ -409,7 +407,7 @@ def do_up_operations(self):
                 if options.registration:
                         pdisk.unregister(login,pswd,options.vm_id)
 
-def do_down_operations(self):
+def do_down_operations(pdisk):
         try:
                 if options.mount:
                         pdisk.umount(options.vm_id,options.target)
@@ -424,8 +422,9 @@ def do_down_operations(self):
                 print "Error while try to umount %s to %s " % ( options.persistent_disk_id , options.vm_id )
         except LinkPersistentDiskException:
                 print "Error while try to unlink %s" % dst
-        except AttachPersistentDiskException:
-                print "Error while try to detach %s from backend" % options.persistentd_disk_id
+        except AttachPersistentDiskException as e:
+                print e
+                exit(1)
         except RegisterPersistentDiskException:
                 print e
                 exit(1)
@@ -447,10 +446,10 @@ def __init__():
                 exit(1)
 
 	if options.operation == "up":
-                self.do_up_operations()
+                do_up_operations(pdisk)
 
 	elif options.operation == "down":
-                self.do_down_operations()
+                do_down_operations(pdisk)
 		
 	else:
 		raise parser.error("--op options only allow up or down")
