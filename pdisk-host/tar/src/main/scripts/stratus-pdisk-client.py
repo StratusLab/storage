@@ -107,26 +107,26 @@ parser.add_option_group(action)
 (options, args) = parser.parse_args()
 
 if not options.operation:
-	raise parser.error("--op options is mandatory")
+	raise parser.error("--op option is mandatory")
 
 if options.attach:
 	if not options.persistent_disk_id :
-		raise parser.error("--attach option need --pdisk-id options")
+		raise parser.error("--attach option needs --pdisk-id option")
 
 if options.registration:
 	if not options.persistent_disk_id or not options.vm_id:
-		raise parser.error("--register need --pdisk-id and --vm-id options")
+		raise parser.error("--register option needs --pdisk-id and --vm-id options")
 
 if options.link:
 	if not options.persistent_disk_id or  ( not vm_dir and not options.vm_dir ) or not options.vm_id or not options.disk_name :
-		raise parser.error("--link need --pdisk-id, --vm-disk-name, --vm-id options are needed, --vm-dir if not define on configuration file ( /etc/stratuslab/pdisk-host.conf)")
+		raise parser.error("--link option needs --pdisk-id, --vm-disk-name, --vm-id options, --vm-dir is not defined in configuration file (/etc/stratuslab/pdisk-host.conf)")
 
 if options.mount:
 	if not options.persistent_disk_id or not options.vm_id or not options.target:
-		raise parser.error("--mount need --pdisk-id, --target and --vm-id options")
+		raise parser.error("--mount option needs --pdisk-id, --target and --vm-id options")
 
 if not options.persistent_disk_id:
-	raise parser.error("--pdisk-id is mandatory")
+	raise parser.error("--pdisk-id option is mandatory")
 
 if options.vm_dir:
 	vm_dir = options.vm_dir
@@ -452,5 +452,5 @@ def __init__():
                 do_down_operations(pdisk)
 		
 	else:
-		raise parser.error("--op options only allow up or down")
+		raise parser.error("--op option only accepts 'up' or 'down'")
 __init__()
