@@ -218,8 +218,8 @@ class PersistentDisk:
 		self.port      = pdisk.port
 		self.disk_uuid = pdisk.disk_uuid
 		self.protocol  = pdisk.protocol
-	self.server    = pdisk.server
-		self.image     = pdisk.image
+	self.server = pdisk.server
+        self.image  = pdisk.image
 
 	"""
 		check_mount used to check if pdisk is already used return true if pdisk is free
