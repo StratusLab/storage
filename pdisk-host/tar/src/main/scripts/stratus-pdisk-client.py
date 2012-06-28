@@ -150,7 +150,7 @@ class PersistentDisk:
 	def register(self,login,pswd,vm_id):
 		node=socket.gethostbyname(socket.gethostname())
 		url = self.__registration_uri__()+"mounts/"
-		h = httplib2.Http("/tmp/.cache")
+		h = httplib2.Http()
 		h.disable_ssl_certificate_validation=True
 		h.add_credentials(login,pswd)
 		data = dict(node=node, vm_id=vm_id,register_only="true")
@@ -166,7 +166,7 @@ class PersistentDisk:
 	def unregister(self,login,pswd,vm_id):
 		node=socket.gethostbyname(socket.gethostname())
 		url = self.__registration_uri__()+"mounts/"+self.disk_uuid+"_"+vm_id
-		h = httplib2.Http("/tmp/.cache")
+		h = httplib2.Http()
 		h.add_credentials(login,pswd)
 		h.disable_ssl_certificate_validation=True
 		try:
@@ -223,7 +223,7 @@ class PersistentDisk:
 	"""
 	def check_mount(self,login,pswd):
 		url = self.__registration_uri__()
-		h = httplib2.Http("/tmp/.cache")
+		h = httplib2.Http()
 		h.add_credentials(login,pswd)
 		h.disable_ssl_certificate_validation=True
 		resp, contents = h.request(url)
