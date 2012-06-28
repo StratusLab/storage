@@ -91,8 +91,6 @@ public final class DiskUtils {
 	public static void attachHotplugDisk(String serviceName, int servicePort,
 			String node, String vmId, String diskUuid, String target) {
             
-            //String attachedDisk = getDiskLocation(vmId, diskUuid);
-
 		List<String> cmd = createHotPlugCommand(node);
 		cmd.add("--op up");
 

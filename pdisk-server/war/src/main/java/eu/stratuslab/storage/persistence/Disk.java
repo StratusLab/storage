@@ -271,7 +271,7 @@ public class Disk implements Serializable {
 
 	public String diskTarget(String mountId) {
 
-		if (mounts.containsKey(mountId)) {
+		if (!mounts.containsKey(mountId)) {
 			return STATIC_DISK_TARGET;
 		}
 
