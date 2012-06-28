@@ -392,7 +392,7 @@ def do_up_operations(pdisk):
                 if options.registration:
                         pdisk.unregister(login,pswd,options.vm_id)
                 exit(1)
-        except LinkPersistentDiskException:
+        except LinkPersistentDiskException as e:
                 print e
                 if options.attach:
                         pdisk.detach()
@@ -425,7 +425,7 @@ def do_down_operations(pdisk):
         except AttachPersistentDiskException as e:
                 print e
                 exit(1)
-        except RegisterPersistentDiskException:
+        except RegisterPersistentDiskException as e:
                 print e
                 exit(1)
 
