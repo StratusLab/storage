@@ -349,10 +349,10 @@ class FilePersistentDisk(PersistentDisk):
 class PersistentDiskException(Exception):
         pass
 
-class RegisterPersistentDiskException(PersistentDisk):
+class RegisterPersistentDiskException(PersistentDiskException):
         pass
 
-class AttachPersistentDiskException(PersistentDisk):
+class AttachPersistentDiskException(PersistentDiskException):
         pass
 
 class URIPersistentDiskException(PersistentDiskException):
