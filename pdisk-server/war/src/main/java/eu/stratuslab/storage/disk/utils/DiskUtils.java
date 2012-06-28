@@ -1,4 +1,4 @@
-[package eu.stratuslab.storage.disk.utils;
+package eu.stratuslab.storage.disk.utils;
 
 import java.io.File;
 import java.io.FileInputStream;
