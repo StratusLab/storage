@@ -13,12 +13,13 @@ import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.persistence.Disk;
+import eu.stratuslab.storage.persistence.Instance;
 import eu.stratuslab.storage.persistence.Mount;
 
 public class MountResource extends BaseResource {
 
 	public static final String METADATA_ONLY_QUERY_PARAMETER = "metadata_only";
-	
+
 	private String diskId = null;
 	private String mountId = null;
 	private String node = null;
@@ -44,15 +45,21 @@ public class MountResource extends BaseResource {
 
 		}
 		mountId = mountIdValue.toString();
-		
-		mount  = Mount.load(mountId);
 
-		if(mount == null) {
+		mount = Mount.load(mountId);
+
+		if (mount == null) {
 			setExisting(false);
+		} else {
+			Instance instance = Instance.load(mount.getVmId());
+			if (instance != null) {
+				node = instance.getNode();
+			}
 		}
-		
-		Object metadataOnlyValue = attributes.get(METADATA_ONLY_QUERY_PARAMETER); 
-		if(metadataOnlyValue != null) {
+
+		Object metadataOnlyValue = attributes
+				.get(METADATA_ONLY_QUERY_PARAMETER);
+		if (metadataOnlyValue != null) {
 			metadataOnly = true;
 		}
 	}
@@ -130,26 +137,28 @@ public class MountResource extends BaseResource {
 
 		String diskTarget = disk.diskTarget(mount.getId());
 
-		boolean updateMetadataOnly = metadataOnly || diskTarget.equals(Disk.STATIC_DISK_TARGET);
-		
+		boolean updateMetadataOnly = metadataOnly
+				|| diskTarget.equals(Disk.STATIC_DISK_TARGET);
+
 		if (!updateMetadataOnly) {
-			
+
 			try {
 				DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node,
 						mount.getVmId(), diskId, diskTarget);
 				getLogger().info(
-						"hotDetach: " + node + ", " + mount.getVmId() + ", " + diskId + ", "
-								+ diskTarget);
-			} catch(ResourceException e) {
+						"hotDetach: " + node + ", " + mount.getVmId() + ", "
+								+ diskId + ", " + diskTarget);
+			} catch (ResourceException e) {
 				getLogger().warning(
-						"hotDetach failed for: " + node + ", " + mount.getVmId() + ", " + diskId + ", "
+						"hotDetach failed for: " + node + ", "
+								+ mount.getVmId() + ", " + diskId + ", "
 								+ diskTarget);
-				
+
 			}
 		}
 
 		mount.remove();
-		
+
 		return diskTarget;
 
 	}
