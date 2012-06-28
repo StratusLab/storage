@@ -139,12 +139,14 @@ if options.username:
 
 if options.password:
 	pswd = options.password
+
 """
  Metaclass for general persistent disk client
 """
 class PersistentDisk:
 	def __registration_uri__(self):
 		return "https://"+self.endpoint+":"+self.port+"/pswd/disks/"+self.disk_uuid+"/"
+
 	"""
 		Register/Unregister mount on pdisk endpoint
 	"""
@@ -158,7 +160,12 @@ class PersistentDisk:
 		try:
 			resp, contents = h.request(url,"POST",urlencode(data))
 		except httplib2.ServerNotFoundError:
-			raise RegisterPersistentDiskException('Register : Server '+self.endpoint+' not found')
+                        msg = 'register: %s not found' % self.endpoint
+			raise RegisterPersistentDiskException(msg)
+                if (resp.status >= 400):
+                        msg = 'register: POST on %s raised error %d' % (url, resp.status)
+                        raise RegisterPersistentDiskException(msg)
+
 	def unregister(self,login,pswd,vm_id):
 		node=socket.gethostbyname(socket.gethostname())
 		url = self.__registration_uri__()+"mounts/"+self.disk_uuid+"_"+vm_id
@@ -168,7 +175,11 @@ class PersistentDisk:
 		try:
 			resp, contents = h.request(url,"DELETE")
 		except httplib2.ServerNotFoundError:
-			raise RegisterPersistentDiskException('Unregister : Server '+self.endpoint+' not found')
+                        msg = 'unregister: %s not found' % self.endpoint
+			raise RegisterPersistentDiskException(msg)
+                if (resp.status >= 400):
+                        msg = 'unregister: DELETE on %s raised error %d' % (url, resp.status)
+                        raise RegisterPersistentDiskException(msg)
 
 	"""
 		Link/Unlink, create a link between device ( image or physical device) and Virtual Machine directory
@@ -179,7 +190,9 @@ class PersistentDisk:
 				os.unlink(dst)
 			os.symlink(src,dst)
 		except:
-			raise LinkPersistentDiskException('Link : Error while linking '+src+' to '+dst)
+                        msg = 'link: error while linking %s to %s' % (src, dst)
+			raise LinkPersistentDiskException(msg)
+
 	def unlink(self,link):
 		if os.path.exists(link):
 			os.unlink(link)
@@ -205,7 +218,7 @@ class PersistentDisk:
 		self.port      = pdisk.port
 		self.disk_uuid = pdisk.disk_uuid
 		self.protocol  = pdisk.protocol
-		self.server    = pdisk.server
+	self.server    = pdisk.server
 		self.image     = pdisk.image
 
 	"""
@@ -217,17 +230,20 @@ class PersistentDisk:
 		h.add_credentials(login,pswd)
 		h.disable_ssl_certificate_validation=True
 		resp, contents = h.request(url)
-		#print contents
+
 		if resp.status != 200:
-			raise CheckPersistentDiskException('Check_mount : error while check '+self.endpoint+' with url '+url)
+                        msg = 'check_mount: GET on %s returned %d' % (url, resp.status)
+			raise CheckPersistentDiskException(msg)
+
 		io = StringIO(contents)
 		json_output = json.load(io)
-#		try:
-#		if json_output['count'] != '0':
-#			raise CheckPersistentDiskException('Check_mount : pdisk pdisk:'+ self.endpoint+':'+self.port+':'+self.disk_uuid+' is mounted')
+
+		if json_output['count'] != '0':
+                        disk_id = 'pdisk:%s:%s:%s' % (self.endpoint, self.port, self.disk_uuid)
+                        msg = 'check_mount: %s is already mounted' % disk_id
+			raise CheckPersistentDiskException(msg)
+
 		return False
-#		except KeyError:
-#			return False
 
 	"""
 		__checkTurl__ check and split Transport URL ( proto://server:port/proto_options ) from pdisk id ( pdisk:endpoint:port:disk_uuid )
@@ -257,34 +273,54 @@ class PersistentDisk:
 			
 
 class IscsiPersistentDisk(PersistentDisk):
+
 	_unix_device_path='/dev/disk/by-path/'
+
 	def image_storage(self):
 		__portal__    = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
 		__portal_ip__ = socket.gethostbyname( __portal__.group('server') )
-		dev = "ip-" + __portal_ip__ + ":" + __portal__.group('port') + "-iscsi-" + self.iqn + "-lun-" + self.lun
+
+		dev = "ip-%s:%s-iscsi-%s-lun-%s" % (
+                        __portal_ip__,  __portal__.group('port'), self.iqn, self.lun)
+
 		return self._unix_device_path+dev
+
 	def attach(self):
 		__portal__    = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
 		__portal_ip__ = socket.gethostbyname(__portal__.group('server'))
-		reg = "sudo "+iscsiadm + " --mode node --portal " + __portal_ip__ + ":" + __portal__.group('port') + " --target " + self.iqn + " -o new" 
-		cmd = "sudo "+iscsiadm + " --mode node --portal " + __portal_ip__ + ":" + __portal__.group('port') + " --target " + self.iqn + " --login" 
+
+		reg = "sudo %s --mode node --portal %s:%s --target %s -o new" % (
+                        iscsiadm, __portal_ip__,  __portal__.group('port'), self.iqn) 
 		retcode = call(reg, shell=True)
 		if retcode < 0:
-			raise AttachPersistentDiskException("Error while attach iSCSI disk to hypervisor")
+			msg = "attach: error registering iSCSI disk with hypervisor (%d)" % retcode
+			raise AttachPersistentDiskException(msg)
+
+		cmd = "sudo %s --mode node --portal %s:%s --target %s --login" % (
+                        iscsiadm, __portal_ip__,  __portal__.group('port'), self.iqn) 
 		retcode = call(cmd, shell=True)
 		if retcode < 0:
-			raise AttachPersistentDiskException("Error while attach iSCSI disk to hypervisor")
+			msg = "attach: error logging in iSCSI disk session (%d)" % retcode
+			raise AttachPersistentDiskException(msg)
+
 	def detach(self):
 		__portal__    = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
 		__portal_ip__ = socket.gethostbyname(__portal__.group('server'))
-		cmd   = "sudo "+iscsiadm + " --mode node --portal " + __portal_ip__ + ":" + __portal__.group('port') + " --target " + self.iqn + " --logout" 
-		unreg = "sudo "+iscsiadm + " --mode node --portal " + __portal_ip__ + ":" + __portal__.group('port') + " --target " + self.iqn + " -o delete" 
+
+		cmd = 'sudo %s --mode node --portal %s:%s --target %s --logout' % (
+                        iscsiadm,  __portal_ip__,  __portal__.group('port'), self.iqn)
 		retcode = call(cmd, shell=True)
 		if retcode < 0:
-			raise AttachPersistentDiskException("Error while attach iSCSI disk to hypervisor")
+                        msg = 'detach: error detaching iSCSI disk from hypervisor (%d)' % retcode
+			raise AttachPersistentDiskException(msg)
+
+		unreg = "sudo %s --mode node --portal %s:%s --target %s -o delete" % (
+                        iscsiadm, __portal_ip__,  __portal__.group('port'), self.iqn) 
 		retcode = call(unreg, shell=True)
 		if retcode < 0:
-			raise AttachPersistentDiskException("Error while attach iSCSI disk to hypervisor")
+                        msg = 'detach: error unregistering iSCSI disk with hypervisor (%s)' % retcode
+			raise AttachPersistentDiskException(msg)
+
 	def __image2iqn__(self, str):
 		__iqn__ = re.match(r"(?P<iqn>.*:.*):(?P<lun>.*)", str)
 		self.iqn = __iqn__.group('iqn')
@@ -311,42 +347,94 @@ class FilePersistentDisk(PersistentDisk):
 		self.__copy__(pdisk_class)
 
 class PersistentDiskException(Exception):
-	def __init__(self,value):
-		self.value = value
+        pass
 
 class RegisterPersistentDiskException(PersistentDisk):
-	def __init__(self,value):
-		self.value = value
+        pass
 
 class AttachPersistentDiskException(PersistentDisk):
-	def __init__(self,value):
-		self.value = value
+        pass
 
 class URIPersistentDiskException(PersistentDiskException):
-	def __init__(self,value):
-		self.value = value
+        pass
 
 class LinkPersistentDiskException(PersistentDiskException):
-	def __init__(self,value):
-		self.value = value
+        pass
 
 class MountPersistentDiskException(PersistentDiskException):
-	def __init__(self,value):
-		self.value = value
+        pass
 
 class CheckPersistentDiskException(PersistentDiskException):
-	def __init__(self,value):
-		self.value = value
+        pass
 
 class getTurlPersistentDiskException(PersistentDiskException):
-	def __init__(self,value):
-		self.value = value
+        pass
+
+def do_up_operations(self):
+        try:
+                if not options.no_check:
+                        pdisk.check_mount(login,pswd)
+                if options.registration:
+                        pdisk.register(login,pswd,options.vm_id)
+                if options.attach:
+                        pdisk.attach()
+                if options.link:
+                        src = pdisk.image_storage()
+                        dst = vm_dir+"/"+str(options.vm_id)+"/images/"+options.disk_name
+                        pdisk.link(src,dst)
+                if options.mount:
+                        pdisk.mount(options.vm_id,options.disk_name,options.target)
+        except CheckPersistentDiskException as e:
+                print e
+                exit(1)
+        except RegisterPersistentDiskException:
+                print e
+                exit(1)
+        except AttachPersistentDiskException:
+                print "Error while try to attach backend to hypervisor"
+                if options.registration:
+                        pdisk.unregister(login,pswd,options.vm_id)
+        except LinkPersistentDiskException:
+                print e
+                if options.attach:
+                        pdisk.detach()
+                if options.registration:
+                        pdisk.unregister(login,pswd,options.vm_id)
+        except MountPersistentDiskException:
+                print "Error while try to mount %s to %s" % ( options.persistent_disk_id , options.vm_id )
+                if options.link:
+                        pdisk.unlink(dst)
+                if options.attach:
+                        pdisk.detach()
+                if options.registration:
+                        pdisk.unregister(login,pswd,options.vm_id)
+
+def do_down_operations(self):
+        try:
+                if options.mount:
+                        pdisk.umount(options.vm_id,options.target)
+                if options.link:
+                        dst = vm_dir+"/"+str(options.vm_id)+"/images/"+options.disk_name
+                        pdisk.unlink(dst)
+                if options.attach:
+                        pdisk.detach()
+                if options.registration:
+                        pdisk.unregister(login,pswd,options.vm_id)
+        except MountPersistentDiskException:
+                print "Error while try to umount %s to %s " % ( options.persistent_disk_id , options.vm_id )
+        except LinkPersistentDiskException:
+                print "Error while try to unlink %s" % dst
+        except AttachPersistentDiskException:
+                print "Error while try to detach %s from backend" % options.persistentd_disk_id
+        except RegisterPersistentDiskException:
+                print e
+                exit(1)
 
 def __init__():
 	try:
 		global_pdisk = PersistentDisk(options.persistent_disk_id,options.turl)
 	except getTurlPersistentDiskException:
-		print "Error while try to retrive %s" % options.persistent_disk_id
+		print "Error while trying to retrieve %s" % options.persistent_disk_id
 		return -1
 	global vm_dir
 
@@ -356,62 +444,13 @@ def __init__():
 		pdisk = FilePersistentDisk(global_pdisk,options.turl)
 	else :
 		print "Protocol "+global_pdisk.protocol+" not supported"
+                exit(1)
 
 	if options.operation == "up":
-		try:
-			if not options.no_check:
-				pdisk.check_mount(login,pswd)
-			if options.registration:
-				pdisk.register(login,pswd,options.vm_id)
-			if options.attach:
-				pdisk.attach()
-			if options.link:
-				src = pdisk.image_storage()
-				dst = vm_dir+"/"+str(options.vm_id)+"/images/"+options.disk_name
-				pdisk.link(src,dst)
-			if options.mount:
-				pdisk.mount(options.vm_id,options.disk_name,options.target)
-		except CheckPersistentDiskException:
-			print "pdisk is marked as used, please check or use --register --op down"
-		except RegisterPersistentDiskException:
-			print "Error while try to register on pdisk"
-		except AttachPersistentDiskException:
-			print "Error while try to attach backend to hypervisor"
-			if options.registration:
-				pdisk.unregister(login,pswd,options.vm_id)
-		except LinkPersistentDiskException:
-			print "Error while try to link %s to %s" % ( src , dst )
-			if options.attach:
-				pdisk.detach()
-			if options.registration:
-				pdisk.unregister(login,pswd,options.vm_id)
-		except MountPersistentDiskException:
-			print "Error while try to mount %s to %s" % ( options.persistent_disk_id , options.vm_id )
-			if options.link:
-				pdisk.unlink(dst)
-			if options.attach:
-				pdisk.detach()
-			if options.registration:
-				pdisk.unregister(login,pswd,options.vm_id)
+                self.do_up_operations()
+
 	elif options.operation == "down":
-		try:
-			if options.mount:
-				pdisk.umount(options.vm_id,options.target)
-			if options.link:
-				dst = vm_dir+"/"+str(options.vm_id)+"/images/"+options.disk_name
-				pdisk.unlink(dst)
-			if options.attach:
-				pdisk.detach()
-			if options.registration:
-				pdisk.unregister(login,pswd,options.vm_id)
-		except MountPersistentDiskException:
-			print "Error while try to umount %s to %s " % ( options.persistent_disk_id , options.vm_id )
-		except LinkPersistentDiskException:
-			print "Error while try to unlink %s" % dst
-		except AttachPersistentDiskException:
-			print "Error while try to detach %s from backend" % options.persistentd_disk_id
-		except RegisterPersistentDiskException:
-			print "Error while try to unregister as unused"
+                self.do_down_operations()
 		
 	else:
 		raise parser.error("--op options only allow up or down")
