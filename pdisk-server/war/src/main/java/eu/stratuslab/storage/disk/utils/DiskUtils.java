@@ -50,7 +50,7 @@ public final class DiskUtils {
 
 	public static Disk createMachineImageCoWDisk(Disk disk) {
 
-		BackEndStorage diskStorage = getDiskStorage();	
+		BackEndStorage diskStorage = getDiskStorage();
 
 		Disk cowDisk = createCowDisk(disk);
 
@@ -90,27 +90,29 @@ public final class DiskUtils {
 
 	public static void attachHotplugDisk(String serviceName, int servicePort,
 			String node, String vmId, String diskUuid, String target) {
-            
+
+		// Do NOT use the --register flag here. This may cause an infinite loop
+		// in the process because it calls the pdisk service again.
+
 		List<String> cmd = createHotPlugCommand(node);
 		cmd.add("--op up");
 
 		cmd.add("--attach");
 		cmd.add("--link");
 		cmd.add("--mount");
-		cmd.add("--register");
 
 		cmd.add("--pdisk-id");
-		cmd.add("pdisk:" + serviceName + ":"
-				+ String.valueOf(servicePort) + ":" + diskUuid);
+		cmd.add("pdisk:" + serviceName + ":" + String.valueOf(servicePort)
+				+ ":" + diskUuid);
 
 		cmd.add("--target");
 		cmd.add(target);
 
-                cmd.add("--vm-id");
-                cmd.add(vmId);
+		cmd.add("--vm-id");
+		cmd.add(vmId);
 
-                cmd.add("--vm-disk-name");
-                cmd.add("pdisk-" + diskUuid);
+		cmd.add("--vm-disk-name");
+		cmd.add("pdisk-" + diskUuid);
 
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		ProcessUtils.execute(pb, "Unable to attach persistent disk");
@@ -123,7 +125,7 @@ public final class DiskUtils {
 
 		// FIXME: host is most probably wrong for the last parameter
 		attachHotplugDisk(host, port, host, tmpVmId, diskUuid, host);
-		
+
 		return tmpVmId;
 	}
 
@@ -136,26 +138,28 @@ public final class DiskUtils {
 	public static void detachHotplugDisk(String serviceName, int servicePort,
 			String node, String vmId, String diskUuid, String target) {
 
+		// Do NOT use the --register flag here. This may cause an infinite loop
+		// in the process because it calls the pdisk service again.
+
 		List<String> cmd = createHotPlugCommand(node);
 		cmd.add("--op down");
 
 		cmd.add("--attach");
 		cmd.add("--link");
 		cmd.add("--mount");
-		cmd.add("--register");
 
 		cmd.add("--pdisk-id");
-		cmd.add("pdisk:" + serviceName + ":"
-				+ String.valueOf(servicePort) + ":" + diskUuid);
+		cmd.add("pdisk:" + serviceName + ":" + String.valueOf(servicePort)
+				+ ":" + diskUuid);
 
 		cmd.add("--target");
 		cmd.add(target);
 
-                cmd.add("--vm-id");
-                cmd.add(vmId);
+		cmd.add("--vm-id");
+		cmd.add(vmId);
 
-                cmd.add("--vm-disk-name");
-                cmd.add("pdisk-" + diskUuid);
+		cmd.add("--vm-disk-name");
+		cmd.add("pdisk-" + diskUuid);
 
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		ProcessUtils.execute(pb, "Unable to detach persistent disk");
@@ -172,8 +176,7 @@ public final class DiskUtils {
 		cmd.add("StrictHostKeyChecking=no");
 		cmd.add("-i");
 		cmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
-		cmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN + "@"
-				+ node);
+		cmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN + "@" + node);
 		cmd.add("/usr/sbin/stratus-pdisk-client.py");
 		return cmd;
 	}
@@ -213,7 +216,7 @@ public final class DiskUtils {
 	}
 
 	public static String getDevicePath() {
-		return "";//RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
+		return "";// RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
 	}
 
 	public static void createAndPopulateDiskLocal(Disk disk) {
@@ -230,9 +233,9 @@ public final class DiskUtils {
 		int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
 		String host = "localhost";
 
-		DiskUtils.attachHotplugDisk(host, port, host,
-				tmpVmId, disk.getUuid(), host);
-		
+		DiskUtils.attachHotplugDisk(host, port, host, tmpVmId, disk.getUuid(),
+				host);
+
 		FileUtils.copyFile(cachedDisk, diskLocation);
 
 		File cachedDiskFile = new File(cachedDisk);
@@ -248,7 +251,7 @@ public final class DiskUtils {
 		}
 		disk.setType(DiskType.DATA_IMAGE_RAW_READONLY);
 		disk.setSeed(true);
-		
+
 		diskStorage.unmap(uuid);
 
 	}
@@ -261,7 +264,7 @@ public final class DiskUtils {
 	}
 
 	public static void createCompressedDisk(String uuid) {
-		
+
 		String diskLocation = attachHotplugDisk(uuid);
 		String cachedDisk = FileUtils.getCachedDiskLocation(uuid);
 

@@ -222,7 +222,7 @@ class PersistentDisk:
 		check_mount used to check if pdisk is already used return true if pdisk is free
 	"""
 	def check_mount(self,login,pswd):
-		url = self.__registration_uri__()
+		url = self.__registration_uri__()+"mounts/"
 		h = httplib2.Http()
 		h.add_credentials(login,pswd)
 		h.disable_ssl_certificate_validation=True
@@ -235,7 +235,7 @@ class PersistentDisk:
 		io = StringIO(contents)
 		json_output = json.load(io)
 
-		if json_output['count'] != '0':
+		if len(json_output) != 0:
                         disk_id = 'pdisk:%s:%s:%s' % (self.endpoint, self.port, self.disk_uuid)
                         msg = 'check_mount: %s is already mounted' % disk_id
 			raise CheckPersistentDiskException(msg)
