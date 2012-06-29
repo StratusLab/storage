@@ -202,11 +202,18 @@ class PersistentDisk:
 		domain_name="one-"+str(vm_id)
 		cmd="sudo /usr/bin/virsh attach-disk "+domain_name+" "+hypervisor_device+" "+target_device
 		retcode=call(cmd,shell=True)
+		if retcode != 0:
+			msg = "mount: error mounting disk on hypervisor (%d)" % retcode
+			raise MountPersistentDiskException(msg)
 
 	def umount(self,vm_id,target_device):
 		domain_name="one-"+str(vm_id)
 		cmd="sudo /usr/bin/virsh detach-disk "+domain_name+" "+target_device
 		retcode=call(cmd,shell=True)
+		if retcode != 0:
+			msg = "unmount: error dismounting disk from hypervisor (%d)" % retcode
+			raise MountPersistentDiskException(msg)
+
 	"""
 		__copy__ used to create a a xxxPersistentDisk object from PersistentDisk (xxxPersistentDisk is a inherited class)
 	"""
@@ -289,14 +296,14 @@ class IscsiPersistentDisk(PersistentDisk):
 		reg = "sudo %s --mode node --portal %s:%s --target %s -o new" % (
                         iscsiadm, __portal_ip__,  __portal__.group('port'), self.iqn) 
 		retcode = call(reg, shell=True)
-		if retcode < 0:
+		if retcode != 0:
 			msg = "attach: error registering iSCSI disk with hypervisor (%d)" % retcode
 			raise AttachPersistentDiskException(msg)
 
 		cmd = "sudo %s --mode node --portal %s:%s --target %s --login" % (
                         iscsiadm, __portal_ip__,  __portal__.group('port'), self.iqn) 
 		retcode = call(cmd, shell=True)
-		if retcode < 0:
+		if retcode != 0:
 			msg = "attach: error logging in iSCSI disk session (%d)" % retcode
 			raise AttachPersistentDiskException(msg)
 
@@ -307,14 +314,14 @@ class IscsiPersistentDisk(PersistentDisk):
 		cmd = 'sudo %s --mode node --portal %s:%s --target %s --logout' % (
                         iscsiadm,  __portal_ip__,  __portal__.group('port'), self.iqn)
 		retcode = call(cmd, shell=True)
-		if retcode < 0:
+		if retcode != 0:
                         msg = 'detach: error detaching iSCSI disk from hypervisor (%d)' % retcode
 			raise AttachPersistentDiskException(msg)
 
 		unreg = "sudo %s --mode node --portal %s:%s --target %s -o delete" % (
                         iscsiadm, __portal_ip__,  __portal__.group('port'), self.iqn) 
 		retcode = call(unreg, shell=True)
-		if retcode < 0:
+		if retcode != 0:
                         msg = 'detach: error unregistering iSCSI disk with hypervisor (%s)' % retcode
 			raise AttachPersistentDiskException(msg)
 
@@ -398,14 +405,17 @@ def do_up_operations(pdisk):
                         pdisk.detach()
                 if options.registration:
                         pdisk.unregister(login,pswd,options.vm_id)
-        except MountPersistentDiskException:
-                print "Error while try to mount %s to %s" % ( options.persistent_disk_id , options.vm_id )
+        except MountPersistentDiskException as e:
+                print e
+
                 if options.link:
                         pdisk.unlink(dst)
                 if options.attach:
                         pdisk.detach()
                 if options.registration:
                         pdisk.unregister(login,pswd,options.vm_id)
+
+                exit(1)
 
 def do_down_operations(pdisk):
         try:
@@ -418,8 +428,9 @@ def do_down_operations(pdisk):
                         pdisk.detach()
                 if options.registration:
                         pdisk.unregister(login,pswd,options.vm_id)
-        except MountPersistentDiskException:
-                print "Error while try to umount %s to %s " % ( options.persistent_disk_id , options.vm_id )
+        except MountPersistentDiskException as e:
+                print e
+                exit(1)
         except LinkPersistentDiskException:
                 print "Error while try to unlink %s" % dst
         except AttachPersistentDiskException as e:
