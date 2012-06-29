@@ -35,7 +35,7 @@ public class Disk implements Serializable {
 		/**
 		 * seed/cache of machine image seed (managed by Marketplace)
 		 */
-		MACHINE_IMAGE_ORIGINE,
+		MACHINE_IMAGE_ORIGIN,
 		/**
 		 * snapshot / cow of machine image (managed by Marketplace)
 		 */
@@ -43,7 +43,7 @@ public class Disk implements Serializable {
 		/**
 		 * seed/cache of data image seed (managed by Marketplace)
 		 */
-		DATA_IMAGE_ORIGINE,
+		DATA_IMAGE_ORIGIN,
 		/**
 		 * snapshot / cow of machine image (managed by Marketplace)
 		 */
@@ -192,7 +192,7 @@ public class Disk implements Serializable {
 	}
 
 	public int getUsersCount() {
-		if(type == DiskType.MACHINE_IMAGE_ORIGINE) {
+		if(type == DiskType.MACHINE_IMAGE_ORIGIN) {
 			return usersCount;
 		} else {
 			return mounts.size();

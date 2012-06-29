@@ -131,7 +131,7 @@ public class DiskResource extends DiskBaseResource {
 		Disk newDisk = null;
 		if (disk.getType() == DiskType.MACHINE_IMAGE_LIVE) {
 			newDisk = rebase(disk);
-		} else if (disk.getType() == DiskType.MACHINE_IMAGE_ORIGINE) {
+		} else if (disk.getType() == DiskType.MACHINE_IMAGE_ORIGIN) {
 			newDisk = createMachineImageCoW(disk);
 		} else {
 			throw (new ResourceException(Status.CLIENT_ERROR_CONFLICT,
@@ -159,7 +159,7 @@ public class DiskResource extends DiskBaseResource {
 			newDisk.setUuid(rebasedUuid);
 		}
 		
-		newDisk.setType(DiskType.MACHINE_IMAGE_ORIGINE);
+		newDisk.setType(DiskType.MACHINE_IMAGE_ORIGIN);
 		newDisk.setSize(disk.getSize());
 		newDisk.setSeed(true);
 		newDisk.setUsersCount(0);
