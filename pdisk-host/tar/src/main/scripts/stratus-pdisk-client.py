@@ -183,7 +183,11 @@ class PersistentDisk:
 	"""
 	def link(self,src,dst):
 		try:
-			if os.path.exists(dst):
+			# If the link already exists, then remove it.
+                        # The lexists method MUST be used because the
+                        # exists method will return false for existing
+                        # but broken symbolic links!
+                        if os.path.lexists(dst):
 				os.unlink(dst)
 			os.symlink(src,dst)
 		except:
@@ -191,7 +195,8 @@ class PersistentDisk:
 			raise LinkPersistentDiskException(msg)
 
 	def unlink(self,link):
-		if os.path.exists(link):
+                # See note above about lexists vs. exists.
+		if os.path.lexists(link):
 			os.unlink(link)
 
 	"""
@@ -377,16 +382,21 @@ class getTurlPersistentDiskException(PersistentDiskException):
 def do_up_operations(pdisk):
         try:
                 if not options.no_check:
+                        print "Checking for existing mount..."
                         pdisk.check_mount(login,pswd)
                 if options.registration:
+                        print "Registering mount with pdisk service..."
                         pdisk.register(login,pswd,options.vm_id)
                 if options.attach:
+                        print "Attaching disk to hypervisor..."
                         pdisk.attach()
                 if options.link:
+                        print "Linking disk for virtual machine..."
                         src = pdisk.image_storage()
                         dst = vm_dir+"/"+str(options.vm_id)+"/images/"+options.disk_name
                         pdisk.link(src,dst)
                 if options.mount:
+                        print "Mounting disk on virtual machine..."
                         pdisk.mount(options.vm_id,options.disk_name,options.target)
         except CheckPersistentDiskException as e:
                 print e
@@ -420,13 +430,17 @@ def do_up_operations(pdisk):
 def do_down_operations(pdisk):
         try:
                 if options.mount:
+                        print "Unmount the disk from the virtual machine..."
                         pdisk.umount(options.vm_id,options.target)
                 if options.link:
+                        print "Unlink the disk from the virtual machine..."
                         dst = vm_dir+"/"+str(options.vm_id)+"/images/"+options.disk_name
                         pdisk.unlink(dst)
                 if options.attach:
+                        print "Detach the disk from the hypervisor..."
                         pdisk.detach()
                 if options.registration:
+                        print "Remove mount from the pdisk service..."
                         pdisk.unregister(login,pswd,options.vm_id)
         except MountPersistentDiskException as e:
                 print e
