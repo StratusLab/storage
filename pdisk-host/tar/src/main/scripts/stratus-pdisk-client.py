@@ -220,9 +220,7 @@ class PersistentDisk:
 	def umount(self,vm_id,target_device):
 		domain_name="one-"+str(vm_id)
 
-		cmd="sudo /usr/bin/virsh detach-disk "+domain_name+" "+target_device
-
-		cmd = ['sudo', '/usr/bin/virsh', 'detach-disk'
+		cmd = ['sudo', '/usr/bin/virsh', 'detach-disk',
                        domain_name, target_device]
 
                 print >> sys.stderr,  'unmount command: ' + cmd
