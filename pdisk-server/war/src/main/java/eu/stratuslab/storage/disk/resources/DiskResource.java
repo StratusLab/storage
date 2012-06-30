@@ -56,7 +56,7 @@ public class DiskResource extends DiskBaseResource {
 
 		if (!hasSufficientRightsToView(disk)) {
 			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
-					"insuffient access rights to view disk (" + getDiskId()
+					"insufficient access rights to view disk (" + getDiskId()
 							+ ")");
 		}
 
