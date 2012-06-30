@@ -203,9 +203,15 @@ class PersistentDisk:
 		Mount/Unmount display device to a VM
 	"""
 	def mount(self,vm_id,disk_name,target_device):
+
 		hypervisor_device=vm_dir+"/"+str(vm_id)+"/images/"+disk_name
+
 		domain_name="one-"+str(vm_id)
-		cmd="sudo /usr/bin/virsh attach-disk "+domain_name+" "+hypervisor_device+" "+target_device
+
+		cmd = ['sudo', '/usr/bin/virsh', 'attach-disk', 
+                       domain_name, hypervisor_device, target_device]
+
+                print >> sys.stderr,  'mount command: ' + cmd
 		retcode=call(cmd,shell=True)
 		if retcode != 0:
 			msg = "mount: error mounting disk on hypervisor (%d)" % retcode
@@ -213,7 +219,13 @@ class PersistentDisk:
 
 	def umount(self,vm_id,target_device):
 		domain_name="one-"+str(vm_id)
+
 		cmd="sudo /usr/bin/virsh detach-disk "+domain_name+" "+target_device
+
+		cmd = ['sudo', '/usr/bin/virsh', 'detach-disk'
+                       domain_name, target_device]
+
+                print >> sys.stderr,  'unmount command: ' + cmd
 		retcode=call(cmd,shell=True)
 		if retcode != 0:
 			msg = "unmount: error dismounting disk from hypervisor (%d)" % retcode
@@ -382,41 +394,42 @@ class getTurlPersistentDiskException(PersistentDiskException):
 def do_up_operations(pdisk):
         try:
                 if not options.no_check:
-                        print "Checking for existing mount..."
+                        print >> sys.stderr, "Checking for existing mount..."
                         pdisk.check_mount(login,pswd)
                 if options.registration:
-                        print "Registering mount with pdisk service..."
+                        print >> sys.stderr, "Registering mount with pdisk service..."
                         pdisk.register(login,pswd,options.vm_id)
                 if options.attach:
-                        print "Attaching disk to hypervisor..."
+                        print >> sys.stderr, "Attaching disk to hypervisor..."
                         pdisk.attach()
                 if options.link:
-                        print "Linking disk for virtual machine..."
+                        print >> sys.stderr, "Linking disk for virtual machine..."
                         src = pdisk.image_storage()
                         dst = vm_dir+"/"+str(options.vm_id)+"/images/"+options.disk_name
                         pdisk.link(src,dst)
                 if options.mount:
-                        print "Mounting disk on virtual machine..."
+                        print >> sys.stderr, "Mounting disk on virtual machine..."
                         pdisk.mount(options.vm_id,options.disk_name,options.target)
         except CheckPersistentDiskException as e:
-                print e
+                print >> sys.stderr, e
                 exit(1)
         except RegisterPersistentDiskException as e:
-                print e
+                print >> sys.stderr, e
                 exit(1)
         except AttachPersistentDiskException as e:
-                print e
+                print >> sys.stderr, e
                 if options.registration:
                         pdisk.unregister(login,pswd,options.vm_id)
                 exit(1)
         except LinkPersistentDiskException as e:
-                print e
+                print >> sys.stderr, e
                 if options.attach:
                         pdisk.detach()
                 if options.registration:
                         pdisk.unregister(login,pswd,options.vm_id)
+                exit(1)
         except MountPersistentDiskException as e:
-                print e
+                print >> sys.stderr, e
 
                 if options.link:
                         pdisk.unlink(dst)
@@ -430,35 +443,36 @@ def do_up_operations(pdisk):
 def do_down_operations(pdisk):
         try:
                 if options.mount:
-                        print "Unmount the disk from the virtual machine..."
+                        print >> sys.stderr, "Unmount the disk from the virtual machine..."
                         pdisk.umount(options.vm_id,options.target)
                 if options.link:
-                        print "Unlink the disk from the virtual machine..."
+                        print >> sys.stderr, "Unlink the disk from the virtual machine..."
                         dst = vm_dir+"/"+str(options.vm_id)+"/images/"+options.disk_name
                         pdisk.unlink(dst)
                 if options.attach:
-                        print "Detach the disk from the hypervisor..."
+                        print >> sys.stderr, "Detach the disk from the hypervisor..."
                         pdisk.detach()
                 if options.registration:
-                        print "Remove mount from the pdisk service..."
+                        print >> sys.stderr, "Remove mount from the pdisk service..."
                         pdisk.unregister(login,pswd,options.vm_id)
         except MountPersistentDiskException as e:
-                print e
+                print >> sys.stderr, e
                 exit(1)
-        except LinkPersistentDiskException:
-                print "Error while try to unlink %s" % dst
+        except LinkPersistentDiskException as e:
+                print >> sys.stderr, e
+                exit(1)
         except AttachPersistentDiskException as e:
-                print e
+                print >> sys.stderr, e
                 exit(1)
         except RegisterPersistentDiskException as e:
-                print e
+                print >> sys.stderr, e
                 exit(1)
 
 def __init__():
 	try:
 		global_pdisk = PersistentDisk(options.persistent_disk_id,options.turl)
 	except getTurlPersistentDiskException:
-		print "Error while trying to retrieve %s" % options.persistent_disk_id
+		print >> sys.stderr, "Error while trying to retrieve %s" % options.persistent_disk_id
 		return -1
 	global vm_dir
 
@@ -467,7 +481,7 @@ def __init__():
 	elif global_pdisk.protocol == "file" :
 		pdisk = FilePersistentDisk(global_pdisk,options.turl)
 	else :
-		print "Protocol "+global_pdisk.protocol+" not supported"
+		print >> sys.stderr, "Protocol "+global_pdisk.protocol+" not supported"
                 exit(1)
 
 	if options.operation == "up":
