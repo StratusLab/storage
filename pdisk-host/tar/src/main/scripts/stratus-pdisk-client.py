@@ -36,6 +36,7 @@ import json
 from StringIO import StringIO
 from urllib import urlencode
 from subprocess import call
+from time import sleep
 import commands
 
 sample_example="""
@@ -190,8 +191,17 @@ class PersistentDisk:
                         if os.path.lexists(dst):
 				os.unlink(dst)
 			os.symlink(src,dst)
-		except:
-                        msg = 'link: error while linking %s to %s' % (src, dst)
+
+			if not os.path.lexists(dst):
+				msg = 'link: failed to create symlink %s' % dst
+				raise LinkPersistentDiskException(msg)
+
+			if not os.path.exists(dst):
+				msg = 'link: created broken symlink from %s to %s' % (src,dst)
+				raise LinkPersistentDiskException(msg)
+
+		except Exception as e:
+                        msg = 'link: error while linking %s to %s; %s' % (src, dst, e)
 			raise LinkPersistentDiskException(msg)
 
 	def unlink(self,link):
@@ -208,8 +218,8 @@ class PersistentDisk:
 
 		domain_name="one-"+str(vm_id)
 
-		cmd = ['sudo', '/usr/bin/virsh', 'attach-disk', 
-                       domain_name, hypervisor_device, target_device]
+		cmd = " ".join(['sudo', '/usr/bin/virsh', 'attach-disk', 
+                       domain_name, hypervisor_device, target_device])
 
                 print >> sys.stderr,  'mount command: ' + cmd
 		retcode=call(cmd,shell=True)
@@ -220,8 +230,8 @@ class PersistentDisk:
 	def umount(self,vm_id,target_device):
 		domain_name="one-"+str(vm_id)
 
-		cmd = ['sudo', '/usr/bin/virsh', 'detach-disk',
-                       domain_name, target_device]
+		cmd = " ".join(['sudo', '/usr/bin/virsh', 'detach-disk',
+                       domain_name, target_device])
 
                 print >> sys.stderr,  'unmount command: ' + cmd
 		retcode=call(cmd,shell=True)
@@ -295,6 +305,26 @@ class IscsiPersistentDisk(PersistentDisk):
 
 	_unix_device_path='/dev/disk/by-path/'
 
+	def _wait_until_appears(self):
+		path = self.image_storage()
+		iteration = 0
+		while not os.path.exists(path):
+			iteration = iteration + 1
+			if iteration > 5:
+				msg = "attach: storage path (%s) did not appear" % path
+				raise AttachPersistentDiskException(msg)
+			sleep(1)
+
+	def _wait_until_disappears(self):
+		path = self.image_storage()
+		iteration = 0
+		while os.path.exists(path):
+			iteration = iteration + 1
+			if iteration > 5:
+				msg = "detach: storage path (%s) did not disappear" % path
+				raise AttachPersistentDiskException(msg)
+			sleep(1)
+
 	def image_storage(self):
 		__portal__    = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
 		__portal_ip__ = socket.gethostbyname( __portal__.group('server') )
@@ -322,6 +352,9 @@ class IscsiPersistentDisk(PersistentDisk):
 			msg = "attach: error logging in iSCSI disk session (%d)" % retcode
 			raise AttachPersistentDiskException(msg)
 
+		# Seems to be a problem with the device by path being instantly available.
+		self._wait_until_appears()
+
 	def detach(self):
 		__portal__    = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
 		__portal_ip__ = socket.gethostbyname(__portal__.group('server'))
@@ -339,6 +372,9 @@ class IscsiPersistentDisk(PersistentDisk):
 		if retcode != 0:
                         msg = 'detach: error unregistering iSCSI disk with hypervisor (%s)' % retcode
 			raise AttachPersistentDiskException(msg)
+
+		# Seems to be a problem with the device by path being instantly unavailable.
+		self._wait_until_disappears()
 
 	def __image2iqn__(self, str):
 		__iqn__ = re.match(r"(?P<iqn>.*:.*):(?P<lun>.*)", str)
@@ -405,6 +441,7 @@ def do_up_operations(pdisk):
                         src = pdisk.image_storage()
                         dst = vm_dir+"/"+str(options.vm_id)+"/images/"+options.disk_name
                         pdisk.link(src,dst)
+			print >> sys.stderr, "Created link: " + dst
                 if options.mount:
                         print >> sys.stderr, "Mounting disk on virtual machine..."
                         pdisk.mount(options.vm_id,options.disk_name,options.target)
