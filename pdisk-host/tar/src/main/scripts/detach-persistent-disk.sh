@@ -23,20 +23,12 @@ then
 fi
 
 detach_nfs() {
-    local UUID_URL="$1"
-    
-    PORTAL=`echo $UUID_URL | cut -d ':' -f 2`
-    PORTAL_PORT=`echo $UUID_URL | cut -d ':' -f 3`
-    DISK_UUID=`echo $UUID_URL | cut -d ':' -f 4`
+    # No-op
 }
 
 detach_iscsi() {
     local UUID_URL="$1"
     
-    PORTAL=`echo $UUID_URL | cut -d ':' -f 2`
-    PORTAL_PORT=`echo $UUID_URL | cut -d ':' -f 3`
-    DISK_UUID=`echo $UUID_URL | cut -d ':' -f 4`
-
     vms_dir=$(dirname $(dirname $VM_ID))
     /usr/sbin/stratus-pdisk-client.py \
         --username $PDISK_USER --password $PDISK_PSWD \

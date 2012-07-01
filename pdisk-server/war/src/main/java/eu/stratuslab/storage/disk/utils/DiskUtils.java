@@ -88,6 +88,10 @@ public final class DiskUtils {
 		getDiskStorage().delete(uuid);
 	}
 
+	public static String getDiskId(String host, int port, String uuid) {
+		return String.format("pdisk:%s:%d:%s", host, port, uuid);
+	}
+
 	public static void attachHotplugDisk(String serviceName, int servicePort,
 			String node, String vmId, String diskUuid, String target) {
 
@@ -102,8 +106,7 @@ public final class DiskUtils {
 		cmd.add("--mount");
 
 		cmd.add("--pdisk-id");
-		cmd.add("pdisk:" + serviceName + ":" + String.valueOf(servicePort)
-				+ ":" + diskUuid);
+		cmd.add(getDiskId(serviceName, servicePort, diskUuid));
 
 		cmd.add("--target");
 		cmd.add(target);
@@ -149,8 +152,7 @@ public final class DiskUtils {
 		cmd.add("--mount");
 
 		cmd.add("--pdisk-id");
-		cmd.add("pdisk:" + serviceName + ":" + String.valueOf(servicePort)
-				+ ":" + diskUuid);
+		cmd.add(getDiskId(serviceName, servicePort, diskUuid));
 
 		cmd.add("--target");
 		cmd.add(target);
