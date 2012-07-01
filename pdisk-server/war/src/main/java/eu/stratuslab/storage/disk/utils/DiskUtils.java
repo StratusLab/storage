@@ -115,7 +115,7 @@ public final class DiskUtils {
 		cmd.add(vmId);
 
 		cmd.add("--vm-disk-name");
-		cmd.add("pdisk-" + diskUuid);
+		cmd.add(getDiskId(serviceName, servicePort, diskUuid));
 
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		ProcessUtils.execute(pb, "Unable to attach persistent disk");
@@ -161,7 +161,7 @@ public final class DiskUtils {
 		cmd.add(vmId);
 
 		cmd.add("--vm-disk-name");
-		cmd.add("pdisk-" + diskUuid);
+		cmd.add(getDiskId(serviceName, servicePort, diskUuid));
 
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		ProcessUtils.execute(pb, "Unable to detach persistent disk");
