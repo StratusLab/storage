@@ -22,18 +22,6 @@ then
     exit 1
 fi
 
-
-deregister_disks() {
-    if [ "x$SCRIPT" != "xpython" ]
-    then
-    	local NODE=$(host -c IN $(hostname) | awk '{print $4}')
-    	# Only username/password authentication is supported for the pdisk user.
-    	local DEREGISTER_CMD="$CURL -k -u ${PDISK_USER}:${PDISK_PSWD} -X DELETE https://${PORTAL}:${PORTAL_PORT}/pswd/disks/${DISK_UUID}/mounts/${DISK_UUID}_${VM_ID}"
-    	echo "$DEREGISTER_CMD"
-    	$DEREGISTER_CMD
-    fi
-}
-
 detach_nfs() {
     local UUID_URL="$1"
     
@@ -49,43 +37,11 @@ detach_iscsi() {
     PORTAL_PORT=`echo $UUID_URL | cut -d ':' -f 3`
     DISK_UUID=`echo $UUID_URL | cut -d ':' -f 4`
 
-    if [ "x$SCRIPT" = "xpython" ]
-    then
-        vms_dir=$(dirname $(dirname $VM_ID))
-        /usr/sbin/stratus-pdisk-client.py --username $PDISK_USER --password $PDISK_PSWD --pdisk-id $UUID_URL --vm-id $VM_ID --register --attach --op down
-    else
-    	# Must contact the server to discover what disks are available.
-    	local DISCOVER_CMD="sudo $ISCSIADM --mode discovery --type sendtargets --portal $PORTAL -o nonpersistent"
-    	local DISCOVER_OUT=`$DISCOVER_CMD | grep -m 1 $DISK_UUID`
-
-    	if [ "x$DISCOVER_OUT" = "x" ]
-    	then
-        	echo "Unable to find disk $DISK_UUID at $PORTAL"
-        	return
-    	fi
-
-    	# Portal informations
-    	local PORTAL_IP=`echo $DISCOVER_OUT | cut -d ',' -f 1`
-
-    	# Disk informations
-    	local DISK=`echo $DISCOVER_OUT | cut -d ' ' -f 2` 
-    	local LUN=`echo $DISCOVER_OUT | cut -d ',' -f 2 | cut -d ' ' -f 1`
-    	local DISK_PATH="/dev/disk/by-path/ip-$PORTAL_IP-iscsi-$DISK-lun-$LUN"
-
-    	# Detach the disk only if it exists and if no one else is using it
-    	[ -b $DISK_PATH ] || return
-    	if [ `sudo /usr/sbin/lsof $DISK_PATH | wc -l` -eq 0 ]
-    	then
-        	local DETACH_CMD="sudo $ISCSIADM --mode node --portal $PORTAL_IP --targetname $DISK --logout"
-		local iscsi_unregister="sudo $ISCSIADM --mode node --portal $PORTAL_IP --target $DISK -o delete"
-        	echo "$DETACH_CMD"
-        	$DETACH_CMD
-		$iscsi_unregister
-    	else
-		echo "Disk is currently used..."
-		exit 1
-    	fi
-    fi
+    vms_dir=$(dirname $(dirname $VM_ID))
+    /usr/sbin/stratus-pdisk-client.py \
+        --username $PDISK_USER --password $PDISK_PSWD \
+        --pdisk-id $UUID_URL --vm-id $VM_ID \
+        --register --attach --op down
 }
 
 detach_all_disks() {
@@ -98,23 +54,11 @@ detach_all_disks() {
     do
         echo "detach_${SHARE_TYPE} $DISK_INFO"
         detach_${SHARE_TYPE} $DISK_INFO
-        deregister_disks
     done
 }
 
-detach_hotplug_disk() {
-	if [ "x$SCRIPT" != "xpython" ]
-	then
-		sudo /usr/bin/virsh detach-disk one-$VM_ID $TARGET
-		detach_${SHARE_TYPE} $UUID_URL
-	fi
-}
-
-if [ "x$TARGET" = "x" ]
-then 
+if [ "x$TARGET" = "x" ]; then 
     detach_all_disks
-else
-    detach_hotplug_disk
 fi
 
 exit 0
