@@ -39,13 +39,13 @@ attach_iscsi() {
     	/usr/sbin/stratus-pdisk-client.py \
             --username $PDISK_USER --password $PDISK_PSWD \
             --pdisk-id $UUID_URL --vm-dir $vms_dir --vm-id $VM_ID \
-            --vm-disk-name $UUID_URL \
+            --vm-disk-name $device_name \
             --target $TARGET --attach --link --mount --op up
     else
     	/usr/sbin/stratus-pdisk-client.py \
             --username $PDISK_USER --password $PDISK_PSWD \
             --pdisk-id $UUID_URL --vm-dir $vms_dir --vm-id $VM_ID \
-            --vm-disk-name $UUID_URL \
+            --vm-disk-name $device_name \
             --register --attach --link --op up
     fi
 }
