@@ -23,7 +23,7 @@ then
 fi
 
 detach_nfs() {
-    # No-op
+    echo "detach_nfs"
 }
 
 detach_iscsi() {
