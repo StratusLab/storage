@@ -71,7 +71,7 @@ public final class DiskUtils {
 		cowDisk.setBaseDiskUuid(disk.getUuid());
 		cowDisk.setSize(disk.getSize());
 		cowDisk.setUsersCount(1);
-		cowDisk.setIdentifier(disk.getIdentifier());
+		cowDisk.setIdentifier("snapshot:" + disk.getUuid());
 		disk.incrementUserCount();
 		return cowDisk;
 	}
