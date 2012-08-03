@@ -308,6 +308,12 @@
                 <source>
                   <location>src/main/config</location>
                   <includes>
+                    <include>iscsi.conf</include>
+                  </includes>
+                </source>
+                <source>
+                  <location>src/main/config</location>
+                  <includes>
                     <include>pdisk-backend.cfg.ref</include>
                   </includes>
                 </source>
