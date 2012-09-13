@@ -378,9 +378,9 @@ class LVMBackend (Backend):
   backend_cmds = {'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
                   'create':[ '/sbin/lvcreate', '-L', '%%SIZE%%G', '-n', '%%UUID%%', '%%VOLUME_NAME%%' ],
                   'dmremove':[ '/sbin/dmsetup', 'remove', '%%DM_VOLUME_PATH%%' ],
-                  'add_device':[ '/bin/sed', '-i', '1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>','/etc/stratuslab/iscsi.conf' ],
+                  'add_device':[ '/bin/sed', '-i', '"1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>"','/etc/stratuslab/iscsi.conf' ],
                   'reload_iscsi': [ '/usr/sbin/tgt-admin','--update','ALL'],
-                  'remove_device': [ '/bin/sed', '-i', '/<target iqn.2011-01.eu.stratuslab:.*%%UUID%%.*/,+2d', '/etc/stratuslab/iscsi.conf' ],
+                  'remove_device': [ '/bin/sed', '-i', '"/<target iqn.2011-01.eu.stratuslab:.*%%UUID%%.*/,+2d"', '/etc/stratuslab/iscsi.conf' ],
                   'remove':[ '/sbin/lvremove', '-f', '%%LOGVOL_PATH%%' ],
                   'rebase':[ '/bin/dd', 'if=%%LOGVOL_PATH%%', 'of=%%NEW_LOGVOL_PATH%%'],
                   # lvchange doesn't work with clone. Normally unneeded as lvremove -f (remove) does the same
@@ -390,7 +390,7 @@ class LVMBackend (Backend):
                   'getturl' : ['/bin/echo', 'iscsi://%%PORTAL%%/iqn.2011-01.eu.stratuslab:%%UUID%%:1' ],
                   }
   
-  backend_failure_cmds = {'remove': {'add_device' : [ 'sed', '-i', '1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>','/etc/stratuslab/iscsi.conf' ]}
+  backend_failure_cmds = {'remove': {'add_device' : [ 'sed', '-i', '"1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>"','/etc/stratuslab/iscsi.conf' ]}
                                     #{'delete' : 'add_device'}
                           }
 
