@@ -267,14 +267,93 @@ public final class DiskUtils {
 
 	public static void createCompressedDisk(String uuid) {
 
-		String diskLocation = attachHotplugDisk(uuid);
-		String cachedDisk = FileUtils.getCachedDiskLocation(uuid);
+		String diskLocation = attachDiskToThisHost(uuid);
 
-		FileUtils.copyFile(diskLocation, cachedDisk);
-
-		ProcessBuilder pb = new ProcessBuilder(
-				RootApplication.CONFIGURATION.GZIP_CMD, "-f", cachedDisk);
+		ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c",
+				RootApplication.CONFIGURATION.GZIP_CMD + " -f -c " +
+				diskLocation + " > " + getCompressedDiskLocation(uuid));
 		ProcessUtils.execute(pb, "Unable to compress disk " + uuid);
+		
+		detachDiskFromThisHost(uuid);
+	}
+
+	private static String attachDiskToThisHost(String uuid) {
+
+		String host = "localhost";
+		int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
+		
+		String linkName = getLinkedVolumeInDownlaodCache(uuid);
+
+		List<String> cmd = getCommandAttachAndLinkLocal(uuid, host, port,
+				linkName);
+
+		ProcessBuilder pb = new ProcessBuilder(cmd);
+		ProcessUtils.execute(pb, "Unable to attach persistent disk");
+
+		return linkName;
+	}
+
+	private static void detachDiskFromThisHost(String uuid) {
+		unlinkVolumeFromDownloadCache(uuid);
+
+		String host = "localhost";
+		int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
+
+		List<String> cmd = getCommandDetachLocal(uuid, host, port);
+
+		ProcessBuilder pb = new ProcessBuilder(cmd);
+		ProcessUtils.execute(pb, "Unable to detach persistent disk");
+	}
+
+	private static void unlinkVolumeFromDownloadCache(String uuid) {
+		String linkName = getLinkedVolumeInDownlaodCache(uuid);
+		File file = new File(linkName);
+		if (!file.delete()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Failed deleting linked file: " + linkName);
+		}
+	}
+
+	private static List<String> getCommandAttachAndLinkLocal(String uuid,
+			String host, int port, String linkName) {
+		List<String> cmd = new ArrayList<String>();
+
+		cmd.add("/usr/sbin/stratus-pdisk-client.py");
+
+		cmd.add("--op");
+		cmd.add("up");
+
+		cmd.add("--attach");
+
+		cmd.add("--pdisk-id");
+		cmd.add(getDiskId(host, port, uuid));
+
+		cmd.add("--link-to");
+		cmd.add(linkName);
+
+		return cmd;
+	}
+	
+	private static List<String> getCommandDetachLocal(String uuid, String host,
+			int port) {
+		List<String> cmd = new ArrayList<String>();
+
+		cmd.add("/usr/sbin/stratus-pdisk-client.py");
+
+		cmd.add("--op");
+		cmd.add("down");
+
+		cmd.add("--attach");
+
+		cmd.add("--pdisk-id");
+		cmd.add(getDiskId(host, port, uuid));
+
+		return cmd;
+	}
+	
+	private static String getLinkedVolumeInDownlaodCache(String uuid) {
+		return RootApplication.CONFIGURATION.CACHE_LOCATION + "/" + uuid
+				+ ".link";
 	}
 
 	public static String getCompressedDiskLocation(String uuid) {
