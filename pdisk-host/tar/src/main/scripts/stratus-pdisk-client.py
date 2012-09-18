@@ -50,8 +50,9 @@ vm_dir=/var/lib/one
 [iscsi]
 iscsiadm=/usr/sbin/iscsiadm
 """
+CONFFILE='/etc/stratuslab/pdisk-host.conf'
 config = ConfigParser.RawConfigParser()
-config.read('/etc/stratuslab/pdisk-host.conf')
+config.read(CONFFILE)
 
 iscsiadm=config.get("iscsi","iscsiadm")
 login=config.get("main","pdisk_user")
@@ -95,6 +96,9 @@ action.add_option("--register", dest="registration", action="store_true",
 action.add_option("--link", dest="link", action="store_true",
   help="link/unlink attached disk in Virtual Machine directory"
 )
+action.add_option("--link-to", dest="link_to", default="",
+  help="link attached disk to the specified link name"
+)
 action.add_option("--mount", dest="mount", action="store_true",
   help="mount/unmount disk into Virtual Machine"
 )
@@ -110,24 +114,20 @@ parser.add_option_group(action)
 if not options.operation:
 	raise parser.error("--op option is mandatory")
 
-if options.attach:
-	if not options.persistent_disk_id :
-		raise parser.error("--attach option needs --pdisk-id option")
-
-if options.registration:
-	if not options.persistent_disk_id or not options.vm_id:
-		raise parser.error("--register option needs --pdisk-id and --vm-id options")
-
-if options.link:
-	if not options.persistent_disk_id or  ( not vm_dir and not options.vm_dir ) or not options.vm_id or not options.disk_name :
-		raise parser.error("--link option needs --pdisk-id, --vm-disk-name, --vm-id options, --vm-dir is not defined in configuration file (/etc/stratuslab/pdisk-host.conf)")
-
-if options.mount:
-	if not options.persistent_disk_id or not options.vm_id or not options.target:
-		raise parser.error("--mount option needs --pdisk-id, --target and --vm-id options")
-
 if not options.persistent_disk_id:
 	raise parser.error("--pdisk-id option is mandatory")
+
+if options.registration:
+	if not options.vm_id:
+		raise parser.error("--register option needs --vm-id options")
+
+if options.link:
+	if ( not vm_dir and not options.vm_dir ) or not options.vm_id or not options.disk_name :
+		raise parser.error("--link option needs --vm-disk-name, --vm-id options and --vm-dir if not defined in %s" % CONFFILE)
+
+if options.mount:
+	if not options.vm_id or not options.target:
+		raise parser.error("--mount option needs --target and --vm-id options")
 
 if options.vm_dir:
 	vm_dir = options.vm_dir
@@ -436,6 +436,10 @@ def do_up_operations(pdisk):
                 if options.attach:
                         print >> sys.stderr, "Attaching disk to hypervisor..."
                         pdisk.attach()
+                if options.link_to:
+                        print >> sys.stderr, "Linking disk to %s" % options.link_to
+                        src = pdisk.image_storage()
+                        pdisk.link(src, options.link_to)
                 if options.link:
                         print >> sys.stderr, "Linking disk for virtual machine..."
                         src = pdisk.image_storage()
