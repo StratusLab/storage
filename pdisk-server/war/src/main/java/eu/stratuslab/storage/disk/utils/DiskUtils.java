@@ -223,27 +223,20 @@ public final class DiskUtils {
 
 	public static void createAndPopulateDiskLocal(Disk disk) {
 
+		createDisk(disk);
+
 		BackEndStorage diskStorage = getDiskStorage();
 
 		String uuid = disk.getUuid();
-		String tmpVmId = DiskUtils.generateUUID();
 
-		String diskLocation = diskStorage.getDiskLocation(tmpVmId, uuid);
-		diskStorage.map(uuid);
 		String cachedDisk = FileUtils.getCachedDiskLocation(uuid);
-
-		int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
-		String host = "localhost";
-
-		DiskUtils.attachHotplugDisk(host, port, host, tmpVmId, disk.getUuid(),
-				host);
+		String diskLocation = attachDiskToThisHost(uuid);
 
 		FileUtils.copyFile(cachedDisk, diskLocation);
 
 		File cachedDiskFile = new File(cachedDisk);
 
 		long size = convertBytesToGigaBytes(cachedDiskFile.length());
-
 		disk.setSize(size);
 
 		boolean success = cachedDiskFile.delete();
@@ -256,6 +249,7 @@ public final class DiskUtils {
 
 		diskStorage.unmap(uuid);
 
+		detachDiskFromThisHost(uuid);
 	}
 
 	// FIXME: need to implement this for real!
