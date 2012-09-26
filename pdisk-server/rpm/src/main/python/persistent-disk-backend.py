@@ -535,14 +535,16 @@ class LUN:
     for cmd_toks,successMsg,failure_cmd_toks in self.proxy.getCmd(action):
       # When returned command for action is None, it means that the action is not implemented
       if cmd_toks == None:
-        abort("Action '%s' not implemented by SCSI back-end type '%s'" % (action,self.proxy.getType()))
+        abort("Action '%s' not implemented by back-end type '%s'" % (action,self.proxy.getType()))
       command = Command(action,self.parseCmd(cmd_toks),successMsg)
       command.execute()
       status,optInfo = command.checkStatus()
       if status != 0 and failure_cmd_toks:
         command = Command(action,self.parseCmd(failure_cmd_toks),successMsg)
         command.execute()
-        status,optInfo = command.checkStatus()        
+        status_,optInfo_ = command.checkStatus()        
+        if status_ != 0:
+        	print "Rollback command",failure_cmd_toks,"failed:", optInfo_
         break
       # If failure_cmd_toks is an amtpy string, stop LUN action processing
       elif failure_cmd_toks == '':
