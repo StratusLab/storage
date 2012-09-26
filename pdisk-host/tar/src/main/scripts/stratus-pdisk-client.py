@@ -359,18 +359,20 @@ class IscsiPersistentDisk(PersistentDisk):
 		__portal__    = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
 		__portal_ip__ = socket.gethostbyname(__portal__.group('server'))
 
+		hostname = socket.gethostname()
+
 		cmd = 'sudo %s --mode node --portal %s:%s --target %s --logout' % (
                         iscsiadm,  __portal_ip__,  __portal__.group('port'), self.iqn)
 		retcode = call(cmd, shell=True)
 		if retcode != 0:
-                        msg = 'detach: error detaching iSCSI disk from hypervisor (%d)' % retcode
+                        msg = 'detach: error detaching iSCSI disk from node %s (%s)' % (hostname, retcode)
 			raise AttachPersistentDiskException(msg)
 
 		unreg = "sudo %s --mode node --portal %s:%s --target %s -o delete" % (
                         iscsiadm, __portal_ip__,  __portal__.group('port'), self.iqn) 
 		retcode = call(unreg, shell=True)
 		if retcode != 0:
-                        msg = 'detach: error unregistering iSCSI disk with hypervisor (%s)' % retcode
+                        msg = 'detach: error unregistering iSCSI disk from node %s (%s)' % (hostname, retcode)
 			raise AttachPersistentDiskException(msg)
 
 		# Seems to be a problem with the device by path being instantly unavailable.
