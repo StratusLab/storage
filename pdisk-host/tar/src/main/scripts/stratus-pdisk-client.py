@@ -368,6 +368,8 @@ class IscsiPersistentDisk(PersistentDisk):
                         msg = 'detach: error detaching iSCSI disk from node %s (%s)' % (hostname, retcode)
 			raise AttachPersistentDiskException(msg)
 
+		sleep(2)
+		
 		unreg = "sudo %s --mode node --portal %s:%s --target %s -o delete" % (
                         iscsiadm, __portal_ip__,  __portal__.group('port'), self.iqn) 
 		retcode = call(unreg, shell=True)
