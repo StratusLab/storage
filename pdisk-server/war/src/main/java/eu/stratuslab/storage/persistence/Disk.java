@@ -26,9 +26,9 @@ import eu.stratuslab.storage.disk.utils.MiscUtils;
 @Entity
 @SuppressWarnings("serial")
 @NamedQueries({
-		@NamedQuery(name = "allDisks", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d ORDER BY d.creation DESC"),
-		@NamedQuery(name = "allDisksByUser", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.owner = :user ORDER BY d.creation DESC"),
-		@NamedQuery(name = "allDisksByIdentifier", query = "SELECT NEW eu.stratuslab.storage.persistence.DiskView(d.uuid, d.tag, d.size, d.usersCount, d.owner, d.quarantine, d.identifier) FROM Disk d WHERE d.identifier = :identifier ORDER BY d.creation DESC") })
+		@NamedQuery(name = "allDisks", query = "SELECT d FROM Disk d ORDER BY d.creation DESC"),
+		@NamedQuery(name = "allDisksByUser", query = "SELECT d FROM Disk d WHERE d.owner = :user ORDER BY d.creation DESC"),
+		@NamedQuery(name = "allDisksByIdentifier", query = "SELECT d FROM Disk d WHERE d.identifier = :identifier ORDER BY d.creation DESC") })
 public class Disk implements Serializable {
 
 	public enum DiskType {
@@ -57,10 +57,10 @@ public class Disk implements Serializable {
 		 */
 		DATA_IMAGE_RAW_READ_WRITE
 	}
-	
+
 	public static final String STATIC_DISK_TARGET = "static";
-    public static final String UUID_KEY = "uuid";
-    public static final String DISK_VISIBILITY_KEY = "visibility";
+	public static final String UUID_KEY = "uuid";
+	public static final String DISK_VISIBILITY_KEY = "visibility";
 	public static final String DISK_SIZE_KEY = "size";
 	public static final String DISK_IDENTIFER_KEY = "Marketplace_id";
 
@@ -101,9 +101,10 @@ public class Disk implements Serializable {
 	public static List<DiskView> listAll() {
 		EntityManager em = PersistenceUtil.createEntityManager();
 		Query q = em.createNamedQuery("allDisks");
-		List<DiskView> list = q.getResultList();
+		List<Disk> disks = q.getResultList();
+		List<DiskView> views = convertDisksToDiskViews(disks);		
 		em.close();
-		return list;
+		return views;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -111,21 +112,33 @@ public class Disk implements Serializable {
 		EntityManager em = PersistenceUtil.createEntityManager();
 		Query q = em.createNamedQuery("allDisksByUser");
 		q.setParameter("user", user);
-		List<DiskView> list = q.getResultList();
+		List<Disk> disks = q.getResultList();
+		List<DiskView> views = convertDisksToDiskViews(disks);		
 		em.close();
-		return list;
+		return views;
+	}
+
+	private static List<DiskView> convertDisksToDiskViews(List<Disk> disks) {
+		List<DiskView> views = new ArrayList<DiskView>();
+		for (Disk d : disks) {
+			views.add(new DiskView(d.getUuid(), d.getTag(), d.getSize(), d
+					.getUsersCount(), d.getOwner(), d.getQuarantine(), d
+					.getIdentifier()));
+		}
+		return views;
 	}
 
 	@SuppressWarnings("unchecked")
 	public static boolean identifierExists(String identifier) {
-		if("".equals(identifier)) {
+		if ("".equals(identifier)) {
 			return false;
 		}
 		EntityManager em = PersistenceUtil.createEntityManager();
 		Query q = em.createNamedQuery("allDisksByIdentifier");
 		q.setParameter("identifier", identifier);
-		List<DiskView> list = q.getResultList();
-		return list.size() > 0;
+		List<Disk> disks = q.getResultList();
+		em.close();
+		return disks.size() > 0;
 	}
 
 	public Disk() {
@@ -143,25 +156,26 @@ public class Disk implements Serializable {
 	private String deletion = ""; // deleted timestamp
 
 	private int usersCount = 0;
-	
+
 	private String tag = "";
 	private long size = -1;
 	private String quarantine = ""; // quarantine start date
 
 	private String identifier = ""; // Marketplace identifier
-	
+
 	private String homeUrl = ""; // Marketplace url
 
 	private boolean seed = false; // original... don't delete!
-	
+
 	private String baseDiskUuid;
-	
+
 	private DiskType type = DiskType.DATA_IMAGE_RAW_READ_WRITE;
-	
+
 	@MapKey(name = "id")
-	@OneToMany(mappedBy = "disk", fetch=FetchType.EAGER)
+	@OneToMany(mappedBy = "disk", fetch = FetchType.EAGER)
 	@ElementMap(name = "mounts", required = false, data = true, valueType = Mount.class)
-	private Map<String, Mount> mounts = new HashMap<String, Mount>(); // key is vmId
+	private Map<String, Mount> mounts = new HashMap<String, Mount>(); // key is
+																		// vmId
 
 	public String getUuid() {
 		return uuid;
@@ -192,7 +206,7 @@ public class Disk implements Serializable {
 	}
 
 	public int getUsersCount() {
-		if(type == DiskType.MACHINE_IMAGE_ORIGIN) {
+		if (type == DiskType.MACHINE_IMAGE_ORIGIN) {
 			return usersCount;
 		} else {
 			return mounts.size();
@@ -219,7 +233,8 @@ public class Disk implements Serializable {
 	}
 
 	/**
-	 * @param size in GB
+	 * @param size
+	 *            in GB
 	 */
 	public void setSize(long size) {
 		this.size = size;
@@ -324,7 +339,7 @@ public class Disk implements Serializable {
 
 	public String getGroup() {
 		StringBuffer group = new StringBuffer();
-		for(String user : this.group_) {
+		for (String user : this.group_) {
 			group.append(user + ", ");
 		}
 		return group.toString();
@@ -340,9 +355,9 @@ public class Disk implements Serializable {
 
 	public void setGroup(String group) {
 		ArrayList<String> list = new ArrayList<String>();
-		for(String user : group.split(",")) {
+		for (String user : group.split(",")) {
 			String trimmed = user.trim();
-			if(!"".equals(trimmed)) {
+			if (!"".equals(trimmed)) {
 				list.add(user.trim());
 			}
 		}
