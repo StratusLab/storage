@@ -44,7 +44,6 @@ public class DiskBaseResource extends BaseResource {
 	private static final String DISK_TYPE_KEY = "type";
 	private static final String DISK_SEED_KEY = "seed";
 	private static final String DISK_GROUP_KEY = "group";
-	private static final String USER_COUNT_KEY = "count";
 
 	protected Disk getDisk(Form form) {
 
@@ -125,11 +124,6 @@ public class DiskBaseResource extends BaseResource {
 			disk.setSeed(false);
 		}
 
-		String usersCount = form.getFirstValue(USER_COUNT_KEY);
-		if (usersCount != null) {
-			disk.setUsersCount(Integer.parseInt(usersCount));
-		}
-
 		return disk;
 	}
 
@@ -161,10 +155,6 @@ public class DiskBaseResource extends BaseResource {
 	protected Disk updateDisk(Disk disk) {
 		disk.store();
 		return disk;
-	}
-
-	protected int incrementUserCount(String uuid) {
-		return Disk.load(uuid).incrementUserCount();
 	}
 
 	protected Disk loadExistingDisk() {

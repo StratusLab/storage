@@ -162,7 +162,6 @@ public class DiskResource extends DiskBaseResource {
 		newDisk.setType(DiskType.MACHINE_IMAGE_ORIGIN);
 		newDisk.setSize(disk.getSize());
 		newDisk.setSeed(true);
-		newDisk.setUsersCount(0);
 		newDisk.setQuarantine("");
 
 		newDisk.store();
@@ -322,7 +321,6 @@ public class DiskResource extends DiskBaseResource {
 	}
 
 	private void deleteDisk(Disk disk) {
-		String parentUuid = disk.getBaseDiskUuid();
 		disk.remove();
 
 		try {
@@ -330,11 +328,6 @@ public class DiskResource extends DiskBaseResource {
 		} catch (ResourceException ex) {
 			disk.store(); // store it back since remove failed
 			throw (ex);
-		}
-
-		if (parentUuid != null) {
-			Disk parent = Disk.load(parentUuid);
-			parent.decrementUserCount();
 		}
 	}
 }

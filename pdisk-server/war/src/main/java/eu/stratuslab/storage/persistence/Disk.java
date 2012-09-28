@@ -28,6 +28,7 @@ import eu.stratuslab.storage.disk.utils.MiscUtils;
 @NamedQueries({
 		@NamedQuery(name = "allDisks", query = "SELECT d FROM Disk d ORDER BY d.creation DESC"),
 		@NamedQuery(name = "allDisksByUser", query = "SELECT d FROM Disk d WHERE d.owner = :user ORDER BY d.creation DESC"),
+		@NamedQuery(name = "countAllDisksByIdentifier", query = "SELECT COUNT(d) FROM Disk d WHERE d.identifier = :identifier"),
 		@NamedQuery(name = "allDisksByIdentifier", query = "SELECT d FROM Disk d WHERE d.identifier = :identifier ORDER BY d.creation DESC") })
 public class Disk implements Serializable {
 
@@ -141,6 +142,15 @@ public class Disk implements Serializable {
 		return disks.size() > 0;
 	}
 
+	public static int countSnapshots(String uuid) {
+		EntityManager em = PersistenceUtil.createEntityManager();
+		Query q = em.createNamedQuery("countAllDisksByIdentifier");
+		q.setParameter("identifier", "snapshot:" + uuid);
+		long count = (Long)q.getSingleResult();
+		em.close();
+		return (int)count;
+	}
+
 	public Disk() {
 		uuid = DiskUtils.generateUUID();
 	}
@@ -154,8 +164,6 @@ public class Disk implements Serializable {
 
 	private String creation = MiscUtils.getTimestamp();
 	private String deletion = ""; // deleted timestamp
-
-	private int usersCount = 0;
 
 	private String tag = "";
 	private long size = -1;
@@ -207,14 +215,10 @@ public class Disk implements Serializable {
 
 	public int getUsersCount() {
 		if (type == DiskType.MACHINE_IMAGE_ORIGIN) {
-			return usersCount;
+			return countSnapshots(getUuid());
 		} else {
 			return mounts.size();
 		}
-	}
-
-	public void setUsersCount(int count) {
-		this.usersCount = count;
 	}
 
 	public String getTag() {
@@ -246,30 +250,6 @@ public class Disk implements Serializable {
 
 	public void setIdentifier(String identifier) {
 		this.identifier = identifier;
-	}
-
-	public int incrementUserCount() {
-		EntityManager em = PersistenceUtil.createEntityManager();
-		EntityTransaction transaction = em.getTransaction();
-		transaction.begin();
-		Disk disk = em.merge(this);
-		disk.setUsersCount(disk.getUsersCount() + 1);
-		int count = disk.getUsersCount();
-		transaction.commit();
-		em.close();
-		return count;
-	}
-
-	public int decrementUserCount() {
-		EntityManager em = PersistenceUtil.createEntityManager();
-		EntityTransaction transaction = em.getTransaction();
-		transaction.begin();
-		Disk disk = em.merge(this);
-		disk.setUsersCount(disk.getUsersCount() - 1);
-		int count = disk.getUsersCount();
-		transaction.commit();
-		em.close();
-		return count;
 	}
 
 	public void setBaseDiskUuid(String uuid) {
