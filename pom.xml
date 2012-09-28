@@ -17,7 +17,7 @@
 
   <description>
     This repository contains the storage services used in the StratusLab
-    cloud.  This currently includes persistent storage with a "disk" 
+    cloud. This currently includes persistent storage with a "disk" 
     abstraction.
   </description>
 
