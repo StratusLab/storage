@@ -74,7 +74,7 @@
       <dependency>
 	<groupId>eu.stratuslab.metadata</groupId>
 	<artifactId>metadata</artifactId>
-	<version>3.0</version>
+	<version>3.2</version>
       </dependency>
       <dependency>
 	<groupId>eu.stratuslab.authn</groupId>
