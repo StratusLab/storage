@@ -229,7 +229,8 @@ public class DisksResource extends DiskBaseResource {
 				// it's ok
 			}
 		}
-		return DiskUtils.convertBytesToGigaBytes(file.length());
+		File inflatedFile = new File(inflatedName);
+		return DiskUtils.convertBytesToGigaBytes(inflatedFile.length());
 	}
 
 	private Map<String, Object> listDisks() {
