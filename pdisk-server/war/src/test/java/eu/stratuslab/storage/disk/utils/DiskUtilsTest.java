@@ -21,4 +21,18 @@ public class DiskUtilsTest {
 
 		assertThat(identifier, is("Nyuwnr8SOXWilAOWhWTELpytQKS"));
 	}
+
+	@Test
+	public void testConvertBytesToGigaBytes() {
+		assertThat(DiskUtils.convertBytesToGigaBytes(0L), is((long)1));
+
+		long oneGBofBytes = 1024*1024*1024L;
+		long twoGBofBytes = 2 * 1024*1024*1024L;
+
+		assertThat(DiskUtils.convertBytesToGigaBytes(oneGBofBytes - 1), is((long)1));
+		assertThat(DiskUtils.convertBytesToGigaBytes(oneGBofBytes), is((long)1));
+		assertThat(DiskUtils.convertBytesToGigaBytes(oneGBofBytes + 1), is((long)2));
+		assertThat(DiskUtils.convertBytesToGigaBytes(twoGBofBytes), is((long)2));
+		assertThat(DiskUtils.convertBytesToGigaBytes(twoGBofBytes + 1), is((long)3));
+	}
 }

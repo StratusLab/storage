@@ -250,10 +250,11 @@ public final class DiskUtils {
 		detachDiskFromThisHost(uuid);
 	}
 
-	// FIXME: need to implement this for real!
+	// FIXME: This always rounds up and does it starting from bytes.
+	//        Need to round up only starting from megabytes?
 	public static long convertBytesToGigaBytes(long sizeInBytes) {
-		long bytesInAGB = 1073741824;
-		long inGB = sizeInBytes / bytesInAGB;
+		double bytesInAGB = 1024 * 1024 * 1024;
+		long inGB = (long) Math.ceil(sizeInBytes / bytesInAGB);
 		return (inGB == 0 ? 1 : inGB);
 	}
 
