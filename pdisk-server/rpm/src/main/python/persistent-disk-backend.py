@@ -377,7 +377,6 @@ class LVMBackend (Backend):
   
   backend_cmds = {'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
                   'create':[ '/sbin/lvcreate', '-L', '%%SIZE%%G', '-n', '%%UUID%%', '%%VOLUME_NAME%%' ],
-                  'dmremove':[ '/sbin/dmsetup', 'remove', '%%DM_VOLUME_PATH%%' ],
                   'add_device':[ '/bin/sed', '-i', '1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>','/etc/stratuslab/iscsi.conf' ],
                   'reload_iscsi': [ '/usr/sbin/tgt-admin','--update','iqn.2011-01.eu.stratuslab:%%UUID%%'],
                   'remove_device': [ '/bin/sed', '-i', '/<target iqn.2011-01.eu.stratuslab:.*%%UUID%%.*/,+2d', '/etc/stratuslab/iscsi.conf' ],
