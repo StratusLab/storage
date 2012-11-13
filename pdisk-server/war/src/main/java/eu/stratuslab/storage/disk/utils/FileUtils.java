@@ -200,18 +200,16 @@ public final class FileUtils {
         return new File(RootApplication.CONFIGURATION.CACHE_LOCATION);
     }
 
-    public static String getCachedDiskLocation(String uuid) {
-        return RootApplication.CONFIGURATION.CACHE_LOCATION + "/" + uuid;
+    public static File getCachedDiskFile(String uuid) {
+        return new File(getUploadCacheDirectory(), uuid);
     }
 
     public static String getCompressedDiskLocation(String uuid) {
-        return getCachedDiskLocation(uuid) + ".gz";
+        return getCachedDiskFile(uuid) + ".gz";
     }
 
     public static Boolean isCachedDiskExists(String uuid) {
-        File cachedDisk = new File(getCachedDiskLocation(uuid));
-
-        return cachedDisk.exists() && cachedDisk.canRead();
+        return getCachedDiskFile(uuid).canRead(); // implies exists()
     }
 
     public static Boolean isCompressedDiskExists(String uuid) {

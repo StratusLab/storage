@@ -23,10 +23,10 @@ import static org.restlet.data.MediaType.APPLICATION_JSON;
 import static org.restlet.data.MediaType.TEXT_HTML;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
@@ -175,29 +175,26 @@ public class DisksResource extends DiskBaseResource {
         }
     }
 
-    // FIXME: On ANY error, the created file should be deleted. (Issue #8)
     protected Disk inflateAndProcessImage(FileItem fi) {
+
+        File cachedDiskFile = null;
+
         try {
 
             Disk disk = initializeDisk();
-            String compressedFilename = FileUtils
-                    .getCompressedDiskLocation(disk.getUuid());
 
-            File file = new File(compressedFilename);
+            cachedDiskFile = FileUtils.getCachedDiskFile(disk.getUuid());
 
             try {
-                fi.write(file);
-            } catch (Exception ex) {
+                long size = inflateFile(fi.getInputStream(), cachedDiskFile);
+                disk.setSize(size);
+            } catch (IOException e) {
                 throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
                         "no valid file uploaded");
             }
-            String cachedDiskLocation = FileUtils.getCachedDiskLocation(disk
-                    .getUuid());
-            long size = inflateFile(file, cachedDiskLocation);
-            disk.setSize(size);
+
             try {
-                disk.setIdentifier(DiskUtils.calculateHash(new File(
-                        cachedDiskLocation)));
+                disk.setIdentifier(DiskUtils.calculateHash(cachedDiskFile));
             } catch (FileNotFoundException e) {
                 throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
                         e.getMessage());
@@ -207,19 +204,26 @@ public class DisksResource extends DiskBaseResource {
 
         } finally {
             fi.delete();
+
+            if (cachedDiskFile != null) {
+                if (!cachedDiskFile.delete()) {
+                    getLogger().warning(
+                            "could not delete file: "
+                                    + cachedDiskFile.getAbsolutePath());
+                }
+            }
         }
     }
 
-    // FIXME: The compressed file is never deleted here or in the calling code.
-    // This will eventually fill the upload cache and require manual
-    // intervention to clean up. (Issue #7)
-    private long inflateFile(File file, String inflatedName) {
+    private long inflateFile(InputStream gzippedContents, File inflatedFile) {
+
         GZIPInputStream in = null;
         OutputStream out = null;
-        try {
-            in = new GZIPInputStream(new FileInputStream(file));
 
-            out = new FileOutputStream(inflatedName);
+        try {
+
+            in = new GZIPInputStream(gzippedContents);
+            out = new FileOutputStream(inflatedFile);
 
             byte[] buf = new byte[1024];
             int len;
@@ -246,7 +250,6 @@ public class DisksResource extends DiskBaseResource {
                 // it's ok
             }
         }
-        File inflatedFile = new File(inflatedName);
         return DiskUtils.convertBytesToGigaBytes(inflatedFile.length());
     }
 
