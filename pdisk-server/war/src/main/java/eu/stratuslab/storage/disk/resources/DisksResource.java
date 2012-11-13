@@ -140,11 +140,12 @@ public class DisksResource extends DiskBaseResource {
         int fileSizeLimit = ServiceConfiguration.getInstance().UPLOAD_COMPRESSED_IMAGE_MAX_BYTES;
 
         DiskFileItemFactory factory = new DiskFileItemFactory();
+        factory.setRepository(FileUtils.getUploadCacheDirectory());
         factory.setSizeThreshold(fileSizeLimit);
 
         RestletFileUpload upload = new RestletFileUpload(factory);
 
-        List<FileItem> items;
+        List<FileItem> items = null;
 
         try {
             items = upload.parseRequest(getRequest());
@@ -153,51 +154,60 @@ public class DisksResource extends DiskBaseResource {
                     e.getMessage());
         }
 
-        // FIXME: This ignores all but the last item in the multipart content,
-        // but it processes ALL of them. This means that the ignored parts take
-        // up disk space and are never removed. (Issue #9)
-        Disk disk = null;
+        FileItem lastFileItem = null;
         for (FileItem fi : items) {
             if (fi.getName() != null) {
-                disk = inflateAndProcessImage(fi);
+                lastFileItem = fi;
             }
         }
-        if (disk == null) {
+
+        for (FileItem fi : items) {
+            if (fi != lastFileItem) {
+                fi.delete();
+            }
+        }
+
+        if (lastFileItem != null) {
+            return inflateAndProcessImage(lastFileItem);
+        } else {
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
                     "empty file uploaded");
         }
-
-        // Return only the last uuid
-        return disk;
     }
 
     // FIXME: On ANY error, the created file should be deleted. (Issue #8)
     protected Disk inflateAndProcessImage(FileItem fi) {
-        Disk disk = initializeDisk();
-        String compressedFilename = FileUtils.getCompressedDiskLocation(disk
-                .getUuid());
-
-        File file = new File(compressedFilename);
-
         try {
-            fi.write(file);
-        } catch (Exception ex) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "no valid file uploaded");
+
+            Disk disk = initializeDisk();
+            String compressedFilename = FileUtils
+                    .getCompressedDiskLocation(disk.getUuid());
+
+            File file = new File(compressedFilename);
+
+            try {
+                fi.write(file);
+            } catch (Exception ex) {
+                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                        "no valid file uploaded");
+            }
+            String cachedDiskLocation = FileUtils.getCachedDiskLocation(disk
+                    .getUuid());
+            long size = inflateFile(file, cachedDiskLocation);
+            disk.setSize(size);
+            try {
+                disk.setIdentifier(DiskUtils.calculateHash(new File(
+                        cachedDiskLocation)));
+            } catch (FileNotFoundException e) {
+                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                        e.getMessage());
+            }
+            validateNewDisk(disk);
+            return disk;
+
+        } finally {
+            fi.delete();
         }
-        String cachedDiskLocation = FileUtils.getCachedDiskLocation(disk
-                .getUuid());
-        long size = inflateFile(file, cachedDiskLocation);
-        disk.setSize(size);
-        try {
-            disk.setIdentifier(DiskUtils.calculateHash(new File(
-                    cachedDiskLocation)));
-        } catch (FileNotFoundException e) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    e.getMessage());
-        }
-        validateNewDisk(disk);
-        return disk;
     }
 
     // FIXME: The compressed file is never deleted here or in the calling code.
