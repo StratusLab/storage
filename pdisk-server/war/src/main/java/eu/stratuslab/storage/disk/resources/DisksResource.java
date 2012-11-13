@@ -202,9 +202,7 @@ public class DisksResource extends DiskBaseResource {
             validateNewDisk(disk);
             return disk;
 
-        } finally {
-            fi.delete();
-
+        } catch (RuntimeException e) {
             if (cachedDiskFile != null) {
                 if (!cachedDiskFile.delete()) {
                     getLogger().warning(
@@ -212,6 +210,9 @@ public class DisksResource extends DiskBaseResource {
                                     + cachedDiskFile.getAbsolutePath());
                 }
             }
+            throw e;
+        } finally {
+            fi.delete();
         }
     }
 

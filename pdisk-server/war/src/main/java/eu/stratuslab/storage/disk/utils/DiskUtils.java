@@ -10,6 +10,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
@@ -26,6 +27,8 @@ import eu.stratuslab.storage.persistence.Disk.DiskType;
  * 
  */
 public final class DiskUtils {
+
+    private static final Logger LOGGER = Logger.getLogger("org.restlet");
 
     private DiskUtils() {
 
@@ -221,33 +224,41 @@ public final class DiskUtils {
 
     public static void createAndPopulateDiskLocal(Disk disk) {
 
-        createDisk(disk);
-
-        BackEndStorage diskStorage = getDiskStorage();
-
         String uuid = disk.getUuid();
 
-        String cachedDisk = FileUtils.getCachedDiskFile(uuid).getAbsolutePath();
-        String diskLocation = attachDiskToThisHost(uuid);
+        File cachedDiskFile = FileUtils.getCachedDiskFile(uuid);
+        String cachedDisk = cachedDiskFile.getAbsolutePath();
+        try {
 
-        FileUtils.copyFile(cachedDisk, diskLocation);
+            createDisk(disk);
 
-        File cachedDiskFile = new File(cachedDisk);
+            try {
+                copyContentsToVolume(uuid, cachedDisk);
 
-        long size = convertBytesToGigaBytes(cachedDiskFile.length());
-        disk.setSize(size);
+                // Size has already been set on the disk.
+                disk.setType(DiskType.DATA_IMAGE_RAW_READONLY);
+                disk.setSeed(true);
 
-        boolean success = cachedDiskFile.delete();
-        if (!success) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "Failed deleting inflated file: " + cachedDisk);
+            } catch (RuntimeException e) {
+                removeDisk(disk.getUuid());
+            }
+
+        } finally {
+            if (!cachedDiskFile.delete()) {
+                LOGGER.warning("could not delete upload cache file: "
+                        + cachedDisk);
+            }
         }
-        disk.setType(DiskType.DATA_IMAGE_RAW_READONLY);
-        disk.setSeed(true);
+    }
 
-        diskStorage.unmap(uuid);
-
-        detachDiskFromThisHost(uuid);
+    private static void copyContentsToVolume(String uuid, String cachedDisk) {
+        String diskLocation = attachDiskToThisHost(uuid);
+        try {
+            FileUtils.copyFile(cachedDisk, diskLocation);
+        } finally {
+            detachDiskFromThisHost(uuid);
+            getDiskStorage().unmap(uuid);
+        }
     }
 
     // FIXME: This always rounds up and does it starting from bytes.
