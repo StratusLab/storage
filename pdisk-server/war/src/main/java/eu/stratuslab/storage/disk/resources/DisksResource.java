@@ -235,20 +235,8 @@ public class DisksResource extends DiskBaseResource {
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
                     e.getMessage());
         } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-            } catch (IOException e) {
-                // it's ok
-            }
-            try {
-                if (out != null) {
-                    out.close();
-                }
-            } catch (IOException e) {
-                // it's ok
-            }
+            FileUtils.closeIgnoringError(in);
+            FileUtils.closeIgnoringError(out);
         }
         return DiskUtils.convertBytesToGigaBytes(inflatedFile.length());
     }

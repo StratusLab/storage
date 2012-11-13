@@ -1,6 +1,7 @@
 package eu.stratuslab.storage.disk.utils;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -11,6 +12,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.util.logging.Logger;
 
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
@@ -18,6 +20,8 @@ import org.restlet.resource.ResourceException;
 import eu.stratuslab.storage.disk.main.RootApplication;
 
 public final class FileUtils {
+
+    private static final Logger LOGGER = Logger.getLogger("org.restlet");
 
     private FileUtils() {
 
@@ -42,14 +46,7 @@ public final class FileUtils {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "An error occured while writting " + file.getName());
         } finally {
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (IOException consumed) {
-                    throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                            "An error occured while closing " + file.getName());
-                }
-            }
+            closeRaisingError(writer, file.getName());
         }
     }
 
@@ -67,15 +64,7 @@ public final class FileUtils {
                             + String.valueOf(file.getParentFile()
                                     .getFreeSpace() / (1024 * 1024)) + "MB.");
         } finally {
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (IOException consumed) {
-                    throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                            "An error occured while closing "
-                                    + file.getAbsolutePath());
-                }
-            }
+            closeRaisingError(writer, file.getAbsolutePath());
         }
     }
 
@@ -96,15 +85,7 @@ public final class FileUtils {
                     "An error occured while creating a block file "
                             + file.getName());
         } finally {
-            if (ostream != null) {
-                try {
-                    ostream.close();
-                } catch (IOException consumed) {
-                    throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                            "An error occured while closing block file "
-                                    + file.getName());
-                }
-            }
+            closeRaisingError(ostream, file.getName());
         }
 
     }
@@ -131,14 +112,7 @@ public final class FileUtils {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "An error occured will reading file " + file.getName());
         } finally {
-            try {
-                if (br != null) {
-                    br.close();
-                }
-            } catch (IOException e) {
-                throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                        "An error occured while closing file " + file.getName());
-            }
+            closeRaisingError(br, file.getName());
         }
 
         return isPresent;
@@ -178,15 +152,7 @@ public final class FileUtils {
                     "An error occured while creating a block file "
                             + file.getName());
         } finally {
-            if (ostream != null) {
-                try {
-                    ostream.close();
-                } catch (IOException consumed) {
-                    throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                            "An error occured while closing block file "
-                                    + file.getName());
-                }
-            }
+            closeRaisingError(ostream, file.getName());
         }
 
     }
@@ -205,7 +171,7 @@ public final class FileUtils {
     }
 
     public static String getCompressedDiskLocation(String uuid) {
-        return getCachedDiskFile(uuid) + ".gz";
+        return getCachedDiskFile(uuid).getAbsolutePath() + ".gz";
     }
 
     public static Boolean isCachedDiskExists(String uuid) {
@@ -214,8 +180,29 @@ public final class FileUtils {
 
     public static Boolean isCompressedDiskExists(String uuid) {
         File cachedDisk = new File(getCompressedDiskLocation(uuid));
+        return cachedDisk.canRead(); // implies exists()
+    }
 
-        return cachedDisk.exists() && cachedDisk.canRead();
+    public static void closeIgnoringError(Closeable c) {
+        try {
+            if (c != null) {
+                c.close();
+            }
+        } catch (IOException consumed) {
+        }
+    }
+
+    public static void closeRaisingError(Closeable c, String filename) {
+        try {
+            if (c != null) {
+                c.close();
+            }
+        } catch (IOException e) {
+            LOGGER.warning("an error occurred while closing file: " + filename
+                    + "\n" + e.getMessage());
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "An error occurred while closing a file.");
+        }
     }
 
 }

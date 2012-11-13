@@ -14,166 +14,158 @@ import org.restlet.resource.ResourceException;
 
 public final class ProcessUtils {
 
+    public enum VerboseLevel {
+        Normal, Debug
+    }
 
-	public enum VerboseLevel {
-		Normal,
-		Debug
-	}
-	
-	private static final Logger LOGGER = Logger.getLogger("org.restlet");
-	public static final VerboseLevel verboseLevel = VerboseLevel.Debug;
+    private static final Logger LOGGER = Logger.getLogger("org.restlet");
+    public static final VerboseLevel verboseLevel = VerboseLevel.Debug;
 
-	private ProcessUtils() {
+    private ProcessUtils() {
 
-	}
+    }
 
-	public static void execute(ProcessBuilder pb, String errorMsg) {
-		executeWithOutput(pb, errorMsg);
-	}
-	
-	public static String executeWithOutput(ProcessBuilder pb, String errorMsg) {
-		int returnCode = 1;
-		String stdout = "";
-		String stderr = "";
-		Process process;
-		StringBuffer outputBuf = new StringBuffer();
+    public static void execute(ProcessBuilder pb, String errorMsg) {
+        executeWithOutput(pb, errorMsg);
+    }
 
-		pb.redirectErrorStream(true);
+    public static String executeWithOutput(ProcessBuilder pb, String errorMsg) {
+        int returnCode = 1;
+        String stdout = "";
+        String stderr = "";
+        Process process;
+        StringBuffer outputBuf = new StringBuffer();
 
-		if(verboseLevel == VerboseLevel.Debug) {
-			info(pb);
-		}
-		
-		try {
-			process = pb.start();
+        pb.redirectErrorStream(true);
 
-			BufferedReader stdOutErr = new BufferedReader(
-					new InputStreamReader(process.getInputStream(), "UTF-8"));
-			String line;
-			while ((line = stdOutErr.readLine()) != null) {
-				outputBuf.append(line);
-				outputBuf.append("\n");
-			}
+        if (verboseLevel == VerboseLevel.Debug) {
+            info(pb);
+        }
 
-			processWait(process);
+        try {
+            process = pb.start();
 
-			stdOutErr.close();
+            BufferedReader stdOutErr = new BufferedReader(
+                    new InputStreamReader(process.getInputStream(), "UTF-8"));
+            String line;
+            while ((line = stdOutErr.readLine()) != null) {
+                outputBuf.append(line);
+                outputBuf.append("\n");
+            }
 
-			returnCode = process.exitValue();
-			stdout = streamToString(process.getInputStream());
-			stderr = streamToString(process.getErrorStream());
-		} catch (IOException e) {
+            processWait(process);
 
-			String msg = "An error occurred while executing command: "
-					+ MiscUtils.join(pb.command(), " ") + ".\n" + errorMsg
-					+ ".";
+            stdOutErr.close();
 
-			LOGGER.severe(msg);
-			LOGGER.severe(e.getMessage());
+            returnCode = process.exitValue();
+            stdout = streamToString(process.getInputStream());
+            stderr = streamToString(process.getErrorStream());
+        } catch (IOException e) {
 
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, msg);
-		}
+            String msg = "An error occurred while executing command: "
+                    + MiscUtils.join(pb.command(), " ") + ".\n" + errorMsg
+                    + ".";
 
-		if (returnCode != 0) {
+            LOGGER.severe(msg);
+            LOGGER.severe(e.getMessage());
 
-			process.getErrorStream();
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL, msg);
+        }
 
-			String msg = "An error occurred while executing command: "
-					+ MiscUtils.join(pb.command(), " ") + ".\n"
-					+ outputBuf.toString() + "\n" + errorMsg
-					+ ".\nReturn code was: " + String.valueOf(returnCode);
+        if (returnCode != 0) {
 
-			LOGGER.severe(msg);
-			LOGGER.severe("Standard Output: \n" + stdout + "\n");
-			LOGGER.severe("Standard Error: \n" + stderr + "\n");
+            process.getErrorStream();
 
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, msg);
-		}
-		
-		return outputBuf.toString();
-	}
+            String msg = "An error occurred while executing command: "
+                    + MiscUtils.join(pb.command(), " ") + ".\n"
+                    + outputBuf.toString() + "\n" + errorMsg
+                    + ".\nReturn code was: " + String.valueOf(returnCode);
 
-	private static void info(ProcessBuilder processBuilder) {
-		LOGGER.info(joinList(processBuilder.command(), " "));
-	}
-	
+            LOGGER.severe(msg);
+            LOGGER.severe("Standard Output: \n" + stdout + "\n");
+            LOGGER.severe("Standard Error: \n" + stderr + "\n");
+
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL, msg);
+        }
+
+        return outputBuf.toString();
+    }
+
+    private static void info(ProcessBuilder processBuilder) {
+        LOGGER.info(joinList(processBuilder.command(), " "));
+    }
+
     private static String joinList(List<String> list, String glue) {
         Iterator<String> i = list.iterator();
-        if(i.hasNext() == false) {
-        	return "";
+        if (i.hasNext() == false) {
+            return "";
         }
         StringBuffer res = new StringBuffer();
         res.append(i.next());
         while (i.hasNext()) {
-        	res.append(glue + i.next());
+            res.append(glue + i.next());
         }
         return res.toString();
-    }	
-	
-	public static int executeGetStatus(ProcessBuilder pb) {
-		Process process;
-		try {
-			process = pb.start();
-			return processWaitGetStatus(process);
-		} catch (IOException e) {
-			return -1;
-		}
-	}
+    }
 
-	private static void processWait(Process process) {
-		boolean blocked = true;
-		while (blocked) {
-			try {
-				process.waitFor();
-				blocked = false;
-			} catch (InterruptedException consumed) {
-				// just continue to wait
-			}
-		}
+    public static int executeGetStatus(ProcessBuilder pb) {
+        Process process;
+        try {
+            process = pb.start();
+            return processWaitGetStatus(process);
+        } catch (IOException e) {
+            return -1;
+        }
+    }
 
-	}
+    private static void processWait(Process process) {
+        boolean blocked = true;
+        while (blocked) {
+            try {
+                process.waitFor();
+                blocked = false;
+            } catch (InterruptedException consumed) {
+                // just continue to wait
+            }
+        }
 
-	private static int processWaitGetStatus(Process process) {
-		int rc = -1;
-		boolean blocked = true;
-		while (blocked) {
-			try {
-				rc = process.waitFor();
-				blocked = false;
-			} catch (InterruptedException consumed) {
-				// just continue to wait
-			}
-		}
-		return rc;
-	}
+    }
 
-	private static String streamToString(InputStream is) {
+    private static int processWaitGetStatus(Process process) {
+        int rc = -1;
+        boolean blocked = true;
+        while (blocked) {
+            try {
+                rc = process.waitFor();
+                blocked = false;
+            } catch (InterruptedException consumed) {
+                // just continue to wait
+            }
+        }
+        return rc;
+    }
 
-		StringBuilder sb = new StringBuilder();
-		char[] c = new char[1024];
+    private static String streamToString(InputStream is) {
 
-		Reader r = null;
+        StringBuilder sb = new StringBuilder();
+        char[] c = new char[1024];
 
-		try {
+        Reader r = null;
 
-			r = new InputStreamReader(is, "UTF-8");
-			for (int n = r.read(c); n > 0; n = r.read(c)) {
-				sb.append(c, 0, n);
-			}
+        try {
 
-		} catch (IOException consumed) {
-			// Do nothing.
-		} finally {
-			if (r != null) {
-				try {
-					r.close();
-				} catch (IOException consumed) {
-					// Do nothing.
-				}
-			}
-		}
+            r = new InputStreamReader(is, "UTF-8");
+            for (int n = r.read(c); n > 0; n = r.read(c)) {
+                sb.append(c, 0, n);
+            }
 
-		return sb.toString();
-	}
+        } catch (IOException consumed) {
+            // Do nothing.
+        } finally {
+            FileUtils.closeIgnoringError(r);
+        }
+
+        return sb.toString();
+    }
 
 }

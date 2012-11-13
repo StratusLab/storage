@@ -15,141 +15,135 @@ import eu.stratuslab.storage.disk.utils.FileUtils;
 
 public class ServiceConfiguration {
 
-	private static final ServiceConfiguration instance = new ServiceConfiguration();
+    private static final ServiceConfiguration instance = new ServiceConfiguration();
 
-	// Configuration file
-	public static final String PDISK_SERVER_PORT_PARAM_NAME = "disk.store.server.port";
-	public final int PDISK_SERVER_PORT;
-	public static final String DEFAULT_CFG_FILENAME = "pdisk.cfg";
-	public static final String DEFAULT_CFG_LOCATION = "/etc/stratuslab/";
+    // Configuration file
+    public static final String PDISK_SERVER_PORT_PARAM_NAME = "disk.store.server.port";
+    public final int PDISK_SERVER_PORT;
+    public static final String DEFAULT_CFG_FILENAME = "pdisk.cfg";
+    public static final String DEFAULT_CFG_LOCATION = "/etc/stratuslab/";
 
-	// Disk size limits (in GiBs)
-	public static final int DISK_SIZE_MIN = 1;
-	public static final int DISK_SIZE_MAX = 1024;
-	
-	public static final int CACHE_EXPIRATION_DURATION = 2000;
-	
-	public final Properties CONFIGURATION;
+    // Disk size limits (in GiBs)
+    public static final int DISK_SIZE_MIN = 1;
+    public static final int DISK_SIZE_MAX = 1024;
 
-	public final String CLOUD_NODE_SSH_KEY;
-	public final String CLOUD_NODE_ADMIN;
-	public final String CLOUD_NODE_VM_DIR;
-	public final String CLOUD_SERVICE_USER;
+    public static final int CACHE_EXPIRATION_DURATION = 2000;
 
-	public final String CACHE_LOCATION;
-	
-	public final String GZIP_CMD;
+    public final Properties CONFIGURATION;
 
-	public final int UPLOAD_COMPRESSED_IMAGE_MAX_BYTES;
+    public final String CLOUD_NODE_SSH_KEY;
+    public final String CLOUD_NODE_ADMIN;
+    public final String CLOUD_NODE_VM_DIR;
+    public final String CLOUD_SERVICE_USER;
 
-	private ServiceConfiguration() {
+    public final String CACHE_LOCATION;
 
-		CONFIGURATION = readConfigFile();
+    public final String GZIP_CMD;
 
-		PDISK_SERVER_PORT = Integer.parseInt(getConfigValue(PDISK_SERVER_PORT_PARAM_NAME));
+    public final int UPLOAD_COMPRESSED_IMAGE_MAX_BYTES;
 
-		CLOUD_NODE_SSH_KEY = getConfigValue("disk.store.cloud.node.ssh_keyfile");
-		CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
-		CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
-		CLOUD_SERVICE_USER = getConfigValue("disk.store.cloud.service.user");
+    private ServiceConfiguration() {
 
-		CACHE_LOCATION = getCacheLocation();
-		
-		GZIP_CMD = getCommand("disk.store.utils.gzip");
-		
-		UPLOAD_COMPRESSED_IMAGE_MAX_BYTES = 10240000;
-	}
+        CONFIGURATION = readConfigFile();
 
-	public static ServiceConfiguration getInstance() {
-		return instance;
-	}
+        PDISK_SERVER_PORT = Integer
+                .parseInt(getConfigValue(PDISK_SERVER_PORT_PARAM_NAME));
 
-	private static Properties readConfigFile() {
-		File cfgFile = locateConfigFile();
+        CLOUD_NODE_SSH_KEY = getConfigValue("disk.store.cloud.node.ssh_keyfile");
+        CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
+        CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
+        CLOUD_SERVICE_USER = getConfigValue("disk.store.cloud.service.user");
 
-		Properties properties = new Properties();
+        CACHE_LOCATION = getCacheLocation();
 
-		Reader reader = null;
-		try {
-			reader = new InputStreamReader(new FileInputStream(cfgFile),
-					Charset.defaultCharset());
-			properties.load(reader);
-		} catch (IOException consumed) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"An error occured while reading configuration file");
-		} finally {
-			if (reader != null) {
-				try {
-					reader.close();
-				} catch (IOException consumed) {
-					throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-							"An error occured while reading configuration file");
-				}
-			}
-		}
+        GZIP_CMD = getCommand("disk.store.utils.gzip");
 
-		return properties;
-	}
+        UPLOAD_COMPRESSED_IMAGE_MAX_BYTES = 10240000;
+    }
 
-	private static File locateConfigFile() {
+    public static ServiceConfiguration getInstance() {
+        return instance;
+    }
 
-		// Default to a local filename, then one in the /etc/stratuslab/ area.
-		File cfgFile = new File(DEFAULT_CFG_FILENAME);
-		if (!cfgFile.exists()) {
-			cfgFile = new File(DEFAULT_CFG_LOCATION + DEFAULT_CFG_FILENAME);
-			if (!cfgFile.exists()) {
-				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-						"Configuration file does not exists.");
-			}
-		}
-		return cfgFile;
-	}
+    private static Properties readConfigFile() {
+        File cfgFile = locateConfigFile();
 
-	private String getConfigValue(String key) {
-		if (!CONFIGURATION.containsKey(key)) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					"Unable to retrieve configuration key: " + key);
-		}
+        Properties properties = new Properties();
 
-		return CONFIGURATION.getProperty(key);
-	}
+        Reader reader = null;
+        try {
+            reader = new InputStreamReader(new FileInputStream(cfgFile),
+                    Charset.defaultCharset());
+            properties.load(reader);
+        } catch (IOException consumed) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "An error occured while reading configuration file");
+        } finally {
+            FileUtils.closeRaisingError(reader, cfgFile.getAbsolutePath());
+        }
 
-	private String getCacheLocation() {
-		String cache = getConfigValue("disk.store.cache.location");
-		File cacheDir = new File(cache);
+        return properties;
+    }
 
-		if (cacheDir.exists()) {
-			if (!cacheDir.isDirectory()) {
-				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-						"Cache location " + cacheDir.getAbsolutePath()
-								+ " already in use");
-			} else if (!cacheDir.canWrite()) {
-				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-						"Cannot write cache location "
-								+ cacheDir.getAbsolutePath());
-			}
-		} else {
-			if (!cacheDir.mkdirs()) {
-				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-						"Unable to create cache location "
-								+ cacheDir.getAbsolutePath());
-			}
-		}
+    private static File locateConfigFile() {
 
-		return cache;
-	}
+        // Default to a local filename, then one in the /etc/stratuslab/ area.
+        File cfgFile = new File(DEFAULT_CFG_FILENAME);
+        if (!cfgFile.exists()) {
+            cfgFile = new File(DEFAULT_CFG_LOCATION + DEFAULT_CFG_FILENAME);
+            if (!cfgFile.exists()) {
+                throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                        "Configuration file does not exists.");
+            }
+        }
+        return cfgFile;
+    }
 
-	private String getCommand(String configName) {
-		String configValue = getConfigValue(configName);
-		File exec = new File(configValue);
+    private String getConfigValue(String key) {
+        if (!CONFIGURATION.containsKey(key)) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "Unable to retrieve configuration key: " + key);
+        }
 
-		if (!FileUtils.isExecutable(exec)) {
-			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					configValue
-							+ " command does not exist or is not executable");
-		}
+        return CONFIGURATION.getProperty(key);
+    }
 
-		return configValue;
-	}
+    private String getCacheLocation() {
+        String cache = getConfigValue("disk.store.cache.location");
+        File cacheDir = new File(cache);
+
+        if (cacheDir.exists()) {
+            if (!cacheDir.isDirectory()) {
+                throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                        "Cache location " + cacheDir.getAbsolutePath()
+                                + " already in use");
+            } else if (!cacheDir.canWrite()) {
+                throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                        "Cannot write cache location "
+                                + cacheDir.getAbsolutePath());
+            }
+        } else {
+            if (!cacheDir.mkdirs()) {
+                throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                        "Unable to create cache location "
+                                + cacheDir.getAbsolutePath());
+            }
+        }
+
+        return cache;
+    }
+
+    private String getCommand(String configName) {
+        String configValue = getConfigValue(configName);
+        File exec = new File(configValue);
+
+        if (!FileUtils.isExecutable(exec)) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    configValue
+                            + " command does not exist or is not executable");
+        }
+
+        return configValue;
+    }
 
 }
