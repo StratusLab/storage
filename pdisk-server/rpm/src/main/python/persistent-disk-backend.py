@@ -377,9 +377,9 @@ class LVMBackend (Backend):
   
   backend_cmds = {'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
                   'create':[ '/sbin/lvcreate', '-L', '%%SIZE%%G', '-n', '%%UUID%%', '%%VOLUME_NAME%%' ],
-                  'add_device':[ '/bin/sed', '-i', '1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>','/etc/stratuslab/iscsi.conf' ],
+                  'add_device':[ '/bin/sed', '-i', '"1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>"','/etc/stratuslab/iscsi.conf' ],
                   'reload_iscsi': [ '/usr/sbin/tgt-admin','--update','iqn.2011-01.eu.stratuslab:%%UUID%%'],
-                  'remove_device': [ '/bin/sed', '-i', '/<target iqn.2011-01.eu.stratuslab:.*%%UUID%%.*/,+2d', '/etc/stratuslab/iscsi.conf' ],
+                  'remove_device': [ '/bin/sed', '-i', '"/<target iqn.2011-01.eu.stratuslab:.*%%UUID%%.*/,+2d"', '/etc/stratuslab/iscsi.conf' ],
                   'dmremove':['/sbin/dmsetup','remove','%%LOGVOL_PATH%%'],
                   'wait2':['/bin/sleep','2'],
                   'remove':[ '/sbin/lvremove', '-f', '%%LOGVOL_PATH%%' ],
@@ -391,7 +391,7 @@ class LVMBackend (Backend):
                   'getturl' : ['/bin/echo', 'iscsi://%%PORTAL%%/iqn.2011-01.eu.stratuslab:%%UUID%%:1' ],
                   }
   
-  backend_failure_cmds = {'remove': {'add_device' : [ 'sed', '-i', '1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>','/etc/stratuslab/iscsi.conf' ]}
+  backend_failure_cmds = {'remove': {'add_device' : [ 'sed', '-i', '"1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>"','/etc/stratuslab/iscsi.conf' ]}
                                     #{'delete' : 'add_device'}
                           }
 
