@@ -146,7 +146,7 @@ done
 ##################################################
 # Set tmp if not already set.
 ##################################################
-TMPDIR=${TMPDIR:-/var/tmp/stratuslab/storage}
+TMPDIR=${TMPDIR:-/var/lib/stratuslab}
 mkdir -p $TMPDIR
 
 ##################################################
