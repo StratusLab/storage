@@ -216,18 +216,20 @@ class NetAppBackend(Backend):
                              'create':['create'],
                              # Attemtp to delete volume snapshot associated with the LUN if it is no longer used (no more LUN clone exists)
                              'delete':['delete','snapdel'],
+                             'getturl':['get_target','get_lun'],
                              'map':['map'],
                              'rebase':[],
                              'size':None,
                              'snapshot':['snapshot','clone'],
                              'unmap':['unmap'],
-                             'getturl':[],
                              }
   
   backend_cmds = {'check':[ 'lun', 'show', '%%NAME%%' ],
                   'clone':[ 'lun', 'clone', 'create', '%%SNAP_NAME%%', '-b', '%%NAME%%', '%%SNAP_PARENT%%'  ],
                   'create':[ 'lun', 'create', '-s', '%%SIZE%%g', '-t', '%%LUNOS%%', '%%NAME%%' ],
                   'delete':[ 'lun', 'destroy', '%%NAME%%' ],
+                  'get_lun':[ 'lun', 'show', '-v', '%%NAME%%' ],
+                  'get_target':[ 'iscsi', 'nodename' ],
                   'map':[ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ],
                   'snapdel':[ 'snap', 'delete', '%%VOLUME_NAME%%', '%%SNAP_PARENT%%' ],
                   'snapshot':[ 'snap', 'create', '%%VOLUME_NAME%%', '%%SNAP_PARENT%%'  ],
@@ -237,11 +239,13 @@ class NetAppBackend(Backend):
   backend_failure_cmds = {
                           }
 
-  success_msg_pattern = { 'check':'online',
-                          # snapdel is expected to fail if there is still a LUN clone using it or if the snapshot doesnt exist
-                          # (LUN never cloned or is a clone). These are not considered as an error.
-                          'snapdel':[ 'deleting snapshot\.\.\.', 'Snapshot [\w\-]+ is busy because of LUN clone','No such snapshot' ],
-                          'snapshot':['^creating snapshot','^Snapshot already exists.']
+  success_msg_pattern = {'check':'online',
+                         'get_lun':'Maps:\s+[\w\-]+=(\d+)',
+                         'get_target':'iSCSI target nodename:\s+([\w\-:\.]+)',
+                         # snapdel is expected to fail if there is still a LUN clone using it or if the snapshot doesnt exist
+                         # (LUN never cloned or is a clone). These are not considered as an error.
+                         'snapdel':[ 'deleting snapshot\.\.\.', 'Snapshot [\w\-]+ is busy because of LUN clone','No such snapshot' ],
+                         'snapshot':['^creating snapshot','^Snapshot already exists.']
                         }
 
   # Would be great to have it configurable as NetApp needs to know the client OS
@@ -302,12 +306,12 @@ class FileBackend(Backend):
   lun_backend_cmd_mapping = {'check':['check'],
                              'create':['create','chown'],
                              'delete':['delete'],
+                             'getturl':['getturl'],
                              'map':[],
                              'rebase':[],
                              'size':[],
                              'snapshot':['copy'],
                              'unmap':[],
-                             'getturl':['getturl'],
                              }
 
   backend_cmds = {'check':['/usr/bin/test','-f','%%LOGVOL_PATH%%'],
@@ -366,29 +370,29 @@ class LVMBackend (Backend):
   lun_backend_cmd_mapping = {'check':['check'],
                              'create':['create','add_device','reload_iscsi'],
                              'delete':['remove_device','reload_iscsi','wait2','dmremove','remove'],
+                             'getturl' : ['getturl'],
                              # map is a required action for snapshot action but does nothing in LVM
                              'map':[],
                              'rebase':['rebase','add_device','reload_iscsi'],
                              'size':['size'],
                              'snapshot':['snapshot','add_device','reload_iscsi'],
                              'unmap':[],
-                             'getturl' : ['getturl'],
                              }
   
-  backend_cmds = {'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
+  backend_cmds = {'add_device':[ '/bin/sed', '-i', '"1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>"','/etc/stratuslab/iscsi.conf' ],
+                  'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
                   'create':[ '/sbin/lvcreate', '-L', '%%SIZE%%G', '-n', '%%UUID%%', '%%VOLUME_NAME%%' ],
-                  'add_device':[ '/bin/sed', '-i', '"1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>"','/etc/stratuslab/iscsi.conf' ],
+                  'dmremove':['/sbin/dmsetup','remove','%%LOGVOL_PATH%%'],
+                  'getturl' : ['/bin/echo', 'iscsi://%%PORTAL%%/iqn.2011-01.eu.stratuslab:%%UUID%%:1' ],
                   'reload_iscsi': [ '/usr/sbin/tgt-admin','--update','iqn.2011-01.eu.stratuslab:%%UUID%%'],
                   'remove_device': [ '/bin/sed', '-i', '"/<target iqn.2011-01.eu.stratuslab:.*%%UUID%%.*/,+2d"', '/etc/stratuslab/iscsi.conf' ],
-                  'dmremove':['/sbin/dmsetup','remove','%%LOGVOL_PATH%%'],
-                  'wait2':['/bin/sleep','2'],
                   'remove':[ '/sbin/lvremove', '-f', '%%LOGVOL_PATH%%' ],
                   'rebase':[ '/bin/dd', 'if=%%LOGVOL_PATH%%', 'of=%%NEW_LOGVOL_PATH%%'],
                   # lvchange doesn't work with clone. Normally unneeded as lvremove -f (remove) does the same
                   'setinactive':[ '/sbin/lvchange', '-a', 'n', '%%LOGVOL_PATH%%' ],
                   'size':['/sbin/lvs', '-o', 'lv_size', '--noheadings', '%%LOGVOL_PATH%%'],
                   'snapshot':[ '/sbin/lvcreate', '--snapshot', '-p', 'rw', '--size', '%%SIZE%%G', '-n', '%%UUID%%', '%%NEW_LOGVOL_PATH%%'  ],
-                  'getturl' : ['/bin/echo', 'iscsi://%%PORTAL%%/iqn.2011-01.eu.stratuslab:%%UUID%%:1' ],
+                  'wait2':['/bin/sleep','2'],
                   }
   
   backend_failure_cmds = {'remove': {'add_device' : [ 'sed', '-i', '"1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>"','/etc/stratuslab/iscsi.conf' ]}
