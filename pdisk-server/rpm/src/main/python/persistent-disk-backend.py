@@ -108,12 +108,12 @@ class Backend:
   lun_backend_cmd_mapping = {'check':None,
                              'create':None,
                              'delete':None,
+                             'getturl':None,
                              'map':None,
                              'rebase':None,
                              'size':None,
                              'snapshot':None,
                              'unmap':None,
-                             'getturl':None,
                             }
   
   # Definitions of NetApp commands used to implement actions.
@@ -138,6 +138,16 @@ class Backend:
   # Keys must match an existing key in backend_cmds
   success_msg_pattern = {
                         }
+  
+  # Some backend actions must return a value (eg. LUN, TURL...)
+  # that is build from the output of executed commands. This dictionnary
+  # allows to specify how the final value returned is built from the
+  # command outputs (each action may execute several commands, each one
+  # returning several values).
+  # Keys must match an existing key in lun_backend_cmd_mapping.
+  # Value must be a valid formatting instruction.
+  opt_info_format = {
+                    }
   
   # The creation of a new LUN may be required by some operations
   # on some backends (e.g. rebase with LVM backend).
@@ -202,6 +212,25 @@ class Backend:
       return True
     else:
       return False
+    
+  # Method formatting optional information returned by executed commands as a string.
+  # Optional information are passed as a tuple.
+  # Formatting instructions are retrieved in a backend-specific dictionnary with one entry
+  # per action requiring a specific formatting of optional informations. The value is
+  # a standard formatting instruction that may contain %%KWORD%% that are substituted with
+  # appropriate value.
+  # If there is no specific instructions for a given action, just join all list elements as a space
+  # separated string.
+  def formatOptInfos(self,action,optInfos):
+    if not optInfos:
+      return
+    if action in self.opt_info_format:
+      optInfosFmt = self.opt_info_format[action]
+      if re.search('%%ISCSI_PROXY%%',optInfosFmt):
+        optInfosFmt = re.sub('%%ISCSI_PROXY%%',self.proxyHost+":3260",optInfosFmt)
+      return optInfosFmt % optInfos
+    else:
+      ' '.join(optInfos)
   
   
 ############################################
@@ -247,6 +276,9 @@ class NetAppBackend(Backend):
                          'snapdel':[ 'deleting snapshot\.\.\.', 'Snapshot [\w\-]+ is busy because of LUN clone','No such snapshot' ],
                          'snapshot':['^creating snapshot','^Snapshot already exists.']
                         }
+
+  opt_info_format = {'getturl':'iscsi://%%ISCSI_PROXY%%/%s-lun-%s',
+                    }
 
   # Would be great to have it configurable as NetApp needs to know the client OS
   lunOS = 'linux'
@@ -537,8 +569,9 @@ class LUN:
   #  - empty list: action does nothing  
   def __executeAction__(self,action):
     status = 0         # Assume success
-    optInfo = None
+    optInfos = None
     for cmd_toks,successMsg,failure_cmd_toks in self.proxy.getCmd(action):
+      optInfo = None
       # When returned command for action is None, it means that the action is not implemented
       if cmd_toks == None:
         abort("Action '%s' not implemented by back-end type '%s'" % (action,self.proxy.getType()))
@@ -550,16 +583,28 @@ class LUN:
         command.execute()
         status_,optInfo_ = command.checkStatus()        
         if status_ != 0:
-        	print "Rollback command",failure_cmd_toks,"failed:", optInfo_
+          if not optInfo_:
+            optInfo_ = []
+          print "Rollback command",failure_cmd_toks,"failed:",optInfo_
         break
       # If failure_cmd_toks is an amtpy string, stop LUN action processing
       elif failure_cmd_toks == '':
         break
+      if optInfo:
+        if optInfos:
+          optInfos += optInfo
+        else:
+          optInfos = optInfo
       
     if status == 0 and action in self.action_output:
       print self.__parse__(self.action_output[action])
       
-    return status,optInfo
+    if optInfos:
+      optInfosStr = self.proxy.formatOptInfos(action,optInfos)
+    else:
+      optInfosStr = None
+    
+    return status,optInfosStr
 
   # Parse all variables related to current LUN in the command (passed and returned as a list of tokens).  
   def parseCmd(self,action_cmd):
@@ -622,7 +667,7 @@ class Command:
               if matcher:
                 # Return only the first capturing group
                 if output_regexp.groups > 0:
-                  optInfo = matcher.group(1)
+                  optInfo = matcher.groups()
                 success = True
                 break
           else:
