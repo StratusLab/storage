@@ -49,7 +49,7 @@ iscsi_supported_variants = [ 'lvm', 'netapp' ]
 valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':1, 'snapshot':3 , 'getturl':1 , 'map':1 , 'unmap':1}
 valid_actions_str = ', '.join(valid_actions.keys())
 
-config_file_default = '/opt/stratuslab/etc/persistent-disk-backend.conf'
+config_file_default = '/etc/stratuslab/pdisk-backend.cfg'
 config_main_section = 'main'
 config_defaults = StringIO.StringIO("""
 # Options commented out are configuration options available for which no 
