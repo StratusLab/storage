@@ -180,7 +180,7 @@ class Backend:
     failure_command = None
     for action in backend_actions:
       if action in self.backend_cmds.keys():
-        parsed_command = self.parse(self.backend_cmds[action])
+        parsed_command = self.buildCmd(self.backend_cmds[action])
       else:
         abort("Internal error: action '%s' unknown" % (action))
   
@@ -201,7 +201,7 @@ class Backend:
         else:
           command = None
         if command:  
-          failure_command = self.parse(command)
+          failure_command = self.buildCmd(command)
 
       yield parsed_command,success_patterns,failure_command
     
@@ -225,12 +225,37 @@ class Backend:
     if not optInfos:
       return
     if action in self.opt_info_format:
-      optInfosFmt = self.opt_info_format[action]
-      if re.search('%%ISCSI_PROXY%%',optInfosFmt):
-        optInfosFmt = re.sub('%%ISCSI_PROXY%%',self.proxyHost+":3260",optInfosFmt)
+      optInfosFmt = self.parse(self.opt_info_format[action])
       return optInfosFmt % optInfos
     else:
-      ' '.join(optInfos)
+      return ' '.join(optInfos)
+
+  # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
+  # Return parsed command as a list of token.
+  def buildCmd(self,command):    
+    # Build command to execute
+    action_cmd = []
+    action_cmd.extend(self.cmd_prefix)
+    action_cmd.extend(command)
+    for i in range(len(action_cmd)):
+      action_cmd[i] = self.parse(action_cmd[i])
+    return action_cmd
+
+  # Parse all variables related to iSCSI proxy in the string passed as argument.
+  # Return parsed string.
+  # Note that this class must generally be overridden in the derived class to process
+  # attributes specific to this class. But it should normally call this method for
+  # the common attributes.
+  def parse(self,string):    
+    if re.search('%%ISCSI_HOST%%',string):
+      string = re.sub('%%ISCSI_HOST%%',self.proxyHost+":3260",string)
+    elif string == '%%ISCSI_PROXY%%':
+      string = "%s@%s" % (self.mgtUser,self.proxyHost)
+    elif string == '%%PRIVKEY%%':
+      string = self.mgtPrivKey
+    elif string == '%%VOLUME_NAME%%':
+      string = self.volumeName
+    return string
   
   
 ############################################
@@ -259,9 +284,12 @@ class NetAppBackend(Backend):
                   'delete':[ 'lun', 'destroy', '%%NAME%%' ],
                   'get_lun':[ 'lun', 'show', '-v', '%%NAME%%' ],
                   'get_target':[ 'iscsi', 'nodename' ],
+                  'igroup_add':[ 'igroup', 'add', '%%INITIATOR_HOST%%', '%%INITIATOR_ID%%' ],
+                  'igroup_create':[ 'igroup', 'create', '-i', '-t', '%%LUNOS%%', '%%INITIATOR_HOST%%' ],
+                  'igroup_delete':[ 'igroup', 'delete', '%%INITIATOR_HOST%%' ],
                   'map':[ 'lun', 'map', '-f', '%%NAME%%', '%%INITIATORGRP%%' ],
                   'snapdel':[ 'snap', 'delete', '%%VOLUME_NAME%%', '%%SNAP_PARENT%%' ],
-                  'snapshot':[ 'snap', 'create', '%%VOLUME_NAME%%', '%%SNAP_PARENT%%'  ],
+                  'snapshot':[ 'snap', 'create', '%%VOLUME_NAME%%', '%%SNAP_PARENT%%' ],
                   'unmap':[ 'lun', 'unmap', '%%NAME%%', '%%INITIATORGRP%%' ]
                   }
 
@@ -271,13 +299,14 @@ class NetAppBackend(Backend):
   success_msg_pattern = {'check':'online',
                          'get_lun':'Maps:\s+[\w\-]+=(\d+)',
                          'get_target':'iSCSI target nodename:\s+([\w\-:\.]+)',
+                         'igroup_create':['','igroup\s+create:\s+Initiator\s+group\s+already\s+exists'],
                          # snapdel is expected to fail if there is still a LUN clone using it or if the snapshot doesnt exist
                          # (LUN never cloned or is a clone). These are not considered as an error.
                          'snapdel':[ 'deleting snapshot\.\.\.', 'Snapshot [\w\-]+ is busy because of LUN clone','No such snapshot' ],
                          'snapshot':['^creating snapshot','^Snapshot already exists.']
                         }
 
-  opt_info_format = {'getturl':'iscsi://%%ISCSI_PROXY%%/%s-lun-%s',
+  opt_info_format = {'getturl':'iscsi://%%ISCSI_HOST%%/%s-lun-%s',
                     }
 
   # Would be great to have it configurable as NetApp needs to know the client OS
@@ -297,31 +326,20 @@ class NetAppBackend(Backend):
   
 
 
-  # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
-  # Return parsed command as a list of token.
-  def parse(self,command):    
-    # Build command to execute
-    action_cmd = []
-    action_cmd.extend(self.cmd_prefix)
-    action_cmd.extend(command)
-    for i in range(len(action_cmd)):
-      if action_cmd[i] == '%%INITIATORGRP%%':
-        action_cmd[i] = self.initiatorGroup
-      elif action_cmd[i] == '%%LUNOS%%':
-        action_cmd[i] = self.lunOS
-      elif action_cmd[i] == '%%PRIVKEY%%':
-        action_cmd[i] = self.mgtPrivKey
-      elif action_cmd[i] == '%%ISCSI_PROXY%%':
-        action_cmd[i] = "%s@%s" % (self.mgtUser,self.proxyHost)
-      elif action_cmd[i] == '%%SNAP_PARENT%%':
-        action_cmd[i] = self.snapshotPrefix + '_%%UUID%%'
-      elif action_cmd[i] == '%%NAME%%':
-        action_cmd[i] = self.namespace + "/%%UUID%%"
-      elif action_cmd[i] == '%%SNAP_NAME%%':
-        action_cmd[i] = self.namespace + "/%%SNAP_UUID%%"
-      elif action_cmd[i] == '%%VOLUME_NAME%%':
-        action_cmd[i] = self.volumeName
-    return action_cmd
+  # Parse all variables related to iSCSI proxy in the string passed as argument.
+  # Return parsed string.
+  def parse(self,string):    
+    if string == '%%INITIATORGRP%%':
+      string = self.initiatorGroup
+    elif string == '%%LUNOS%%':
+      string = self.lunOS
+    elif string == '%%SNAP_PARENT%%':
+      string = self.snapshotPrefix + '_%%UUID%%'
+    elif string == '%%NAME%%':
+      string = self.namespace + "/%%UUID%%"
+    elif string == '%%SNAP_NAME%%':
+      string = self.namespace + "/%%SNAP_UUID%%"
+    return Backend.parse(self,string)
     
   # Return iSCSI back-end type
   def getType(self):
@@ -347,10 +365,10 @@ class FileBackend(Backend):
                              }
 
   backend_cmds = {'check':['/usr/bin/test','-f','%%LOGVOL_PATH%%'],
-                  'create':['/bin/dd','if=/dev/zero','of=%%LOGVOL_PATH%%','bs=1024','count=%%SIZE%%M'],
                   'chown' :['/bin/chown','oneadmin:cloud','%%LOGVOL_PATH%%'],
-                  'delete':['/bin/rm','-rf','%%LOGVOL_PATH%%'],
                   'copy':['/bin/cp','%%NEW_LOGVOL_PATH%%','%%LOGVOL_PATH%%'],
+                  'create':['/bin/dd','if=/dev/zero','of=%%LOGVOL_PATH%%','bs=1024','count=%%SIZE%%M'],
+                  'delete':['/bin/rm','-rf','%%LOGVOL_PATH%%'],
                   'getturl':['/bin/echo','file://%%LOGVOL_PATH%%'],
                   }
 
@@ -368,25 +386,14 @@ class FileBackend(Backend):
     else:
       self.cmd_prefix = []
 
-  # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
-  # Return parsed command as a list of token.
-  def parse(self,command):    
-    # Build command to execute
-    action_cmd = []
-    action_cmd.extend(self.cmd_prefix)
-    action_cmd.extend(command)
-    for i in range(len(action_cmd)):
-      if action_cmd[i] == '%%ISCSI_PROXY%%':
-        action_cmd[i] = "%s@%s" % (self.mgtUser,self.proxyHost)
-      elif re.search('%%LOGVOL_PATH%%',action_cmd[i]):
-        action_cmd[i] = re.sub('%%LOGVOL_PATH%%',self.volumeName+"/%%UUID%%",action_cmd[i])
-      elif re.search('%%NEW_LOGVOL_PATH%%',action_cmd[i]):
-        action_cmd[i] = re.sub('%%NEW_LOGVOL_PATH%%',self.volumeName+"/%%SNAP_UUID%%",action_cmd[i])
-      elif action_cmd[i] == '%%PRIVKEY%%':
-        action_cmd[i] = self.mgtPrivKey
-      elif action_cmd[i] == '%%VOLUME_NAME%%':
-        action_cmd[i] = self.volumeName
-    return action_cmd
+  # Parse all variables related to iSCSI proxy in the string passed as argument.
+  # Return parsed string.
+  def parse(self,string):    
+    if re.search('%%LOGVOL_PATH%%',string):
+      string = re.sub('%%LOGVOL_PATH%%',self.volumeName+"/%%UUID%%",string)
+    elif re.search('%%NEW_LOGVOL_PATH%%',string):
+      string = re.sub('%%NEW_LOGVOL_PATH%%',self.volumeName+"/%%SNAP_UUID%%",string)
+    return Backend.parse(self,string)
 
   def getType(self):
     return 'File'
@@ -415,7 +422,7 @@ class LVMBackend (Backend):
                   'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
                   'create':[ '/sbin/lvcreate', '-L', '%%SIZE%%G', '-n', '%%UUID%%', '%%VOLUME_NAME%%' ],
                   'dmremove':['/sbin/dmsetup','remove','%%LOGVOL_PATH%%'],
-                  'getturl' : ['/bin/echo', 'iscsi://%%PORTAL%%/iqn.2011-01.eu.stratuslab:%%UUID%%:1' ],
+                  'getturl' : ['/bin/echo', 'iscsi://%%ISCSI_HOST%%/iqn.2011-01.eu.stratuslab:%%UUID%%:1' ],
                   'reload_iscsi': [ '/usr/sbin/tgt-admin','--update','iqn.2011-01.eu.stratuslab:%%UUID%%'],
                   'remove_device': [ '/bin/sed', '-i', '"/<target iqn.2011-01.eu.stratuslab:.*%%UUID%%.*/,+2d"', '/etc/stratuslab/iscsi.conf' ],
                   'remove':[ '/sbin/lvremove', '-f', '%%LOGVOL_PATH%%' ],
@@ -457,27 +464,14 @@ class LVMBackend (Backend):
       self.cmd_prefix = [ ]
   
 
-  # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
-  # Return parsed command as a list of token.
-  def parse(self,command):    
-    # Build command to execute
-    action_cmd = []
-    action_cmd.extend(self.cmd_prefix)
-    action_cmd.extend(command)
-    for i in range(len(action_cmd)):
-      if action_cmd[i] == '%%ISCSI_PROXY%%':
-        action_cmd[i] = "%s@%s" % (self.mgtUser,self.proxyHost)
-      elif re.search('%%LOGVOL_PATH%%',action_cmd[i]):
-        action_cmd[i] = re.sub('%%LOGVOL_PATH%%',self.volumeName+"/%%UUID%%",action_cmd[i])
-      elif re.search('%%NEW_LOGVOL_PATH%%',action_cmd[i]):
-        action_cmd[i] = re.sub('%%NEW_LOGVOL_PATH%%',self.volumeName+"/%%SNAP_UUID%%",action_cmd[i])
-      elif action_cmd[i] == '%%PRIVKEY%%':
-        action_cmd[i] = self.mgtPrivKey
-      elif action_cmd[i] == '%%VOLUME_NAME%%':
-        action_cmd[i] = self.volumeName
-      elif re.search('%%PORTAL%%',action_cmd[i]):
-        action_cmd[i] = re.sub('%%PORTAL%%',self.proxyHost+":3260",action_cmd[i])
-    return action_cmd
+  # Parse all variables related to iSCSI proxy in the string passed as argument.
+  # Return parsed string.
+  def parse(self,string):    
+    if re.search('%%LOGVOL_PATH%%',string):
+      string = re.sub('%%LOGVOL_PATH%%',self.volumeName+"/%%UUID%%",string)
+    elif re.search('%%NEW_LOGVOL_PATH%%',string):
+      string = re.sub('%%NEW_LOGVOL_PATH%%',self.volumeName+"/%%SNAP_UUID%%",string)
+    return Backend.parse(self,string)
     
   # Return iSCSI back-end type
   def getType(self):
@@ -491,11 +485,18 @@ class LVMBackend (Backend):
 class LUN:
 
   # Some LUN commands (e.g. rebase) needs to return information as a string on stdout
-  # that will be captured by pdisk. The string is defined using the same tokens as commands.
-  # By default, a command returns nothing on stdout.
+  # that will be captured by pdisk. The return value is built mainly from information
+  # capture in command output and returned as optInfo in __executeAction__ method.
+  # In addition to these optional informations produced by the command, it is possible
+  # to add a value built from LUN class attributes. This value s appended to other
+  # optional values, if any.
+  # In the following dictionnary, the key is an action for which this additional
+  # information must be produced. And the value is a string defining the returned
+  # value using the same tokens as commands.
   # This information is returned only on successful execution of action.
-  action_output = {'rebase':'%%SNAP_UUID%%',
-                   }
+  # By default, a command returns nothing on stdout.
+  additional_opt_info = {'rebase':'%%SNAP_UUID%%',
+                        }
   
   def __init__(self,uuid,size=None,proxy=None):
     self.uuid = uuid
@@ -545,8 +546,12 @@ class LUN:
         abort('An error occured creating a new LUN for rebasing %s' % (self.uuid))
     else:
       self.associatedLUN = self     # To simplify returned value
-    status,optInfo = self.__executeAction__('rebase')
-    return status
+    status,rebasedLUN = self.__executeAction__('rebase')
+    if status != 0:
+      abort('Failure to rebase LUN %s' % (self.uuid))
+    # Don't return directly self.associatedLUN but use optional information
+    # returned by action execution to allow reformatting if needed.
+    return rebasedLUN
     
   def snapshot(self,snapshot_lun):
     self.associatedLUN = snapshot_lun
@@ -584,7 +589,7 @@ class LUN:
         status_,optInfo_ = command.checkStatus()        
         if status_ != 0:
           if not optInfo_:
-            optInfo_ = []
+            optInfo_ = ()
           print "Rollback command",failure_cmd_toks,"failed:",optInfo_
         break
       # If failure_cmd_toks is an amtpy string, stop LUN action processing
@@ -595,9 +600,12 @@ class LUN:
           optInfos += optInfo
         else:
           optInfos = optInfo
-      
-    if status == 0 and action in self.action_output:
-      print self.__parse__(self.action_output[action])
+    
+    # Append an optional additional value built from LUN attributes, if necessary
+    if status == 0 and action in self.additional_opt_info:
+      if not optInfos:
+        optInfos = ()
+      optInfos += self.__parse__(self.additional_opt_info[action]),
       
     if optInfos:
       optInfosStr = self.proxy.formatOptInfos(action,optInfos)
@@ -951,10 +959,28 @@ elif options.action == 'delete':
   debug(1,"Deleting LUN...")
   lun = LUN(args[0],proxy=iscsi_proxy)
   status = lun.delete()
+elif options.action == 'getturl' :
+  debug(1,"Returning Transport URL...")
+  lun = LUN(args[0], proxy=iscsi_proxy)
+  turl = lun.getTurl()
+  # If an error occured, it has already been signaled.
+  # If it succeeds, rebasedLUN should always be defined...
+  if turl:
+    print turl
+    status = 0
+  else:
+    status = 10
 elif options.action == 'rebase':
   debug(1,"Rebasing LUN...")
   lun = LUN(args[0],proxy=iscsi_proxy)
-  status = lun.rebase()
+  rebasedLUN = lun.rebase()
+  # If an error occured, it has already been signaled.
+  # If it succeeds, rebasedLUN should always be defined...
+  if rebasedLUN:
+    print rebasedLUN
+    status = 0
+  else:
+    status = 10
 elif options.action == 'snapshot':
   debug(1,"Doing a LUN snapshot...")
   lun = LUN(args[1],size=args[2],proxy=iscsi_proxy)
@@ -970,15 +996,6 @@ elif options.action == 'unmap':
   debug(1,"Unmapping LUN...")
   lun = LUN(args[0],proxy=iscsi_proxy)
   status = lun.unmap()
-elif options.action == 'getturl' :
-  debug(1,"Returning Transport URL...")
-  lun = LUN(args[0], proxy=iscsi_proxy)
-  turl = lun.getTurl()
-  if turl == "":
-    status = 1
-  else:
-    status = 0
-  print turl
 else:
   abort ("Internal error: unimplemented action (%s)" % (options.action))
   
