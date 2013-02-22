@@ -35,6 +35,7 @@ import logging.handlers
 import syslog
 import ConfigParser
 import uuid
+import socket
 
 # Initializations
 verbosity = 0
@@ -248,7 +249,10 @@ class Backend:
   # the common attributes.
   def parse(self,string):    
     if re.search('%%ISCSI_HOST%%',string):
-      string = re.sub('%%ISCSI_HOST%%',self.proxyHost+":3260",string)
+      if self.proxyHost == "local":
+        string = re.sub('%%ISCSI_HOST%%',socket.gethostname()+":3260",string)
+      else:
+        string = re.sub('%%ISCSI_HOST%%',self.proxyHost+":3260",string)
     elif string == '%%ISCSI_PROXY%%':
       string = "%s@%s" % (self.mgtUser,self.proxyHost)
     elif string == '%%PRIVKEY%%':
@@ -306,8 +310,8 @@ class NetAppBackend(Backend):
                          'snapshot':['^creating snapshot','^Snapshot already exists.']
                         }
 
-  opt_info_format = {'getturl':'iscsi://%%ISCSI_HOST%%/%s-lun-%s',
-                    }
+  opt_info_format = {'getturl':'iscsi://%%ISCSI_HOST%%/%s:%s',
+                   } 
 
   # Would be great to have it configurable as NetApp needs to know the client OS
   lunOS = 'linux'
@@ -366,7 +370,7 @@ class FileBackend(Backend):
 
   backend_cmds = {'check':['/usr/bin/test','-f','%%LOGVOL_PATH%%'],
                   'chown' :['/bin/chown','oneadmin:cloud','%%LOGVOL_PATH%%'],
-                  'copy':['/bin/cp','%%NEW_LOGVOL_PATH%%','%%LOGVOL_PATH%%'],
+                  'copy':['/bin/cp','%%LOGVOL_PATH%%','%%NEW_LOGVOL_PATH%%'],
                   'create':['/bin/dd','if=/dev/zero','of=%%LOGVOL_PATH%%','bs=1024','count=%%SIZE%%M'],
                   'delete':['/bin/rm','-rf','%%LOGVOL_PATH%%'],
                   'getturl':['/bin/echo','file://%%LOGVOL_PATH%%'],
@@ -414,23 +418,29 @@ class LVMBackend (Backend):
                              'map':[],
                              'rebase':['rebase','add_device','reload_iscsi'],
                              'size':['size'],
-                             'snapshot':['snapshot','add_device','reload_iscsi'],
+                             'snapshot':['snapshot','add_device_snap','reload_iscsi_snap'],
                              'unmap':[],
                              }
   
-  backend_cmds = {'add_device':[ '/bin/sed', '-i', '"1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>"','/etc/stratuslab/iscsi.conf' ],
+  backend_cmds = {'add_device':[ '/bin/sed', '-i', 
+                                 '"1i<target iqn.2011-01.eu.stratuslab:%%UUID%%> \\n backing-store %%LOGVOL_PATH%% \\n </target>"',
+                                 '/etc/stratuslab/iscsi.conf' ],
+                  'add_device_snap':[ '/bin/sed', '-i',
+                                      '"1i<target iqn.2011-01.eu.stratuslab:%%SNAP_UUID%%> \\n backing-store %%NEW_LOGVOL_PATH%% \\n </target>"',
+                                      '/etc/stratuslab/iscsi.conf' ],
                   'check':[ '/usr/bin/test', '-b', '%%LOGVOL_PATH%%' ],
                   'create':[ '/sbin/lvcreate', '-L', '%%SIZE%%G', '-n', '%%UUID%%', '%%VOLUME_NAME%%' ],
                   'dmremove':['/sbin/dmsetup','remove','%%LOGVOL_PATH%%'],
                   'getturl' : ['/bin/echo', 'iscsi://%%ISCSI_HOST%%/iqn.2011-01.eu.stratuslab:%%UUID%%:1' ],
                   'reload_iscsi': [ '/usr/sbin/tgt-admin','--update','iqn.2011-01.eu.stratuslab:%%UUID%%'],
+                  'reload_iscsi_snap': [ '/usr/sbin/tgt-admin','--update','iqn.2011-01.eu.stratuslab:%%SNAP_UUID%%'],
                   'remove_device': [ '/bin/sed', '-i', '"/<target iqn.2011-01.eu.stratuslab:.*%%UUID%%.*/,+2d"', '/etc/stratuslab/iscsi.conf' ],
                   'remove':[ '/sbin/lvremove', '-f', '%%LOGVOL_PATH%%' ],
                   'rebase':[ '/bin/dd', 'if=%%LOGVOL_PATH%%', 'of=%%NEW_LOGVOL_PATH%%'],
                   # lvchange doesn't work with clone. Normally unneeded as lvremove -f (remove) does the same
                   'setinactive':[ '/sbin/lvchange', '-a', 'n', '%%LOGVOL_PATH%%' ],
                   'size':['/sbin/lvs', '-o', 'lv_size', '--noheadings', '%%LOGVOL_PATH%%'],
-                  'snapshot':[ '/sbin/lvcreate', '--snapshot', '-p', 'rw', '--size', '%%SIZE%%G', '-n', '%%UUID%%', '%%NEW_LOGVOL_PATH%%'  ],
+                  'snapshot':[ '/sbin/lvcreate', '--snapshot', '-p', 'rw', '--size', '%%SIZE%%G', '-n', '%%SNAP_UUID%%', '%%LOGVOL_PATH%%'  ],
                   'wait2':['/bin/sleep','2'],
                   }
   
@@ -739,10 +749,10 @@ Parameters:
     action=check:    LUN_UUID
     action=create:   LUN_UUID LUN_Size
     action=delete:   LUN_UUID
-    action=rebase:   LUN_UUID (will return the rebased LUN UUID on stdout)
-    action=snapshot: LUN_UUID New_LUN_UUID Snapshot_Size
     action=getturl:  LUN_UUID
     action=map:      LUN_UUID
+    action=rebase:   LUN_UUID (will return the rebased LUN UUID on stdout)
+    action=snapshot: LUN_UUID New_LUN_UUID Snapshot_Size
     action=unmap:    LUN_UUID
 """
 
@@ -983,11 +993,10 @@ elif options.action == 'rebase':
     status = 10
 elif options.action == 'snapshot':
   debug(1,"Doing a LUN snapshot...")
-  lun = LUN(args[1],size=args[2],proxy=iscsi_proxy)
-  snapshot_lun = LUN(args[0],proxy=iscsi_proxy)
+  lun = LUN(args[0],size=args[2],proxy=iscsi_proxy)
+  snapshot_lun = LUN(args[1],proxy=iscsi_proxy)
   # Only the last error is returned
   status = lun.snapshot(snapshot_lun)
-  status = snapshot_lun.map()
 elif options.action == 'map':
   debug(1,"Mapping LUN...")
   lun = LUN(args[0],proxy=iscsi_proxy)
