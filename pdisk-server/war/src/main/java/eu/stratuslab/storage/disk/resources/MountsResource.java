@@ -15,6 +15,7 @@ import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ResourceException;
 
+import eu.stratuslab.storage.disk.backend.BackEndStorage;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
 import eu.stratuslab.storage.persistence.Disk;
@@ -157,8 +158,10 @@ public class MountsResource extends BaseResource {
 			getLogger().info(
 					"hotPlugDisk: " + node + " " + vmId + " " + disk.getUuid() + " "
 							+ target);
+			BackEndStorage backEndStorage = new BackEndStorage();
 			DiskUtils.attachHotplugDisk(serviceName(), servicePort(), node,
-					vmId, disk.getUuid(), target);
+					vmId, disk.getUuid(), target,
+					backEndStorage.getTurl(disk.getUuid()));
 		}
 
 		// Add this metadata only AFTER the device has been successfully added.

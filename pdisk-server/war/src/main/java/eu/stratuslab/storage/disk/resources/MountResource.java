@@ -11,6 +11,7 @@ import org.restlet.resource.Delete;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
 
+import eu.stratuslab.storage.disk.backend.BackEndStorage;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.persistence.Disk;
 import eu.stratuslab.storage.persistence.Instance;
@@ -143,8 +144,11 @@ public class MountResource extends BaseResource {
 		if (!updateMetadataOnly) {
 
 			try {
+				BackEndStorage backEndStorage = new BackEndStorage();
+				String turl = backEndStorage.getTurl(diskId);
+
 				DiskUtils.detachHotplugDisk(serviceName(), servicePort(), node,
-						mount.getVmId(), diskId, diskTarget);
+						mount.getVmId(), diskId, diskTarget, turl);
 				getLogger().info(
 						"hotDetach: " + node + ", " + mount.getVmId() + ", "
 								+ diskId + ", " + diskTarget);

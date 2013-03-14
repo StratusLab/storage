@@ -94,7 +94,7 @@ public final class DiskUtils {
     }
 
     public static void attachHotplugDisk(String serviceName, int servicePort,
-            String node, String vmId, String diskUuid, String target) {
+            String node, String vmId, String diskUuid, String target, String turl) {
 
         // Do NOT use the --register flag here. This may cause an infinite loop
         // in the process because it calls the pdisk service again.
@@ -115,6 +115,9 @@ public final class DiskUtils {
         cmd.add("--vm-id");
         cmd.add(vmId);
 
+        cmd.add("--turl");
+        cmd.add(turl);
+        
         cmd.add("--vm-disk-name");
         cmd.add(getDiskId(serviceName, servicePort, diskUuid));
 
@@ -126,9 +129,12 @@ public final class DiskUtils {
         int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
         String host = "localhost";
         String tmpVmId = DiskUtils.generateUUID();
+        
+        BackEndStorage backEndStorage = new BackEndStorage();
+        String turl = backEndStorage.getTurl(diskUuid);
 
         // FIXME: host is most probably wrong for the last parameter
-        attachHotplugDisk(host, port, host, tmpVmId, diskUuid, host);
+        attachHotplugDisk(host, port, host, tmpVmId, diskUuid, host, turl);
 
         return tmpVmId;
     }
@@ -140,7 +146,7 @@ public final class DiskUtils {
     }
 
     public static void detachHotplugDisk(String serviceName, int servicePort,
-            String node, String vmId, String diskUuid, String target) {
+            String node, String vmId, String diskUuid, String target, String turl) {
 
         // Do NOT use the --register flag here. This may cause an infinite loop
         // in the process because it calls the pdisk service again.
@@ -160,7 +166,10 @@ public final class DiskUtils {
 
         cmd.add("--vm-id");
         cmd.add(vmId);
-
+        
+        cmd.add("--turl");
+        cmd.add(turl);
+        
         cmd.add("--vm-disk-name");
         cmd.add(getDiskId(serviceName, servicePort, diskUuid));
 
