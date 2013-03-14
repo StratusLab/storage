@@ -48,12 +48,11 @@ public final class BackEndStorage {
 				args);
 	}
 
-	// TODO: expose this
 	public String getTurl(String baseUuid) {
 
 		String[] args = { baseUuid };
 		return execute("getturl", "Cannot find transport URL (turl) for uuid: "
-				+ baseUuid, args);
+				+ baseUuid, args).trim();
 	}
 
 	public String rebase(Disk disk) {
