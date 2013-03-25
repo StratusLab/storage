@@ -48,7 +48,6 @@ vm_dir=/var/lib/one
 
 [iscsi]
 iscsiadm=/usr/sbin/iscsiadm
-disconnect=false
 """
 CONFFILE='/etc/stratuslab/pdisk-host.conf'
 config = ConfigParser.RawConfigParser()
@@ -58,8 +57,6 @@ iscsiadm=config.get("iscsi","iscsiadm")
 login=config.get("main","pdisk_user")
 pswd=config.get("main","pdisk_passwd")
 vm_dir=config.get("main","vm_dir")
-iscsidisconnect=config.get("iscsi","disconnect")
-used_volume_dir="/etc/stratuslab"
 
 parser=OptionParser()
 parser.add_option("--pdisk-id", dest="persistent_disk_id",
@@ -138,6 +135,32 @@ if options.username:
 
 if options.password:
   pswd = options.password
+
+"""
+ Class to manage local information about file
+"""
+class VolumeManagment:
+  def deleteVolume(self,target,turl):
+    file = "%s/%s" % (self.directory, target)
+    if os.path.isfile(file):
+      readFile = open(file,'r')
+      lines = readFile.readlines()
+      readFile.close()
+      openFile = open(file,'w')
+      for line in lines:
+        if line != turl+'\n':
+          openFile.write(line)
+      openFile.close()
+
+  def insertVolume(self,target, turl):
+    file = "%s/%s" % (self.directory, target)
+    if os.path.isdir(self.directory):
+     openFile = open(file,'a')
+     openFile.write(turl+'\n')
+     openFile.close()
+
+  def __init__(self,directory):
+    self.directory = directory
 
 """
  Metaclass for general persistent disk client
@@ -250,6 +273,7 @@ class PersistentDisk:
     self.protocol  = pdisk.protocol
     self.server    = pdisk.server
     self.image     = pdisk.image
+    self.volumeCheck = pdisk.volumeCheck
 
   """
     check_mount used to check if pdisk is already used return true if pdisk is free
@@ -298,6 +322,7 @@ class PersistentDisk:
       self.port      = __pdisk__.group('port')
       self.disk_uuid = __pdisk__.group('disk_uuid')
       self.__checkTurl__(turl)
+      self.volumeCheck = VolumeManagment('/var/run/stratuslab')
     except AttributeError:
       raise PersistentDiskException('URI '+pdisk_id+' not match expression pdisk:endpoint:port:disk_uuid')
       
@@ -345,20 +370,27 @@ class IscsiPersistentDisk(PersistentDisk):
     if retcode != 0:
       msg = "attach: error registering iSCSI disk with hypervisor (%d)" % retcode
       raise AttachPersistentDiskException(msg)
+
     cmd = "sudo %s --mode node --portal %s:%s --target %s --login" % (
                       iscsiadm, __portal_ip__,  __portal__.group('port'), self.iqn)
     retcode = call(cmd, shell=True)
+    if retcode == 0:
+      filename = '%s-%s-%s' % (__portal_ip__,__portal__.group('port'), self.iqn)
+      self.volumeCheck.insertVolume(filename,options.turl)
     if retcode != 0:
-                  if retcode == 15:
-                    cmd = "sudo %s --mode session --rescan" % (
-                          iscsiadm)
-                    retcode = call(cmd, shell=True)
-                    if retcode !=0:
-                      msg = "attach: error rescanning in iSCSI disk session (%d)" % retcode
-                      raise AttachPersistentDiskException(msg)
-                  else:
-                    msg = "attach: error logging in iSCSI disk session (%d)" % retcode
-                    raise AttachPersistentDiskException(msg)
+      if retcode == 15:
+        cmd = "sudo %s --mode session --rescan" % (
+              iscsiadm)
+        retcode = call(cmd, shell=True)
+        if retcode == 0:
+          filename = '%s-%s-%s' % (__portal_ip__,__portal__.group('port'), self.iqn)
+          self.volumeCheck.insertVolume(filename,options.turl)
+        else:
+           msg = "attach: error rescanning in iSCSI disk session (%d)" % retcode
+           raise AttachPersistentDiskException(msg)
+      else:
+         msg = "attach: error logging in iSCSI disk session (%d)" % retcode
+         raise AttachPersistentDiskException(msg)
 
     # Seems to be a problem with the device by path being instantly available.
     self._wait_until_appears()
@@ -366,17 +398,22 @@ class IscsiPersistentDisk(PersistentDisk):
   def detach(self):
     __portal__    = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
     __portal_ip__ = socket.gethostbyname(__portal__.group('server'))
-
     hostname = socket.gethostname()
-    if iscsidisconnect == "true" :
+
+    filename = '%s-%s-%s' % (__portal_ip__,__portal__.group('port'), self.iqn)
+    self.volumeCheck.deleteVolume(filename,options.turl)
+
+    if os.path.getsize(self.volumeCheck.directory+'/'+filename) == 0:
       cmd = 'sudo %s --mode node --portal %s:%s --target %s --logout' % (
              iscsiadm,  __portal_ip__,  __portal__.group('port'), self.iqn)
       retcode = call(cmd, shell=True)
       if retcode != 0:
         msg = 'detach: error detaching iSCSI disk from node %s (%s)' % (hostname, retcode)
         raise AttachPersistentDiskException(msg)
-      sleep(2)
 
+    sleep(2)
+
+    if os.path.getsize(self.volumeCheck.directory+'/'+filename) == 0:
       unreg = "sudo %s --mode node --portal %s:%s --target %s -o delete" % (
                           iscsiadm, __portal_ip__,  __portal__.group('port'), self.iqn) 
       retcode = call(unreg, shell=True)
