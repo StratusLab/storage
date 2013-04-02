@@ -12,18 +12,21 @@
     <fileSet>
       <outputDirectory>sbin</outputDirectory>
       <fileMode>755</fileMode>
+      <directoryMode>755</directoryMode>
       <directory>src/main/scripts</directory>
     </fileSet>
 
     <fileSet>
       <outputDirectory>share</outputDirectory>
       <fileMode>644</fileMode>
+      <directoryMode>755</directoryMode>
       <directory>src/main/share</directory>
     </fileSet>
 
     <fileSet>
       <outputDirectory>etc</outputDirectory>
       <fileMode>644</fileMode>
+      <directoryMode>755</directoryMode>
       <directory>src/main/etc</directory>
     </fileSet>
 
