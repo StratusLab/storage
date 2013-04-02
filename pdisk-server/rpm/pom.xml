@@ -330,6 +330,22 @@
               </sources>
             </mapping>
 
+	    <mapping>
+	      <directory>${installation.dir}/lib/ext</directory>
+	      <filemode>644</filemode>
+	      <username>root</username>
+	      <groupname>root</groupname>
+	      <directoryIncluded>false</directoryIncluded>
+	      <sources>
+		<source>
+		  <location>target/dependency/jars/</location>
+		  <includes>
+		    <include>*.jar</include>
+		  </includes>
+		</source>
+	      </sources>
+	    </mapping>
+
             <mapping>
               <directory>${installation.dir}/stratuslab-webapps</directory>
               <filemode>644</filemode>
