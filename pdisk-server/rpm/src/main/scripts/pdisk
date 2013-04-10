@@ -5,7 +5,7 @@
 # To get the service to restart correctly on reboot, uncomment below (3 lines):
 # ========================
 # chkconfig: 3 99 99
-# description: Jetty 7 webserver
+# description: Jetty 9 webserver
 # processname: jetty
 # ========================
 
@@ -68,7 +68,8 @@
 #
 # JETTY_RUN
 #   Where the jetty.pid file should be stored. It defaults to the
-#   first available of /var/run, /usr/var/run, and /tmp if not set.
+#   first available of /var/run, /usr/var/run, JETTY_HOME and /tmp 
+#   if not set.
 #  
 # JETTY_PID
 #   The Jetty PID file, defaults to $JETTY_RUN/jetty.pid
@@ -136,7 +137,7 @@ shift
 ##################################################
 # Read any configuration files
 ##################################################
-for CONFIG in /etc/default/jetty{,7} $HOME/.jettyrc; do
+for CONFIG in /etc/default/jetty{,9} $HOME/.jettyrc; do
   if [ -f "$CONFIG" ] ; then 
     readConfig "$CONFIG"
   fi
@@ -163,7 +164,6 @@ start_tgtd() {
     [ $? -gt 0 ] && $TGT_SERV start 
 }
 
-
 ##################################################
 # Try to determine JETTY_HOME if not set
 ##################################################
@@ -189,10 +189,10 @@ fi
 ##################################################
 if [ -z "$JETTY_HOME" ] ; then
   STANDARD_LOCATIONS=(
-        "/opt/stratuslab/storage"
+	"/opt/stratuslab/storage"
         )
   JETTY_DIR_NAMES=(
-        "pdisk"
+	"pdisk"
         )
         
   for L in "${STANDARD_LOCATIONS[@]}"
@@ -300,7 +300,7 @@ fi
 #####################################################
 if [ -z "$JETTY_RUN" ] 
 then
-  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run /tmp)
+  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run $JETTY_HOME /tmp)
 fi
 
 #####################################################
@@ -565,4 +565,3 @@ case "$ACTION" in
 esac
 
 exit 0
-
