@@ -34,7 +34,6 @@ from StringIO import StringIO
 from urllib import urlencode
 from subprocess import call
 from time import sleep
-import commands
 
 sample_example = """
 [main]
@@ -144,24 +143,26 @@ class VolumeManagement(object):
     def __init__(self, directory):
         self.directory = directory
 
+    def isFree(self, target):
+        if os.listdir("%s/%s" % (self.directory, target)) == "":
+            return True
+        else:
+            return False
+
     def deleteVolume(self, target, turl):
-        file = "%s/%s" % (self.directory, target)
-        if os.path.isfile(file):
-            readFile = open(file, 'r')
-            lines = readFile.readlines()
-            readFile.close()
-            openFile = open(file, 'w')
-            for line in lines:
-                if line != turl + '\n':
-                    openFile.write(line)
-            openFile.close()
+        _turl = turl.replace('/','-')
+        file = "%s/%s/%s" % (self.directory, target, _turl)
+        os.rmdir(file)
 
     def insertVolume(self, target, turl):
-        file = "%s/%s" % (self.directory, target)
-        if os.path.isdir(self.directory):
-            openFile = open(file, 'a')
-            openFile.write(turl + '\n')
-            openFile.close()
+        _turl = turl.replace('/','-')
+        targetDir = "%s/%s" % (self.directory, target)
+        file      = "%s/%s" % (targetDir, _turl)
+        if not os.path.isdir(self.directory):
+            os.mkdir(self.directory)
+        if not os.path.isdir(targetDir):
+            os.mkdir(targetDir)
+        os.mkdir(file)
 
 
 
@@ -189,9 +190,9 @@ class PersistentDisk:
         except httplib2.ServerNotFoundError:
             msg = 'register: %s not found' % self.endpoint
             raise RegisterPersistentDiskException(msg)
-            if (resp.status >= 400):
-                msg = 'register: POST on %s raised error %d' % (url, resp.status)
-                raise RegisterPersistentDiskException(msg)
+        if (resp.status >= 400):
+            msg = 'register: POST on %s raised error %d' % (url, resp.status)
+            raise RegisterPersistentDiskException(msg)
 
     def unregister(self, login, pswd, vm_id):
         node = socket.gethostbyname(socket.gethostname())
@@ -204,9 +205,9 @@ class PersistentDisk:
         except httplib2.ServerNotFoundError:
             msg = 'unregister: %s not found' % self.endpoint
             raise RegisterPersistentDiskException(msg)
-            if (resp.status >= 400):
-                msg = 'unregister: DELETE on %s raised error %d' % (url, resp.status)
-                raise RegisterPersistentDiskException(msg)
+        if (resp.status >= 400):
+            msg = 'unregister: DELETE on %s raised error %d' % (url, resp.status)
+            raise RegisterPersistentDiskException(msg)
 
 
     def link(self, src, dst):
@@ -413,7 +414,7 @@ class IscsiPersistentDisk(PersistentDisk):
         filename = '%s-%s-%s' % (portal_ip, portal.group('port'), self.iqn)
         self.volumeCheck.deleteVolume(filename, options.turl)
 
-        if os.path.getsize(self.volumeCheck.directory + '/' + filename) == 0:
+        if self.volumeCheck.isFree(filename):
             cmd = 'sudo %s --mode node --portal %s:%s --target %s --logout' % (
                 iscsiadm, portal_ip, portal.group('port'), self.iqn)
             retcode = call(cmd, shell=True)
@@ -423,7 +424,7 @@ class IscsiPersistentDisk(PersistentDisk):
 
         sleep(2)
 
-        if os.path.getsize(self.volumeCheck.directory + '/' + filename) == 0:
+        if self.volumeCheck.isFree(filename):
             unreg = "sudo %s --mode node --portal %s:%s --target %s -o delete" % (
                 iscsiadm, portal_ip, portal.group('port'), self.iqn)
             retcode = call(unreg, shell=True)
@@ -579,7 +580,7 @@ def do_down_operations(pdisk):
         exit(1)
 
 
-def __init__():
+def __main__():
     try:
         global_pdisk = PersistentDisk(options.persistent_disk_id, options.turl)
     except getTurlPersistentDiskException:
@@ -605,4 +606,5 @@ def __init__():
         raise parser.error("--op option only accepts 'up' or 'down'")
 
 
-__init__()
+if __name__ == "__main__":
+    __main__()
