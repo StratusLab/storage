@@ -101,7 +101,8 @@ action.add_option("--no-check", dest="no_check", action="store_true",
                   help="disable check if device is used")
 
 action.add_option("--op", dest="operation", metavar="OP",
-                  help="up : activate persistent disk ( register / attach / link / mount ) -- down : deactivate persistent disk ( unmount / unlink / detach / unregister )")
+                  help="up : activate persistent disk ( register / attach / link / mount ) "
+                       "-- down : deactivate persistent disk ( unmount / unlink / detach / unregister )")
 
 parser.add_option_group(action)
 (options, args) = parser.parse_args()
@@ -150,30 +151,26 @@ class VolumeManagement(object):
             return False
 
     def deleteVolume(self, target, turl):
-        _turl = turl.replace('/','-')
-        file = "%s/%s/%s" % (self.directory, target, _turl)
-        os.rmdir(file)
+        _turl = turl.replace('/', '-')
+        f = '%s/%s/%s' % (self.directory, target, _turl)
+        os.rmdir(f)
 
     def insertVolume(self, target, turl):
-        _turl = turl.replace('/','-')
+        _turl = turl.replace('/', '-')
         targetDir = "%s/%s" % (self.directory, target)
-        file      = "%s/%s" % (targetDir, _turl)
+        f = "%s/%s" % (targetDir, _turl)
         if not os.path.isdir(self.directory):
             os.mkdir(self.directory)
         if not os.path.isdir(targetDir):
             os.mkdir(targetDir)
-        os.mkdir(file)
-
-
+        os.mkdir(f)
 
 
 class PersistentDisk:
-    """
-     Metaclass for general persistent disk client
-    """
+    """Metaclass for general persistent disk client"""
+
     def __registration_uri__(self):
         return "https://" + self.endpoint + ":" + self.port + "/pswd/disks/" + self.disk_uuid + "/"
-
 
     def register(self, login, pswd, vm_id):
         """
@@ -190,7 +187,7 @@ class PersistentDisk:
         except httplib2.ServerNotFoundError:
             msg = 'register: %s not found' % self.endpoint
             raise RegisterPersistentDiskException(msg)
-        if (resp.status >= 400):
+        if resp.status >= 400:
             msg = 'register: POST on %s raised error %d' % (url, resp.status)
             raise RegisterPersistentDiskException(msg)
 
@@ -205,10 +202,9 @@ class PersistentDisk:
         except httplib2.ServerNotFoundError:
             msg = 'unregister: %s not found' % self.endpoint
             raise RegisterPersistentDiskException(msg)
-        if (resp.status >= 400):
+        if resp.status >= 400:
             msg = 'unregister: DELETE on %s raised error %d' % (url, resp.status)
             raise RegisterPersistentDiskException(msg)
-
 
     def link(self, src, dst):
         """
@@ -240,7 +236,6 @@ class PersistentDisk:
         if os.path.lexists(link):
             os.unlink(link)
 
-
     def mount(self, vm_id, disk_name, target_device):
         """
           Mount/Unmount display device to a VM
@@ -271,10 +266,9 @@ class PersistentDisk:
             msg = "unmount: error dismounting disk from hypervisor (%d)" % retcode
             raise MountPersistentDiskException(msg)
 
-
     def __copy__(self, pdisk):
         """
-          __copy__ used to create a a xxxPersistentDisk object from PersistentDisk (xxxPersistentDisk is a inherited class)
+          creates a xxxPersistentDisk object from PersistentDisk (xxxPersistentDisk is a inherited class)
         """
         self.endpoint = pdisk.endpoint
         self.port = pdisk.port
@@ -283,7 +277,6 @@ class PersistentDisk:
         self.server = pdisk.server
         self.image = pdisk.image
         self.volumeCheck = pdisk.volumeCheck
-
 
     def check_mount(self, login, pswd):
         """
@@ -309,10 +302,10 @@ class PersistentDisk:
 
         return False
 
-
     def __checkTurl__(self, turl):
         """
-          __checkTurl__ check and split Transport URL ( proto://server:port/proto_options ) from pdisk id ( pdisk:endpoint:port:disk_uuid )
+        checks and splits the Transport URL ( proto://server:port/proto_options )
+        from pdisk id ( pdisk:endpoint:port:disk_uuid )
         """
         if turl == "":
             __url__ = "iscsi://" + self.endpoint + ":3260/iqn.2011-01.eu.stratuslab:" + self.disk_uuid + ":1"
@@ -346,7 +339,7 @@ class IscsiPersistentDisk(PersistentDisk):
         path = self.image_storage()
         iteration = 0
         while not os.path.exists(path):
-            iteration = iteration + 1
+            iteration += 1
             if iteration > 5:
                 msg = "attach: storage path (%s) did not appear" % path
                 raise AttachPersistentDiskException(msg)
@@ -356,7 +349,7 @@ class IscsiPersistentDisk(PersistentDisk):
         path = self.image_storage()
         iteration = 0
         while os.path.exists(path):
-            iteration = iteration + 1
+            iteration += 1
             if iteration > 5:
                 msg = "detach: storage path (%s) did not disappear" % path
                 raise AttachPersistentDiskException(msg)
@@ -435,8 +428,8 @@ class IscsiPersistentDisk(PersistentDisk):
             # Seems to be a problem with the device by path being instantly unavailable.
             self._wait_until_disappears()
 
-    def __image2iqn__(self, str):
-        __iqn__ = re.match(r"(?P<iqn>.*:.*):(?P<lun>.*)", str)
+    def __image2iqn__(self, s):
+        __iqn__ = re.match(r"(?P<iqn>.*:.*):(?P<lun>.*)", s)
         self.iqn = __iqn__.group('iqn')
         self.lun = __iqn__.group('lun')
 
@@ -446,8 +439,8 @@ class IscsiPersistentDisk(PersistentDisk):
 
 
 class FilePersistentDisk(PersistentDisk):
-    def __image2file__(self, str):
-        __file__ = re.match(r"(?P<mount_point>.*)/(?P<full_path>.*)", str)
+    def __image2file__(self, s):
+        __file__ = re.match(r"(?P<mount_point>.*)/(?P<full_path>.*)", s)
         self.mount_point = __file__.group('mount_point')
         self.full_path = __file__.group('full_path')
 

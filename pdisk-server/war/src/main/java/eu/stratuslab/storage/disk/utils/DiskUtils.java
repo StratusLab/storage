@@ -297,9 +297,12 @@ public final class DiskUtils {
         int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
 
         String linkName = getLinkedVolumeInDownloadCache(uuid);
+        
+        BackEndStorage backend = getDiskStorage();
+        String turl = backend.getTurl(uuid);
 
         List<String> cmd = getCommandAttachAndLinkLocal(uuid, host, port,
-                linkName);
+                linkName, turl);
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
         ProcessUtils.execute(pb, "Unable to attach persistent disk");
@@ -312,8 +315,11 @@ public final class DiskUtils {
 
         String host = "localhost";
         int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
+        
+        BackEndStorage backend = getDiskStorage();
+        String turl = backend.getTurl(uuid);
 
-        List<String> cmd = getCommandDetachLocal(uuid, host, port);
+        List<String> cmd = getCommandDetachLocal(uuid, host, port, turl);
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
         ProcessUtils.execute(pb, "Unable to detach persistent disk");
@@ -329,7 +335,7 @@ public final class DiskUtils {
     }
 
     private static List<String> getCommandAttachAndLinkLocal(String uuid,
-            String host, int port, String linkName) {
+            String host, int port, String linkName, String turl) {
         List<String> cmd = new ArrayList<String>();
 
         cmd.add("/usr/sbin/stratus-pdisk-client.py");
@@ -345,11 +351,14 @@ public final class DiskUtils {
         cmd.add("--link-to");
         cmd.add(linkName);
 
+        cmd.add("--turl");
+        cmd.add(turl);
+
         return cmd;
     }
 
     private static List<String> getCommandDetachLocal(String uuid, String host,
-            int port) {
+            int port, String turl) {
         List<String> cmd = new ArrayList<String>();
 
         cmd.add("/usr/sbin/stratus-pdisk-client.py");
