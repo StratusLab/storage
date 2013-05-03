@@ -296,7 +296,7 @@ public final class DiskUtils {
         String host = "localhost";
         int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
 
-        String linkName = getLinkedVolumeInDownlaodCache(uuid);
+        String linkName = getLinkedVolumeInDownloadCache(uuid);
 
         List<String> cmd = getCommandAttachAndLinkLocal(uuid, host, port,
                 linkName);
@@ -320,7 +320,7 @@ public final class DiskUtils {
     }
 
     private static void unlinkVolumeFromDownloadCache(String uuid) {
-        String linkName = getLinkedVolumeInDownlaodCache(uuid);
+        String linkName = getLinkedVolumeInDownloadCache(uuid);
         File file = new File(linkName);
         if (!file.delete()) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -365,7 +365,7 @@ public final class DiskUtils {
         return cmd;
     }
 
-    private static String getLinkedVolumeInDownlaodCache(String uuid) {
+    private static String getLinkedVolumeInDownloadCache(String uuid) {
         return RootApplication.CONFIGURATION.CACHE_LOCATION + "/" + uuid
                 + ".link";
     }
