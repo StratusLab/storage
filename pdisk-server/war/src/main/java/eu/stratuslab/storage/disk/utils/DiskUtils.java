@@ -371,6 +371,9 @@ public final class DiskUtils {
         cmd.add("--pdisk-id");
         cmd.add(getDiskId(host, port, uuid));
 
+        cmd.add("--turl");
+        cmd.add(turl);
+
         return cmd;
     }
 
