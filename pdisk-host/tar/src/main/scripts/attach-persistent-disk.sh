@@ -2,11 +2,12 @@
 
 UUID_URL=$1
 DEVICE_LINK=$2
-TARGET=$3
+TURL=$3
+TARGET=$4
 
 if [ "x$DEVICE_LINK" = "x" ]
 then
-    echo "usage: $0 UUID_URL DEVICE_LINK [TARGET]"
+    echo "usage: $0 UUID_URL DEVICE_LINK TURL [TARGET]"
     echo "UUID_URL have to be pdisk:<portal_address>:<portal_port>:<disk_uuid>"
     echo "If TARGET specified, disk will be hot plugged"
     exit 1
@@ -43,6 +44,7 @@ attach_iscsi() {
             --username $PDISK_USER --password $PDISK_PSWD \
             --pdisk-id $UUID_URL --vm-dir $vms_dir --vm-id $VM_ID \
             --vm-disk-name $device_name \
+            --turl $TURL \
             --target $TARGET --attach --link --mount --op up
         rc=$?
         if [ $rc -ne 0 ]; then
@@ -53,6 +55,7 @@ attach_iscsi() {
             --username $PDISK_USER --password $PDISK_PSWD \
             --pdisk-id $UUID_URL --vm-dir $vms_dir --vm-id $VM_ID \
             --vm-disk-name $device_name \
+            --turl $TURL \
             --register --attach --link --op up
         rc=$?
         if [ $rc -ne 0 ]; then
