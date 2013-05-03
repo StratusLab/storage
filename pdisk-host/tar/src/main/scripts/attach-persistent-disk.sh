@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 UUID_URL=$1
 DEVICE_LINK=$2
@@ -30,6 +30,9 @@ attach_nfs() {
 
     local ATTACH_CMD="ln -fs ${NFS_LOCATION}/${DISK_UUID} $DEVICE_LINK"
     $ATTACH_CMD
+    if [ $rc -ne 0 ]; then
+        return 1
+    fi
 }
 
 attach_iscsi() {
@@ -41,17 +44,23 @@ attach_iscsi() {
             --pdisk-id $UUID_URL --vm-dir $vms_dir --vm-id $VM_ID \
             --vm-disk-name $device_name \
             --target $TARGET --attach --link --mount --op up
+        rc=$?
+        if [ $rc -ne 0 ]; then
+            return 1
+        fi
     else
     	/usr/sbin/stratus-pdisk-client.py \
             --username $PDISK_USER --password $PDISK_PSWD \
             --pdisk-id $UUID_URL --vm-dir $vms_dir --vm-id $VM_ID \
             --vm-disk-name $device_name \
             --register --attach --link --op up
+        rc=$?
+        if [ $rc -ne 0 ]; then
+            return 1
+        fi
     fi
 }
 
 echo "$UUID_URL" >> $REGISTER_FILE
 
 attach_${SHARE_TYPE}
-
-exit 0
