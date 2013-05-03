@@ -44,6 +44,7 @@ import eu.stratuslab.storage.disk.resources.HomeResource;
 import eu.stratuslab.storage.disk.resources.InstancesResource;
 import eu.stratuslab.storage.disk.resources.MountResource;
 import eu.stratuslab.storage.disk.resources.MountsResource;
+import eu.stratuslab.storage.disk.resources.TurlResource;
 import eu.stratuslab.storage.disk.utils.DummyVerifier;
 import freemarker.template.Configuration;
 
@@ -113,8 +114,11 @@ public class RootApplication extends Application {
 		router.attach("/disks/{uuid}/mounts/{mountid}/", MountResource.class);
 		router.attach("/disks/{uuid}/mounts/{mountid}", MountResource.class);
 
-		router.attach("/disks/{uuid}/mounts/", MountsResource.class);
-		router.attach("/disks/{uuid}/mounts", MountsResource.class);
+        router.attach("/disks/{uuid}/mounts/", MountsResource.class);
+        router.attach("/disks/{uuid}/mounts", MountsResource.class);
+
+        router.attach("/disks/{uuid}/turl/", TurlResource.class);
+        router.attach("/disks/{uuid}/turl", TurlResource.class);
 
 		route = router.attach("/disks/{uuid}/?edit={"
 				+ DiskResource.EDIT_QUERY_VALUE + "}", DiskResource.class);

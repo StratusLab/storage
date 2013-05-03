@@ -39,6 +39,11 @@ public final class DiskUtils {
         return new BackEndStorage();
 
     }
+    
+    public static String getTurl(String diskUuid) {
+        BackEndStorage backend = getDiskStorage();
+        return backend.getTurl(diskUuid);
+    }
 
     public static void createDisk(Disk disk) {
 
@@ -130,8 +135,7 @@ public final class DiskUtils {
         String host = "localhost";
         String tmpVmId = DiskUtils.generateUUID();
         
-        BackEndStorage backEndStorage = new BackEndStorage();
-        String turl = backEndStorage.getTurl(diskUuid);
+        String turl = getTurl(diskUuid);
 
         // FIXME: host is most probably wrong for the last parameter
         attachHotplugDisk(host, port, host, tmpVmId, diskUuid, host, turl);
@@ -298,8 +302,7 @@ public final class DiskUtils {
 
         String linkName = getLinkedVolumeInDownloadCache(uuid);
         
-        BackEndStorage backend = getDiskStorage();
-        String turl = backend.getTurl(uuid);
+        String turl = getTurl(uuid);
 
         List<String> cmd = getCommandAttachAndLinkLocal(uuid, host, port,
                 linkName, turl);
