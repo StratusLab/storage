@@ -145,10 +145,14 @@ class VolumeManagement(object):
         self.directory = directory
 
     def isFree(self, target):
-        if os.listdir("%s/%s" % (self.directory, target)) == "":
+        if len(os.listdir("%s/%s" % (self.directory, target))) == 0:
             return True
         else:
             return False
+
+    def deleteTarget(self, target):
+        f = '%s/%s/' % (self.directory, target)
+        os.rmdir(f)
 
     def deleteVolume(self, target, turl):
         _turl = turl.replace('/', '-')
@@ -415,9 +419,8 @@ class IscsiPersistentDisk(PersistentDisk):
                 msg = 'detach: error detaching iSCSI disk from node %s (%s)' % (hostname, retcode)
                 raise AttachPersistentDiskException(msg)
 
-        sleep(2)
+            sleep(2)
 
-        if self.volumeCheck.isFree(filename):
             unreg = "sudo %s --mode node --portal %s:%s --target %s -o delete" % (
                 iscsiadm, portal_ip, portal.group('port'), self.iqn)
             retcode = call(unreg, shell=True)
@@ -427,6 +430,11 @@ class IscsiPersistentDisk(PersistentDisk):
 
             # Seems to be a problem with the device by path being instantly unavailable.
             self._wait_until_disappears()
+
+            self.volumeCheck.deleteTarget(filename)
+
+        # Give time for backend system to catch up.
+        sleep(2)
 
     def __image2iqn__(self, s):
         __iqn__ = re.match(r"(?P<iqn>.*:.*):(?P<lun>.*)", s)
