@@ -31,10 +31,6 @@
     <module>pdisk-host</module>
   </modules>
 
-  <properties>
-    <jetty.version>9.0.0.v20130308</jetty.version>
-  </properties>
-
   <issueManagement>
     <system>GitHub Issues</system>
     <url>https://github.com/StratusLab/authn/issues</url>
