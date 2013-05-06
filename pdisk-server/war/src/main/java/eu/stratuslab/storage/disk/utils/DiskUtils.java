@@ -3,6 +3,7 @@ package eu.stratuslab.storage.disk.utils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -15,7 +16,6 @@ import java.util.logging.Logger;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.marketplace.metadata.MetadataUtils;
 import eu.stratuslab.storage.disk.backend.BackEndStorage;
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
@@ -39,7 +39,7 @@ public final class DiskUtils {
         return new BackEndStorage();
 
     }
-    
+
     public static String getTurl(String diskUuid) {
         BackEndStorage backend = getDiskStorage();
         return backend.getTurl(diskUuid);
@@ -99,7 +99,8 @@ public final class DiskUtils {
     }
 
     public static void attachHotplugDisk(String serviceName, int servicePort,
-            String node, String vmId, String diskUuid, String target, String turl) {
+            String node, String vmId, String diskUuid, String target,
+            String turl) {
 
         // Do NOT use the --register flag here. This may cause an infinite loop
         // in the process because it calls the pdisk service again.
@@ -122,7 +123,7 @@ public final class DiskUtils {
 
         cmd.add("--turl");
         cmd.add(turl);
-        
+
         cmd.add("--vm-disk-name");
         cmd.add(getDiskId(serviceName, servicePort, diskUuid));
 
@@ -134,7 +135,7 @@ public final class DiskUtils {
         int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
         String host = "localhost";
         String tmpVmId = DiskUtils.generateUUID();
-        
+
         String turl = getTurl(diskUuid);
 
         // FIXME: host is most probably wrong for the last parameter
@@ -150,7 +151,8 @@ public final class DiskUtils {
     }
 
     public static void detachHotplugDisk(String serviceName, int servicePort,
-            String node, String vmId, String diskUuid, String target, String turl) {
+            String node, String vmId, String diskUuid, String target,
+            String turl) {
 
         // Do NOT use the --register flag here. This may cause an infinite loop
         // in the process because it calls the pdisk service again.
@@ -170,10 +172,10 @@ public final class DiskUtils {
 
         cmd.add("--vm-id");
         cmd.add(vmId);
-        
+
         cmd.add("--turl");
         cmd.add(turl);
-        
+
         cmd.add("--vm-disk-name");
         cmd.add(getDiskId(serviceName, servicePort, diskUuid));
 
@@ -274,6 +276,17 @@ public final class DiskUtils {
         }
     }
 
+    public static void copyUrlToVolume(String uuid, String url)
+            throws IOException {
+        String diskLocation = attachDiskToThisHost(uuid);
+        try {
+            DownloadUtils.copyUrlContentsToFile(url, new File(diskLocation));
+        } finally {
+            detachDiskFromThisHost(uuid);
+            getDiskStorage().unmap(uuid);
+        }
+    }
+
     // FIXME: This always rounds up and does it starting from bytes.
     // Need to round up only starting from megabytes?
     public static long convertBytesToGigaBytes(long sizeInBytes) {
@@ -301,7 +314,7 @@ public final class DiskUtils {
         int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
 
         String linkName = getLinkedVolumeInDownloadCache(uuid);
-        
+
         String turl = getTurl(uuid);
 
         List<String> cmd = getCommandAttachAndLinkLocal(uuid, host, port,
@@ -318,7 +331,7 @@ public final class DiskUtils {
 
         String host = "localhost";
         int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
-        
+
         BackEndStorage backend = getDiskStorage();
         String turl = backend.getTurl(uuid);
 

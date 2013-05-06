@@ -95,7 +95,20 @@ public class DisksResource extends DiskBaseResource {
 
         createDisk(disk);
 
+        initializeFromUrl(disk.getUuid(), form.getFirstValue(URL_KEY));
+
         return disk;
+    }
+
+    private void initializeFromUrl(String uuid, String url) {
+        if (url != null) {
+            try {
+                DiskUtils.copyUrlToVolume(uuid, url);
+            } catch (IOException e) {
+                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                        "error initializing disk contents from " + url);
+            }
+        }
     }
 
     @Post("form:json")

@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -22,6 +23,8 @@ import eu.stratuslab.storage.disk.main.RootApplication;
 public final class FileUtils {
 
     private static final Logger LOGGER = Logger.getLogger("org.restlet");
+
+    private static final int BUFFER_SIZE = 1024 * 50; // 50 MB buffer
 
     private FileUtils() {
 
@@ -160,6 +163,16 @@ public final class FileUtils {
     public static void copyFile(String src, String dst) {
         ProcessBuilder pb = new ProcessBuilder("dd", "if=" + src, "of=" + dst);
         ProcessUtils.execute(pb, "Unable to copy file " + src + " to " + dst);
+    }
+
+    public static void copyStream(InputStream is, OutputStream os)
+            throws IOException {
+
+        byte[] buffer = new byte[BUFFER_SIZE];
+
+        for (int bytes = is.read(buffer); bytes >= 0; bytes = is.read(buffer)) {
+            os.write(buffer, 0, bytes);
+        }
     }
 
     public static File getUploadCacheDirectory() {
