@@ -16,6 +16,8 @@ import java.util.logging.Logger;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
+import eu.stratuslab.marketplace.metadata.MetadataUtils;
+
 import eu.stratuslab.storage.disk.backend.BackEndStorage;
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
