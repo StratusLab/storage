@@ -168,8 +168,9 @@ public class DisksResource extends DiskBaseResource {
         try {
             streamInfo = DiskUtils.copyUrlToVolume(uuid, url);
         } catch (IOException e) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "error initializing disk contents from " + url);
+            String msg = "error initializing disk contents from " + url;
+            getLogger().warning(msg + "\nmessage: " + e.getMessage());
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, msg);
         }
 
         String bytes = form.getFirstValue(BYTES_KEY);

@@ -7,8 +7,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
@@ -20,7 +26,12 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.client.entity.GzipDecompressingEntity;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.BasicClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
 
 import eu.stratuslab.marketplace.metadata.MetadataUtils;
@@ -32,9 +43,7 @@ public class DownloadUtils {
 
         Map<String, BigInteger> streamInfo = new HashMap<String, BigInteger>();
 
-        DefaultHttpClient client = new DefaultHttpClient();
-        client.addRequestInterceptor(new GzipRequestInterceptor());
-        client.addResponseInterceptor(new GzipResponseInterceptor());
+        DefaultHttpClient client = getHttpClient();
 
         try {
 
@@ -112,6 +121,51 @@ public class DownloadUtils {
             }
         }
 
+    }
+
+    private static DefaultHttpClient getHttpClient() {
+
+        try {
+
+            SSLContext sslContext = SSLContext.getInstance("SSL");
+
+            sslContext.init(null, new TrustManager[] { new X509TrustManager() {
+
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[] {};
+                }
+
+                public void checkClientTrusted(X509Certificate[] certs,
+                        String authType) {
+                }
+
+                public void checkServerTrusted(X509Certificate[] certs,
+                        String authType) {
+                }
+
+            } }, new SecureRandom());
+
+            SSLSocketFactory sf = new SSLSocketFactory(sslContext,
+                    SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+
+            Scheme httpsScheme = new Scheme("https", 443, sf);
+            SchemeRegistry schemeRegistry = new SchemeRegistry();
+            schemeRegistry.register(httpsScheme);
+
+            ClientConnectionManager cm = new BasicClientConnectionManager(
+                    schemeRegistry);
+
+            DefaultHttpClient client = new DefaultHttpClient(cm);
+
+            client.addRequestInterceptor(new GzipRequestInterceptor());
+            client.addResponseInterceptor(new GzipResponseInterceptor());
+
+            return client;
+
+        } catch (Exception e) {
+            // FIXME: This should probably do something more intelligent!
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
 }
