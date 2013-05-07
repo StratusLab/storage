@@ -70,14 +70,14 @@ public class DownloadUtils {
                 }
 
                 // Explicitly set the size of the output file.
-                RandomAccessFile f = null;
-                try {
-                    f = new RandomAccessFile(file.getAbsolutePath(), "rw");
-                    long length = streamInfo.get("BYTES").longValue();
-                    f.setLength(length);
-                } finally {
-                    FileUtils.closeIgnoringError(f);
-                }
+//                RandomAccessFile f = null;
+//                try {
+//                    f = new RandomAccessFile(file.getAbsolutePath(), "rw");
+//                    long length = streamInfo.get("BYTES").longValue();
+//                    f.setLength(length);
+//                } finally {
+//                    FileUtils.closeIgnoringError(f);
+//                }
 
             }
 
