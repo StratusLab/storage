@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,10 +53,22 @@ public class DownloadUtils {
                     is = entity.getContent();
                     os = new FileOutputStream(file);
                     streamInfo = MetadataUtils.copyWithStreamInfo(is, os);
+
                 } finally {
                     FileUtils.closeIgnoringError(is);
                     FileUtils.closeIgnoringError(os);
                 }
+
+                // Explicitly set the size of the output file.
+                RandomAccessFile f = null;
+                try {
+                    f = new RandomAccessFile(file.getAbsolutePath(), "rw");
+                    long length = streamInfo.get("BYTES").longValue();
+                    f.setLength(length);
+                } finally {
+                    FileUtils.closeIgnoringError(f);
+                }
+
             }
 
         } finally {
