@@ -115,7 +115,7 @@ public class DisksResource extends DiskBaseResource {
         if (url == null) {
             // If no URL, then bail out; there is nothing to do.
             getLogger().info(
-                    String.format("NOT initializing contents of %s", url));
+                    String.format("NOT initializing contents of %s", uuid));
             return;
         }
 
