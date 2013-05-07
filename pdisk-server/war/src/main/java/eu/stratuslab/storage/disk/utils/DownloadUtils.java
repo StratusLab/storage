@@ -5,6 +5,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
@@ -19,10 +22,14 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.protocol.HttpContext;
 
+import eu.stratuslab.marketplace.metadata.MetadataUtils;
+
 public class DownloadUtils {
 
-    public static void copyUrlContentsToFile(String url, File file)
-            throws IOException {
+    public static Map<String, BigInteger> copyUrlContentsToFile(String url,
+            File file) throws IOException {
+
+        Map<String, BigInteger> streamInfo = new HashMap<String, BigInteger>();
 
         DefaultHttpClient client = new DefaultHttpClient();
         client.addRequestInterceptor(new GzipRequestInterceptor());
@@ -44,7 +51,7 @@ public class DownloadUtils {
                 try {
                     is = entity.getContent();
                     os = new FileOutputStream(file);
-                    FileUtils.copyStream(is, os);
+                    streamInfo = MetadataUtils.copyWithStreamInfo(is, os);
                 } finally {
                     FileUtils.closeIgnoringError(is);
                     FileUtils.closeIgnoringError(os);
@@ -54,6 +61,8 @@ public class DownloadUtils {
         } finally {
             client.getConnectionManager().shutdown();
         }
+
+        return streamInfo;
     }
 
     private static class GzipRequestInterceptor implements

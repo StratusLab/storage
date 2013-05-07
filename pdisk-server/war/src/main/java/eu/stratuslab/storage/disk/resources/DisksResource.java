@@ -28,6 +28,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,20 +96,64 @@ public class DisksResource extends DiskBaseResource {
 
         createDisk(disk);
 
-        initializeFromUrl(disk.getUuid(), form.getFirstValue(URL_KEY));
+        try {
+            initializeContents(disk.getUuid(), form);
+        } catch (ResourceException e) {
+            removeDisk(disk);
+            throw e;
+        }
 
         return disk;
     }
 
-    private void initializeFromUrl(String uuid, String url) {
-        if (url != null) {
-            try {
-                DiskUtils.copyUrlToVolume(uuid, url);
-            } catch (IOException e) {
+    private void initializeContents(String uuid, Form form)
+            throws ResourceException {
+
+        Map<String, BigInteger> streamInfo = null;
+
+        String url = form.getFirstValue(URL_KEY);
+        if (url == null) {
+            // If no URL, then bail out; there is nothing to do.
+            return;
+        }
+
+        try {
+            streamInfo = DiskUtils.copyUrlToVolume(uuid, url);
+        } catch (IOException e) {
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "error initializing disk contents from " + url);
+        }
+
+        String bytes = form.getFirstValue(BYTES_KEY);
+        if (bytes != null) {
+            BigInteger expected = new BigInteger(bytes);
+            BigInteger found = streamInfo.get("BYTES");
+            if (!expected.equals(found)) {
                 throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                        "error initializing disk contents from " + url);
+                        String.format(
+                                "size mismatch: %s (found) != %s (expected)",
+                                found, expected));
             }
         }
+
+        String sha1 = form.getFirstValue(SHA1_KEY);
+        if (sha1 != null) {
+            try {
+                BigInteger expected = new BigInteger(sha1, 16);
+                BigInteger found = streamInfo.get("SHA-1");
+                if (!expected.equals(found)) {
+                    throw new ResourceException(
+                            Status.CLIENT_ERROR_BAD_REQUEST,
+                            String.format(
+                                    "checksum mismatch: %s (found) != %s (expected)",
+                                    found, expected));
+                }
+            } catch (IllegalArgumentException e) {
+                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                        "invalid SHA-1 checksum: " + sha1);
+            }
+        }
+
     }
 
     @Post("form:json")
@@ -146,6 +191,10 @@ public class DisksResource extends DiskBaseResource {
 
     protected void createDisk(Disk disk) {
         DiskUtils.createDisk(disk);
+    }
+    
+    protected void removeDisk(Disk disk) {
+        DiskUtils.removeDisk(disk.getUuid());
     }
 
     private Disk saveAndInflateFiles() {

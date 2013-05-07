@@ -45,6 +45,8 @@ public class DiskBaseResource extends BaseResource {
 	private static final String DISK_SEED_KEY = "seed";
 	private static final String DISK_GROUP_KEY = "group";
 	public static final String URL_KEY = "url";
+	public static final String BYTES_KEY = "bytes";
+	public static final String SHA1_KEY = "sha1";
 
 	protected Disk getDisk(Form form) {
 

@@ -17,7 +17,6 @@ import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.marketplace.metadata.MetadataUtils;
-
 import eu.stratuslab.storage.disk.backend.BackEndStorage;
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
@@ -278,11 +277,12 @@ public final class DiskUtils {
         }
     }
 
-    public static void copyUrlToVolume(String uuid, String url)
-            throws IOException {
-        String diskLocation = attachDiskToThisHost(uuid);
+    public static Map<String, BigInteger> copyUrlToVolume(String uuid,
+            String url) throws IOException {
+
+        File diskLocation = new File(attachDiskToThisHost(uuid));
         try {
-            DownloadUtils.copyUrlContentsToFile(url, new File(diskLocation));
+            return DownloadUtils.copyUrlContentsToFile(url, diskLocation);
         } finally {
             detachDiskFromThisHost(uuid);
             getDiskStorage().unmap(uuid);
