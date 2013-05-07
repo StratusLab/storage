@@ -28,6 +28,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
@@ -169,7 +171,21 @@ public class DisksResource extends DiskBaseResource {
             streamInfo = DiskUtils.copyUrlToVolume(uuid, url);
         } catch (IOException e) {
             String msg = "error initializing disk contents from " + url;
-            getLogger().warning(msg + "\nmessage: " + e.getMessage());
+
+            StringWriter sw = null;
+            PrintWriter pw = null;
+            try {
+
+                sw = new StringWriter();
+                pw = new PrintWriter(sw);
+
+                e.printStackTrace(pw);
+                getLogger().warning(msg + "\ntraceback:\n" + sw.toString());
+            } finally {
+                FileUtils.closeIgnoringError(pw);
+                FileUtils.closeIgnoringError(sw);
+            }
+
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, msg);
         }
 
