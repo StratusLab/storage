@@ -87,93 +87,6 @@ public class DisksResource extends DiskBaseResource {
         return null;
     }
 
-    protected Disk validateAndCreateDisk() {
-        form = new Form(getRequestEntity());
-
-        Disk disk = getDisk(form);
-
-        validateNewDisk(disk);
-
-        createDisk(disk);
-
-        try {
-            initializeContents(disk.getUuid(), form);
-        } catch (ResourceException e) {
-            removeDisk(disk);
-            throw e;
-        }
-
-        return disk;
-    }
-
-    private void initializeContents(String uuid, Form form)
-            throws ResourceException {
-
-        Map<String, BigInteger> streamInfo = null;
-
-        String url = form.getFirstValue(URL_KEY);
-        if (url == null) {
-            // If no URL, then bail out; there is nothing to do.
-            getLogger().info(
-                    String.format("NOT initializing contents of %s", uuid));
-            return;
-        }
-
-        getLogger()
-                .info(String.format("initializing contents of %s from %s",
-                        uuid, url));
-
-        try {
-            streamInfo = DiskUtils.copyUrlToVolume(uuid, url);
-        } catch (IOException e) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "error initializing disk contents from " + url);
-        }
-
-        String bytes = form.getFirstValue(BYTES_KEY);
-        if (bytes != null) {
-            BigInteger expected = new BigInteger(bytes);
-            BigInteger found = streamInfo.get("BYTES");
-
-            getLogger().info(
-                    String.format(
-                            "copied bytes for %s: %s (copied), %s (expected)",
-                            uuid, found, expected));
-
-            if (!expected.equals(found)) {
-                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                        String.format(
-                                "size mismatch: %s (found) != %s (expected)",
-                                found, expected));
-            }
-        }
-
-        String sha1 = form.getFirstValue(SHA1_KEY);
-        if (sha1 != null) {
-            try {
-                BigInteger expected = new BigInteger(sha1, 16);
-                BigInteger found = streamInfo.get("SHA-1");
-
-                getLogger()
-                        .info(String
-                                .format("sha1 checksums for %s: %s (copied), %s (expected)",
-                                        uuid, found, expected));
-
-                if (!expected.equals(found)) {
-                    throw new ResourceException(
-                            Status.CLIENT_ERROR_BAD_REQUEST,
-                            String.format(
-                                    "checksum mismatch: %s (found) != %s (expected)",
-                                    found, expected));
-                }
-            } catch (IllegalArgumentException e) {
-                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                        "invalid SHA-1 checksum: " + sha1);
-            }
-        }
-
-    }
-
     @Post("form:json")
     public Representation createDiskRequestFromJson(Representation entity) {
 
@@ -204,6 +117,102 @@ public class DisksResource extends DiskBaseResource {
         disk.store();
 
         redirectSeeOther(getBaseUrl() + "/disks/" + disk.getUuid());
+
+    }
+
+    protected Disk validateAndCreateDisk() {
+        form = new Form(getRequestEntity());
+
+        getLogger().info("DisksResource creating new disk");
+
+        Disk disk = getDisk(form);
+
+        validateNewDisk(disk);
+
+        createDisk(disk);
+
+        getLogger().info(
+                String.format("DisksResource created new disk: %s",
+                        disk.getUuid()));
+
+        try {
+            initializeContents(disk.getUuid(), form);
+        } catch (ResourceException e) {
+            removeDisk(disk);
+            throw e;
+        }
+
+        return disk;
+    }
+
+    private void initializeContents(String uuid, Form form)
+            throws ResourceException {
+
+        Map<String, BigInteger> streamInfo = null;
+
+        String url = form.getFirstValue(URL_KEY);
+        if (url == null) {
+            // If no URL, then bail out; there is nothing to do.
+            getLogger().info(
+                    String.format(
+                            "DisksResource NOT initializing contents of %s",
+                            uuid));
+            return;
+        }
+
+        getLogger().info(
+                String.format(
+                        "DisksResource initializing contents of %s from %s",
+                        uuid, url));
+
+        try {
+            streamInfo = DiskUtils.copyUrlToVolume(uuid, url);
+        } catch (IOException e) {
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "error initializing disk contents from " + url);
+        }
+
+        String bytes = form.getFirstValue(BYTES_KEY);
+        if (bytes != null) {
+            BigInteger expected = new BigInteger(bytes);
+            BigInteger found = streamInfo.get("BYTES");
+
+            getLogger()
+                    .info(String
+                            .format("DisksResource copied bytes for %s: %s (copied), %s (expected)",
+                                    uuid, found, expected));
+
+            if (!expected.equals(found)) {
+                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                        String.format(
+                                "size mismatch: %s (found) != %s (expected)",
+                                found, expected));
+            }
+        }
+
+        String sha1 = form.getFirstValue(SHA1_KEY);
+        if (sha1 != null) {
+            try {
+                BigInteger expected = new BigInteger(sha1, 16);
+                BigInteger found = streamInfo.get("SHA-1");
+
+                getLogger()
+                        .info(String
+                                .format("DisksResource sha1 checksums for %s: %s (copied), %s (expected)",
+                                        uuid, found, expected));
+
+                if (!expected.equals(found)) {
+                    throw new ResourceException(
+                            Status.CLIENT_ERROR_BAD_REQUEST,
+                            String.format(
+                                    "checksum mismatch: %s (found) != %s (expected)",
+                                    found, expected));
+                }
+            } catch (IllegalArgumentException e) {
+                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                        "invalid SHA-1 checksum: " + sha1);
+            }
+        }
 
     }
 
