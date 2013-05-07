@@ -27,6 +27,7 @@ import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.client.entity.GzipDecompressingEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
@@ -149,8 +150,10 @@ public class DownloadUtils {
                     SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
 
             Scheme httpsScheme = new Scheme("https", 443, sf);
+            Scheme httpScheme = new Scheme("http", 80, new PlainSocketFactory());
             SchemeRegistry schemeRegistry = new SchemeRegistry();
             schemeRegistry.register(httpsScheme);
+            schemeRegistry.register(httpScheme);
 
             ClientConnectionManager cm = new BasicClientConnectionManager(
                     schemeRegistry);
