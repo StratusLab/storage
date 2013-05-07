@@ -114,8 +114,14 @@ public class DisksResource extends DiskBaseResource {
         String url = form.getFirstValue(URL_KEY);
         if (url == null) {
             // If no URL, then bail out; there is nothing to do.
+            getLogger().info(
+                    String.format("NOT initializing contents of %s", url));
             return;
         }
+
+        getLogger()
+                .info(String.format("initializing contents of %s from %s",
+                        uuid, url));
 
         try {
             streamInfo = DiskUtils.copyUrlToVolume(uuid, url);
@@ -128,6 +134,12 @@ public class DisksResource extends DiskBaseResource {
         if (bytes != null) {
             BigInteger expected = new BigInteger(bytes);
             BigInteger found = streamInfo.get("BYTES");
+
+            getLogger().info(
+                    String.format(
+                            "copied bytes for %s: %s (copied), %s (expected)",
+                            uuid, found, expected));
+
             if (!expected.equals(found)) {
                 throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
                         String.format(
@@ -141,6 +153,12 @@ public class DisksResource extends DiskBaseResource {
             try {
                 BigInteger expected = new BigInteger(sha1, 16);
                 BigInteger found = streamInfo.get("SHA-1");
+
+                getLogger()
+                        .info(String
+                                .format("sha1 checksums for %s: %s (copied), %s (expected)",
+                                        uuid, found, expected));
+
                 if (!expected.equals(found)) {
                     throw new ResourceException(
                             Status.CLIENT_ERROR_BAD_REQUEST,
@@ -192,7 +210,7 @@ public class DisksResource extends DiskBaseResource {
     protected void createDisk(Disk disk) {
         DiskUtils.createDisk(disk);
     }
-    
+
     protected void removeDisk(Disk disk) {
         DiskUtils.removeDisk(disk.getUuid());
     }
