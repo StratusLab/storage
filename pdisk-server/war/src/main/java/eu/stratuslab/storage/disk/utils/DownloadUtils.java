@@ -5,12 +5,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.RandomAccessFile;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -61,6 +61,12 @@ public class DownloadUtils {
 
                 try {
                     is = entity.getContent();
+
+                    // FIXME: This information should be passed as a parameter.
+                    if (url.endsWith(".gz")) {
+                        is = new GZIPInputStream(is);
+                    }
+
                     os = new FileOutputStream(file);
                     streamInfo = MetadataUtils.copyWithStreamInfo(is, os);
 
@@ -70,14 +76,14 @@ public class DownloadUtils {
                 }
 
                 // Explicitly set the size of the output file.
-//                RandomAccessFile f = null;
-//                try {
-//                    f = new RandomAccessFile(file.getAbsolutePath(), "rw");
-//                    long length = streamInfo.get("BYTES").longValue();
-//                    f.setLength(length);
-//                } finally {
-//                    FileUtils.closeIgnoringError(f);
-//                }
+                // RandomAccessFile f = null;
+                // try {
+                // f = new RandomAccessFile(file.getAbsolutePath(), "rw");
+                // long length = streamInfo.get("BYTES").longValue();
+                // f.setLength(length);
+                // } finally {
+                // FileUtils.closeIgnoringError(f);
+                // }
 
             }
 
@@ -160,8 +166,8 @@ public class DownloadUtils {
 
             DefaultHttpClient client = new DefaultHttpClient(cm);
 
-            client.addRequestInterceptor(new GzipRequestInterceptor());
-            client.addResponseInterceptor(new GzipResponseInterceptor());
+            // client.addRequestInterceptor(new GzipRequestInterceptor());
+            // client.addResponseInterceptor(new GzipResponseInterceptor());
 
             return client;
 
