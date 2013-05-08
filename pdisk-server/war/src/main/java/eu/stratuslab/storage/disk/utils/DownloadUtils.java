@@ -1,6 +1,7 @@
 package eu.stratuslab.storage.disk.utils;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,6 +10,8 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
@@ -34,10 +37,47 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.BasicClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
+import org.restlet.data.Status;
+import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.marketplace.metadata.MetadataUtils;
 
 public class DownloadUtils {
+
+    public static Map<String, BigInteger> copyUrlContentsToFileWithOS(
+            String url, File file) throws IOException {
+
+        List<String> cmd = new LinkedList<String>();
+        cmd.add("curl");
+        cmd.add(url);
+
+        // FIXME: This information should be passed as a parameter.
+        if (url.endsWith(".gz")) {
+            cmd.add("|");
+            cmd.add("gunzip");
+        }
+
+        cmd.add("|");
+        cmd.add("dd");
+        cmd.add("of=" + file.getAbsolutePath());
+
+        ProcessBuilder pb = new ProcessBuilder(cmd);
+
+        String msg = "error copying url (" + url + ") contents to disk";
+        try {
+            ProcessUtils.execute(pb, msg);
+        } catch (ResourceException e) {
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, msg);
+        }
+
+        InputStream is = null;
+        try {
+            is = new FileInputStream(file);
+            return MetadataUtils.streamInfo(is);
+        } finally {
+            FileUtils.closeIgnoringError(is);
+        }
+    }
 
     public static Map<String, BigInteger> copyUrlContentsToFile(String url,
             File file) throws IOException {
