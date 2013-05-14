@@ -169,6 +169,8 @@ public class DisksResource extends DiskBaseResource {
 
         try {
             streamInfo = DiskUtils.copyUrlToVolume(uuid, url);
+            // FIXME: Remove this line when checking will be done!
+            streamInfo.clear();
         } catch (IOException e) {
             String msg = "error initializing disk contents from " + url;
 
