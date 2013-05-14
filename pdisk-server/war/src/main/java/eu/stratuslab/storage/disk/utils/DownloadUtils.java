@@ -48,18 +48,16 @@ public class DownloadUtils {
             String url, File file) throws IOException {
 
         List<String> cmd = new LinkedList<String>();
-        cmd.add("curl");
+        cmd.add("/opt/stratuslab/storage/pdisk/bin/ddcopy");
         cmd.add(url);
+        cmd.add(file.getAbsolutePath());
 
         // FIXME: This information should be passed as a parameter.
         if (url.endsWith(".gz")) {
-            cmd.add("|");
-            cmd.add("gunzip");
+            cmd.add("YES");
+        } else {
+            cmd.add("NO")
         }
-
-        cmd.add("|");
-        cmd.add("dd");
-        cmd.add("of=" + file.getAbsolutePath());
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
 
