@@ -56,7 +56,7 @@ public class DownloadUtils {
         if (url.endsWith(".gz")) {
             cmd.add("YES");
         } else {
-            cmd.add("NO")
+            cmd.add("NO");
         }
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
