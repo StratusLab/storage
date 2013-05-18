@@ -1,7 +1,6 @@
 package eu.stratuslab.storage.disk.utils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,8 +9,6 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
@@ -37,48 +34,13 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.BasicClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
-import org.restlet.data.Status;
-import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.marketplace.metadata.MetadataUtils;
 
 public class DownloadUtils {
 
-    public static Map<String, BigInteger> copyUrlContentsToFileWithOS(
-            String url, File file) throws IOException {
-
-        List<String> cmd = new LinkedList<String>();
-        cmd.add("/opt/stratuslab/storage/pdisk/bin/ddcopy");
-        cmd.add(url);
-        cmd.add(file.getAbsolutePath());
-
-        // FIXME: This information should be passed as a parameter.
-        if (url.endsWith(".gz")) {
-            cmd.add("YES");
-        } else {
-            cmd.add("NO");
-        }
-
-        ProcessBuilder pb = new ProcessBuilder(cmd);
-
-        String msg = "error copying url (" + url + ") contents to disk";
-        try {
-            ProcessUtils.execute(pb, msg);
-        } catch (ResourceException e) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, msg);
-        }
-
-        InputStream is = null;
-        try {
-            is = new FileInputStream(file);
-            return MetadataUtils.streamInfo(is);
-        } finally {
-            FileUtils.closeIgnoringError(is);
-        }
-    }
-
-    public static Map<String, BigInteger> copyUrlContentsToFile(String url,
-            File file) throws IOException {
+    public static Map<String, BigInteger> copyUrlContentsToFile(String url, File file)
+            throws IOException {
 
         Map<String, BigInteger> streamInfo = new HashMap<String, BigInteger>();
 
@@ -95,12 +57,13 @@ public class DownloadUtils {
             if (entity != null) {
 
                 InputStream is = null;
-                OutputStream os = null;
+                FileOutputStream os = null;
 
                 try {
                     is = entity.getContent();
 
                     // FIXME: This information should be passed as a parameter.
+                    // FIXME: This should also support BZ2 compression.
                     if (url.endsWith(".gz")) {
                         is = new GZIPInputStream(is);
                     }
@@ -112,16 +75,6 @@ public class DownloadUtils {
                     FileUtils.closeIgnoringError(is);
                     FileUtils.closeIgnoringError(os);
                 }
-
-                // Explicitly set the size of the output file.
-                // RandomAccessFile f = null;
-                // try {
-                // f = new RandomAccessFile(file.getAbsolutePath(), "rw");
-                // long length = streamInfo.get("BYTES").longValue();
-                // f.setLength(length);
-                // } finally {
-                // FileUtils.closeIgnoringError(f);
-                // }
 
             }
 

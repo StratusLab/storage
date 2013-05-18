@@ -282,11 +282,7 @@ public final class DiskUtils {
 
         File diskLocation = new File(attachDiskToThisHost(uuid));
         try {
-            // Use OS level process for the copy.
-            return DownloadUtils.copyUrlContentsToFileWithOS(url, diskLocation);
-
-            // Use a pure java copy.
-            //return DownloadUtils.copyUrlContentsToFileWithOS(url, diskLocation);
+            return DownloadUtils.copyUrlContentsToFile(url, diskLocation);
         } finally {
             detachDiskFromThisHost(uuid);
             getDiskStorage().unmap(uuid);

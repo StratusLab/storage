@@ -168,9 +168,10 @@ public class DisksResource extends DiskBaseResource {
                         uuid, url));
 
         try {
+            // FIXME: This provides the file information for the download
+            // itself. It does NOT actually verify the data on disk. An
+            // additional check should probably be added.
             streamInfo = DiskUtils.copyUrlToVolume(uuid, url);
-            // FIXME: Remove this line when checking will be done!
-            streamInfo.clear();
         } catch (IOException e) {
             String msg = "error initializing disk contents from " + url;
 
@@ -191,49 +192,47 @@ public class DisksResource extends DiskBaseResource {
             throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, msg);
         }
 
-        // FIXME: These checks should be done!
-        
-//        String bytes = form.getFirstValue(BYTES_KEY);
-//        if (bytes != null) {
-//            BigInteger expected = new BigInteger(bytes);
-//            BigInteger found = streamInfo.get("BYTES");
-//
-//            getLogger()
-//                    .info(String
-//                            .format("DisksResource copied bytes for %s: %s (copied), %s (expected)",
-//                                    uuid, found, expected));
-//
-//            if (!expected.equals(found)) {
-//                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-//                        String.format(
-//                                "size mismatch: %s (found) != %s (expected)",
-//                                found, expected));
-//            }
-//        }
-//
-//        String sha1 = form.getFirstValue(SHA1_KEY);
-//        if (sha1 != null) {
-//            try {
-//                BigInteger expected = new BigInteger(sha1, 16);
-//                BigInteger found = streamInfo.get("SHA-1");
-//
-//                getLogger()
-//                        .info(String
-//                                .format("DisksResource sha1 checksums for %s: %s (copied), %s (expected)",
-//                                        uuid, found, expected));
-//
-//                if (!expected.equals(found)) {
-//                    throw new ResourceException(
-//                            Status.CLIENT_ERROR_BAD_REQUEST,
-//                            String.format(
-//                                    "checksum mismatch: %s (found) != %s (expected)",
-//                                    found, expected));
-//                }
-//            } catch (IllegalArgumentException e) {
-//                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-//                        "invalid SHA-1 checksum: " + sha1);
-//            }
-//        }
+        String bytes = form.getFirstValue(BYTES_KEY);
+        if (bytes != null) {
+            BigInteger expected = new BigInteger(bytes);
+            BigInteger found = streamInfo.get("BYTES");
+
+            getLogger()
+                    .info(String
+                            .format("DisksResource copied bytes for %s: %s (copied), %s (expected)",
+                                    uuid, found, expected));
+
+            if (!expected.equals(found)) {
+                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                        String.format(
+                                "size mismatch: %s (found) != %s (expected)",
+                                found, expected));
+            }
+        }
+
+        String sha1 = form.getFirstValue(SHA1_KEY);
+        if (sha1 != null) {
+            try {
+                BigInteger expected = new BigInteger(sha1, 16);
+                BigInteger found = streamInfo.get("SHA-1");
+
+                getLogger()
+                        .info(String
+                                .format("DisksResource sha1 checksums for %s: %s (copied), %s (expected)",
+                                        uuid, found, expected));
+
+                if (!expected.equals(found)) {
+                    throw new ResourceException(
+                            Status.CLIENT_ERROR_BAD_REQUEST,
+                            String.format(
+                                    "checksum mismatch: %s (found) != %s (expected)",
+                                    found, expected));
+                }
+            } catch (IllegalArgumentException e) {
+                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                        "invalid SHA-1 checksum: " + sha1);
+            }
+        }
 
     }
 
