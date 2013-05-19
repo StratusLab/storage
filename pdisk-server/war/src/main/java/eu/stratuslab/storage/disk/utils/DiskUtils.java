@@ -31,6 +31,11 @@ public final class DiskUtils {
 
     private static final Logger LOGGER = Logger.getLogger("org.restlet");
 
+    // This defines one GibiByte (GiB, 2^30 bytes). GigaBytes (GB) is used
+    // as a synonym for GiB throughout the code and in the API.
+    public static final long BYTES_IN_GiB = 1024L * 1024L * 1024L;
+    public static final double BYTES_IN_GiB_DOUBLE = (double) BYTES_IN_GiB;
+
     private DiskUtils() {
 
     }
@@ -289,12 +294,16 @@ public final class DiskUtils {
         }
     }
 
-    // FIXME: This always rounds up and does it starting from bytes.
-    // Need to round up only starting from megabytes?
-    public static long convertBytesToGigaBytes(long sizeInBytes) {
-        double bytesInAGB = 1024 * 1024 * 1024;
-        long inGB = (long) Math.ceil(sizeInBytes / bytesInAGB);
-        return (inGB == 0 ? 1 : inGB);
+    /**
+     * Returns the minimum number of whole GibiBytes (2^30 bytes) that contains
+     * at least the number of bytes given as the argument. If the argument is
+     * not positive, then the return value is 1L.
+     * 
+     * @param sizeInBytes
+     */
+    public static long convertBytesToGibiBytes(long sizeInBytes) {
+        long inGiB = (long) Math.ceil(sizeInBytes / BYTES_IN_GiB_DOUBLE);
+        return (inGiB <= 0 ? 1L : inGiB);
     }
 
     public static void createCompressedDisk(String uuid) {

@@ -348,7 +348,7 @@ public class DisksResource extends DiskBaseResource {
             FileUtils.closeIgnoringError(in);
             FileUtils.closeIgnoringError(out);
         }
-        return DiskUtils.convertBytesToGigaBytes(inflatedFile.length());
+        return DiskUtils.convertBytesToGibiBytes(inflatedFile.length());
     }
 
     private Map<String, Object> listDisks() {
