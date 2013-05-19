@@ -38,7 +38,6 @@ public class DiskView {
 	@Root(name = "list")
 	public static class DiskViewList {
 
-		@SuppressWarnings("unused")
 		@ElementList(inline = true, required = false)
 		private final List<DiskView> list;
 

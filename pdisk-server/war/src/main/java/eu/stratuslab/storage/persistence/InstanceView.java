@@ -22,7 +22,6 @@ public class InstanceView {
     @Root(name = "list")
     public static class InstanceViewList {
 
-        @SuppressWarnings("unused")
         @ElementList(inline = true, required = false)
         private final List<InstanceView> list;
 
