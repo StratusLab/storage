@@ -47,12 +47,37 @@
   <!-- provides SSL contexts that allow grid certificates and      -->
   <!-- proxies to be used.                                         -->
   <!-- =========================================================== -->
+    <!-- CA directory (/etc/grid-security/certificates) -->
+    <!-- CA namespace validation (EUGRIDPMA_AND_GLOBUS) --> 
+    <!-- update interval in ms (60000 = 10 min) -->
+    <!-- CRL checking policy (REQUIRE) -->
+<!-- SWITCH TO REGULAR SSL SOCKET TO TEST PROBLEMS WITH SSL HANDSHAKE 
   <New id="sslContextFactory" class="eu.stratuslab.ssl.GridSslContextFactory">
-    <Arg></Arg> <!-- CA directory (/etc/grid-security/certificates) -->
-    <Arg></Arg> <!-- CA namespace validation (EUGRIDPMA_AND_GLOBUS) --> 
-    <Arg></Arg> <!-- update interval in ms (60000 = 10 min) -->
-    <Arg></Arg> <!-- CRL checking policy (REQUIRE) -->
+    <Arg></Arg>
+    <Arg></Arg>
+    <Arg></Arg>
+    <Arg></Arg>
   
+    <Set name="KeyManagerPassword">jettycred</Set>
+    
+    <Set name="KeyStorePath"><Property name="jetty.home" default="." />/etc/jetty.jks</Set>
+    <Set name="KeyStorePassword">jettycred</Set>
+
+    <Set name="ExcludeCipherSuites">
+      <Array type="String">
+        <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_DHE_RSA_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_DHE_DSS_WITH_DES_CBC_SHA</Item>
+        <Item>SSL_RSA_EXPORT_WITH_RC4_40_MD5</Item>
+        <Item>SSL_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+        <Item>SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+        <Item>SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA</Item>
+      </Array>
+    </Set>
+  </New>
+-->
+
+  <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
     <Set name="KeyManagerPassword">jettycred</Set>
     
     <Set name="KeyStorePath"><Property name="jetty.home" default="." />/etc/jetty.jks</Set>
