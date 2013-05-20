@@ -67,16 +67,16 @@ class ListRegisteredVolumes(object):
             self.vm_dir = options.vm_dir
 
     def run(self):
-        with open(self.registration_file, 'a') as f:
+        with open(self.registration_file, 'r') as f:
             uris = f.read().splitlines()
 
         unique = []
         for uri in uris:
             uri = uri.strip()
-            if not uri in unique:
+            if uri and (not uri in unique):
                 unique.append(uri)
 
-        print "\n".join(unique) + "\n"
+        print "\n".join(unique)
 
 if __name__ == "__main__":
     ListRegisteredVolumes(sys.argv).run()
