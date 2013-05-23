@@ -67,8 +67,11 @@ class ListRegisteredVolumes(object):
             self.vm_dir = options.vm_dir
 
     def run(self):
-        with open(self.registration_file, 'r') as f:
-            uris = f.read().splitlines()
+        if os.path.exists(self.registration_file):
+            with open(self.registration_file, 'r') as f:
+                uris = f.read().splitlines()
+        else:
+            uris = []
 
         unique = []
         for uri in uris:
