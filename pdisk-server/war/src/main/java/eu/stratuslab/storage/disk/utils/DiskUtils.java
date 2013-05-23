@@ -115,6 +115,7 @@ public final class DiskUtils {
         cmd.add("--op up");
 
         cmd.add("--attach");
+        cmd.add("--mark");
         cmd.add("--link");
         cmd.add("--mount");
 
@@ -167,6 +168,7 @@ public final class DiskUtils {
         cmd.add("--op down");
 
         cmd.add("--attach");
+        cmd.add("--mark");
         cmd.add("--link");
         cmd.add("--mount");
 
