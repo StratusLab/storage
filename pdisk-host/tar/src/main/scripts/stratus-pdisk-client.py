@@ -202,6 +202,19 @@ class PersistentDisk:
         except AttributeError:
             raise PersistentDiskException('URI ' + pdisk_id + ' not match expression pdisk:endpoint:port:disk_uuid')
 
+    def __copy__(self, pdisk):
+        """
+          creates a xxxPersistentDisk object from PersistentDisk (xxxPersistentDisk is a inherited class)
+        """
+        self.pdisk_uri = pdisk.pdisk_uri
+        self.endpoint = pdisk.endpoint
+        self.port = pdisk.port
+        self.disk_uuid = pdisk.disk_uuid
+        self.protocol = pdisk.protocol
+        self.server = pdisk.server
+        self.image = pdisk.image
+        self.volumeCheck = pdisk.volumeCheck
+
     def __registration_uri__(self):
         return "https://" + self.endpoint + ":" + self.port + "/pswd/disks/" + self.disk_uuid + "/"
 
@@ -299,18 +312,6 @@ class PersistentDisk:
             msg = "unmount: error dismounting disk from hypervisor (%d)" % retcode
             raise MountPersistentDiskException(msg)
 
-    def __copy__(self, pdisk):
-        """
-          creates a xxxPersistentDisk object from PersistentDisk (xxxPersistentDisk is a inherited class)
-        """
-        self.endpoint = pdisk.endpoint
-        self.port = pdisk.port
-        self.disk_uuid = pdisk.disk_uuid
-        self.protocol = pdisk.protocol
-        self.server = pdisk.server
-        self.image = pdisk.image
-        self.volumeCheck = pdisk.volumeCheck
-
     def check_mount(self, login, pswd):
         """
           check_mount used to check if pdisk is already used return true if pdisk is free
@@ -363,7 +364,7 @@ class PersistentDisk:
         if registration_file:
             print >> sys.stderr, "Removing URI %s from %s..." % (self.pdisk_uri, registration_file)
             with open(registration_file, 'r') as f:
-                uris = f.splitlines()
+                uris = f.read().splitlines()
 
             with open(registration_file, 'w') as f:
                 for uri in uris:
