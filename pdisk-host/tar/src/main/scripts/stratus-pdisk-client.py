@@ -92,6 +92,9 @@ action.add_option("--attach", dest="attach", action="store_true",
 action.add_option("--register", dest="registration", action="store_true",
                   help="register/unregister persistent disk as used on service")
 
+action.add_option("--mark", dest="mark", action="store_true",
+                  help="mark/unmark persistent disk as used in the VM")
+
 action.add_option("--link", dest="link", action="store_true",
                   help="link/unlink attached disk in Virtual Machine directory")
 
@@ -130,6 +133,11 @@ if options.mount:
     if not options.vm_id or not options.target:
         raise parser.error("--mount option needs --target and --vm-id options")
 
+if options.mark:
+    if (not vm_dir and not options.vm_dir) or not options.vm_id:
+        raise parser.error(
+            "--mark option needs --vm-id option and --vm-dir if not defined in %s" % CONFFILE)
+
 if options.vm_dir:
     vm_dir = options.vm_dir
 
@@ -140,10 +148,9 @@ if options.password:
     pswd = options.password
 
 # Define the name of the file that lists the allocated persistent volumes.
-if vm_dir and vm_id and register_filename:
-    registration_file = os.path.join(vm_dir, vm_id, register_filename)
-else:
-    registration_file = None
+registration_file = None
+if options.mark:
+    registration_file = os.path.join(vm_dir, options.vm_id, register_filename)
 
 
 class VolumeManagement(object):
@@ -182,6 +189,18 @@ class VolumeManagement(object):
 
 class PersistentDisk:
     """Metaclass for general persistent disk client"""
+
+    def __init__(self, pdisk_id, turl):
+        try:
+            __pdisk__ = re.match(r"pdisk:(?P<server>.*):(?P<port>.*):(?P<disk_uuid>.*)", pdisk_id)
+            self.pdisk_uri = pdisk_id
+            self.endpoint = __pdisk__.group('server')
+            self.port = __pdisk__.group('port')
+            self.disk_uuid = __pdisk__.group('disk_uuid')
+            self.__checkTurl__(turl)
+            self.volumeCheck = VolumeManagement(VOLUME_MGMT_DIR)
+        except AttributeError:
+            raise PersistentDiskException('URI ' + pdisk_id + ' not match expression pdisk:endpoint:port:disk_uuid')
 
     def __registration_uri__(self):
         return "https://" + self.endpoint + ":" + self.port + "/pswd/disks/" + self.disk_uuid + "/"
@@ -334,21 +353,31 @@ class PersistentDisk:
             raise URIPersistentDiskException(
                 'TURL ' + turl + ' not match expression protocol://server/protocol-options')
 
-    def __init__(self, pdisk_id, turl):
-        try:
-            __pdisk__ = re.match(r"pdisk:(?P<server>.*):(?P<port>.*):(?P<disk_uuid>.*)", pdisk_id)
-            self.pdisk_uri = pdisk_id
-            self.endpoint = __pdisk__.group('server')
-            self.port = __pdisk__.group('port')
-            self.disk_uuid = __pdisk__.group('disk_uuid')
-            self.__checkTurl__(turl)
-            self.volumeCheck = VolumeManagement(VOLUME_MGMT_DIR)
-        except AttributeError:
-            raise PersistentDiskException('URI ' + pdisk_id + ' not match expression pdisk:endpoint:port:disk_uuid')
+    def addToVolumeUriList(self):
+        print >> sys.stderr, "Appending URI %s to %s..." % (self.pdisk_uri, registration_file)
+        with open(registration_file, 'a') as f:
+            f.write(self.pdisk_uri)
+            f.write("\n")
+
+    def removeFromVolumeUriList(self):
+        if registration_file:
+            print >> sys.stderr, "Removing URI %s from %s..." % (self.pdisk_uri, registration_file)
+            with open(registration_file, 'r') as f:
+                uris = f.splitlines()
+
+            with open(registration_file, 'w') as f:
+                for uri in uris:
+                    if not (uri == self.pdisk_uri):
+                        f.write(uri)
+                        f.write("\n")
 
 
 class IscsiPersistentDisk(PersistentDisk):
     _unix_device_path = '/dev/disk/by-path/'
+
+    def __init__(self, pdisk_class, turl):
+        self.__copy__(pdisk_class)
+        self.__image2iqn__(pdisk_class.image)
 
     def _wait_until_appears(self):
         path = self.image_storage()
@@ -452,12 +481,12 @@ class IscsiPersistentDisk(PersistentDisk):
         self.iqn = __iqn__.group('iqn')
         self.lun = __iqn__.group('lun')
 
-    def __init__(self, pdisk_class, turl):
-        self.__copy__(pdisk_class)
-        self.__image2iqn__(pdisk_class.image)
-
 
 class FilePersistentDisk(PersistentDisk):
+
+    def __init__(self, pdisk_class, turl):
+        self.__copy__(pdisk_class)
+
     def __image2file__(self, s):
         __file__ = re.match(r"(?P<mount_point>.*)/(?P<full_path>.*)", s)
         self.mount_point = __file__.group('mount_point')
@@ -471,9 +500,6 @@ class FilePersistentDisk(PersistentDisk):
 
     def detach(self):
         pass
-
-    def __init__(self, pdisk_class, turl):
-        self.__copy__(pdisk_class)
 
 
 class PersistentDiskException(Exception):
@@ -508,25 +534,6 @@ class getTurlPersistentDiskException(PersistentDiskException):
     pass
 
 
-def addToVolumeUriList(volume_uri):
-    if registration_file:
-        print >> "Appending URI %s to %s..." % (volume_uri, registration_file)
-        with open(registration_file, 'a') as f:
-            f.write(self.volume_uri)
-            f.write("\n")
-
-def removeFromVolumeUriList(volume_uri):
-    if registration_file:
-        print >> "Removing URI %s from %s..." % (volume_uri, registration_file)
-        with open(registration_file, 'r') as f:
-            uris = f.splitlines()
-
-        with open(registration_file, 'w') as f:
-            for uri in uris:
-                if not (uri == volume_uri):
-                    f.write(uri)
-                    f.write("\n")
-
 def do_up_operations(pdisk):
     try:
         if not options.no_check:
@@ -538,7 +545,9 @@ def do_up_operations(pdisk):
         if options.attach:
             print >> sys.stderr, "Attaching disk to hypervisor..."
             pdisk.attach()
-            addToVolumeUriList(pdisk.pdisk_uri)
+        if options.mark:
+            print >> sys.stderr, "Marking pdisk in volume list file..."
+            pdisk.addToVolumeUriList()
         if options.link_to:
             print >> sys.stderr, "Linking disk to %s" % options.link_to
             src = pdisk.image_storage()
@@ -595,7 +604,9 @@ def do_down_operations(pdisk):
         if options.attach:
             print >> sys.stderr, "Detach the disk from the hypervisor..."
             pdisk.detach()
-            removeFromVolumeUriList(pdisk.pdisk_uri)
+        if options.mark:
+            print >> sys.stderr, "Unmarking pdisk in volume list file..."
+            pdisk.removeFromVolumeUriList()
         if options.registration:
             print >> sys.stderr, "Remove mount from the pdisk service..."
             pdisk.unregister(login, pswd, options.vm_id)
