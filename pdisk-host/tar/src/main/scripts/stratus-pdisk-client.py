@@ -56,6 +56,10 @@ pswd = config.get("main", "pdisk_passwd")
 vm_dir = config.get("main", "vm_dir")
 VOLUME_MGMT_DIR = config.get("main", "volume_mgmt_dir")
 
+register_filename = config.get('main', 'register_filename')
+if not register_filename:
+    register_filename = 'pdisk'
+
 parser = OptionParser()
 parser.add_option("--pdisk-id", dest="persistent_disk_id",
                   help="persistent disk id ( pdisk:endpoint:port:disk_uuid )", metavar="PID")
@@ -134,6 +138,12 @@ if options.username:
 
 if options.password:
     pswd = options.password
+
+# Define the name of the file that lists the allocated persistent volumes.
+if vm_dir and vm_id and register_filename:
+    registration_file = os.path.join(vm_dir, vm_id, register_filename)
+else:
+    registration_file = None
 
 
 class VolumeManagement(object):
@@ -327,6 +337,7 @@ class PersistentDisk:
     def __init__(self, pdisk_id, turl):
         try:
             __pdisk__ = re.match(r"pdisk:(?P<server>.*):(?P<port>.*):(?P<disk_uuid>.*)", pdisk_id)
+            self.pdisk_uri = pdisk_id
             self.endpoint = __pdisk__.group('server')
             self.port = __pdisk__.group('port')
             self.disk_uuid = __pdisk__.group('disk_uuid')
@@ -497,6 +508,25 @@ class getTurlPersistentDiskException(PersistentDiskException):
     pass
 
 
+def addToVolumeUriList(volume_uri):
+    if registration_file:
+        print >> "Appending URI %s to %s..." % (volume_uri, registration_file)
+        with open(registration_file, 'a') as f:
+            f.write(self.volume_uri)
+            f.write("\n")
+
+def removeFromVolumeUriList(volume_uri):
+    if registration_file:
+        print >> "Removing URI %s from %s..." % (volume_uri, registration_file)
+        with open(registration_file, 'r') as f:
+            uris = f.splitlines()
+
+        with open(registration_file, 'w') as f:
+            for uri in uris:
+                if not (uri == volume_uri):
+                    f.write(uri)
+                    f.write("\n")
+
 def do_up_operations(pdisk):
     try:
         if not options.no_check:
@@ -508,6 +538,7 @@ def do_up_operations(pdisk):
         if options.attach:
             print >> sys.stderr, "Attaching disk to hypervisor..."
             pdisk.attach()
+            addToVolumeUriList(pdisk.pdisk_uri)
         if options.link_to:
             print >> sys.stderr, "Linking disk to %s" % options.link_to
             src = pdisk.image_storage()
@@ -564,6 +595,7 @@ def do_down_operations(pdisk):
         if options.attach:
             print >> sys.stderr, "Detach the disk from the hypervisor..."
             pdisk.detach()
+            removeFromVolumeUriList(pdisk.pdisk_uri)
         if options.registration:
             print >> sys.stderr, "Remove mount from the pdisk service..."
             pdisk.unregister(login, pswd, options.vm_id)
