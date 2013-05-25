@@ -103,7 +103,7 @@
     <Arg>
       <New class="org.eclipse.jetty.server.ssl.SslSelectChannelConnector">
         <Arg><Ref id="sslContextFactory" /></Arg>
-        <Set name="Port">8443</Set>
+        <Set name="Port">8445</Set>
         <Set name="maxIdleTime">30000</Set>
         <Set name="Acceptors">2</Set>
         <Set name="AcceptQueueSize">100</Set>
