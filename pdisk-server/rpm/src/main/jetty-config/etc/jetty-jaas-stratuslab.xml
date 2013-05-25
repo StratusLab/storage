@@ -13,7 +13,7 @@
     <!-- Realm for checking username/password pairs. -->
     <Call name="addBean">
       <Arg>
-          <New class="org.eclipse.jetty.jaas.JAASLoginService">
+          <New class="org.eclipse.jetty.plus.jaas.JAASLoginService">
            <Set name="Name">StratusLab Password Realm</Set>
            <Set name="LoginModuleName">stratuslab-pswd</Set>
           </New>
@@ -23,7 +23,7 @@
     <!-- Realm for use of X509 certificates. -->
     <Call name="addBean">
       <Arg>
-          <New class="org.eclipse.jetty.jaas.JAASLoginService">
+          <New class="org.eclipse.jetty.plus.jaas.JAASLoginService">
            <Set name="Name">StratusLab Certificate Realm</Set>
            <Set name="LoginModuleName">stratuslab-cert</Set>
           </New>

@@ -14,7 +14,7 @@
   <Set name="securityHandler">
     <New class="org.eclipse.jetty.security.ConstraintSecurityHandler">
       <Set name="loginService">
-        <New class="org.eclipse.jetty.jaas.JAASLoginService">
+        <New class="org.eclipse.jetty.plus.jaas.JAASLoginService">
           <Set name="name">StratusLab Certificate Realm</Set>
           <Set name="loginModuleName">stratuslab-cert</Set>
         </New>
