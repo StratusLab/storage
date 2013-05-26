@@ -9,12 +9,12 @@
   <Set name="extractWAR">true</Set>
   <Set name="copyWebDir">false</Set>
   <Set name="defaultsDescriptor"><SystemProperty name="jetty.home" default="."/>/etc/webdefault.xml</Set>
-  <Set name="overrideDescriptor"><SystemProperty name="jetty.home" default="."/>/contexts/cert.d/override-web.xml</Set>
+  <Set name="overrideDescriptor"><SystemProperty name="jetty.home" default="."/>/webapps/cert.d/override-web.xml</Set>
 
   <Set name="securityHandler">
     <New class="org.eclipse.jetty.security.ConstraintSecurityHandler">
       <Set name="loginService">
-        <New class="org.eclipse.jetty.plus.jaas.JAASLoginService">
+        <New class="org.eclipse.jetty.jaas.JAASLoginService">
           <Set name="name">StratusLab Certificate Realm</Set>
           <Set name="loginModuleName">stratuslab-cert</Set>
         </New>
