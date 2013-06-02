@@ -7,7 +7,7 @@
   <packaging>pom</packaging>
 
   <parent>
-    <groupId>eu.stratuslab.storage</groupId>
+    <groupId>eu.stratuslab.storage-j7</groupId>
     <artifactId>storage</artifactId>
     <version>13.05.0-SNAPSHOT</version>
   </parent>

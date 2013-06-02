@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   
-  <groupId>eu.stratuslab.storage</groupId>
+  <groupId>eu.stratuslab.storage-j7</groupId>
   <artifactId>storage</artifactId>
   <version>13.05.0-SNAPSHOT</version>
   <name>StratusLab Storage</name>
@@ -31,6 +31,10 @@
     <module>pdisk-host</module>
   </modules>
 
+  <properties>
+    <jetty.version>7.6.11.v20130520</jetty.version>
+  </properties>
+  
   <issueManagement>
     <system>GitHub Issues</system>
     <url>https://github.com/StratusLab/authn/issues</url>
@@ -77,12 +81,12 @@
 	<version>13.05.0-SNAPSHOT</version>
       </dependency>
       <dependency>
-	<groupId>eu.stratuslab.authn</groupId>
+	<groupId>eu.stratuslab.authn-j7</groupId>
 	<artifactId>authn-ssl</artifactId>
 	<version>13.05.0-SNAPSHOT</version>
       </dependency>
       <dependency>
-	<groupId>eu.stratuslab.authn</groupId>
+	<groupId>eu.stratuslab.authn-j7</groupId>
 	<artifactId>authn-login-module</artifactId>
 	<version>13.05.0-SNAPSHOT</version>
       </dependency>
