@@ -79,7 +79,8 @@ class ListRegisteredVolumes(object):
             if uri and (not uri in unique):
                 unique.append(uri)
 
-        print "\n".join(unique)
+        if unique:
+            print "\n".join(unique)
 
 if __name__ == "__main__":
     ListRegisteredVolumes(sys.argv).run()
