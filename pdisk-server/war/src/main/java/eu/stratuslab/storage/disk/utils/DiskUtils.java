@@ -72,7 +72,7 @@ public final class DiskUtils {
                 disk.getSize());
 
         cowDisk.setType(DiskType.MACHINE_IMAGE_LIVE);
-        diskStorage.map(disk.getUuid());
+        diskStorage.map(cowDisk.getUuid());
 
         cowDisk.store();
 
