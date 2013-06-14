@@ -184,7 +184,8 @@ class VolumeManagement(object):
             os.mkdir(self.directory)
         if not os.path.isdir(targetDir):
             os.mkdir(targetDir)
-        os.mkdir(f)
+        if not os.path.isdir(f):
+            os.mkdir(f)
 
 
 class PersistentDisk:
