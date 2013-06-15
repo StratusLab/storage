@@ -30,10 +30,11 @@ import ConfigParser
 import socket
 import httplib2
 import json
+import ssl
 from StringIO import StringIO
 from urllib import urlencode
 from subprocess import call
-from time import sleep
+from time import sleep, gmtime, strftime
 
 sample_example = """
 [main]
@@ -225,12 +226,9 @@ class PersistentDisk:
         """
         node = socket.gethostbyname(socket.gethostname())
         url = self.__registration_uri__() + "mounts/"
-        h = httplib2.Http()
-        h.disable_ssl_certificate_validation = True
-        h.add_credentials(login, pswd)
-        data = dict(node=node, vm_id=vm_id, register_only="true")
+        encodedData = urlencode(dict(node=node, vm_id=vm_id, register_only="true"))
         try:
-            resp, contents = h.request(url, "POST", urlencode(data))
+            resp, contents = self._httpRequestWithSSLErrorRetry(url, "POST", login, pswd, encodedData)
         except httplib2.ServerNotFoundError:
             msg = 'register: %s not found' % self.endpoint
             raise RegisterPersistentDiskException(msg)
@@ -241,11 +239,8 @@ class PersistentDisk:
     def unregister(self, login, pswd, vm_id):
         node = socket.gethostbyname(socket.gethostname())
         url = self.__registration_uri__() + "mounts/" + self.disk_uuid + "_" + vm_id
-        h = httplib2.Http()
-        h.add_credentials(login, pswd)
-        h.disable_ssl_certificate_validation = True
         try:
-            resp, contents = h.request(url, "DELETE")
+            resp, contents = self._httpRequestWithSSLErrorRetry(url, "DELETE", login, pswd)
         except httplib2.ServerNotFoundError:
             msg = 'unregister: %s not found' % self.endpoint
             raise RegisterPersistentDiskException(msg)
@@ -318,10 +313,7 @@ class PersistentDisk:
           check_mount used to check if pdisk is already used return true if pdisk is free
         """
         url = self.__registration_uri__() + "mounts/"
-        h = httplib2.Http()
-        h.add_credentials(login, pswd)
-        h.disable_ssl_certificate_validation = True
-        resp, contents = h.request(url)
+        resp, contents = self._httpRequestWithSSLErrorRetry(url, "GET", login, pswd)
 
         if resp.status != 200:
             msg = 'check_mount: GET on %s returned %d' % (url, resp.status)
@@ -372,6 +364,39 @@ class PersistentDisk:
                     if not (uri == self.pdisk_uri):
                         f.write(uri)
                         f.write("\n")
+
+    def _httpRequestWithSSLErrorRetry(self, url, method, login, pswd, encodedData=None):
+        """
+        Perform an HTTP operation, retrying if an SSLError is raised.
+        Data should be urlencoded BEFORE passing it to this routine.
+        """
+        h = httplib2.Http()
+        h.add_credentials(login, pswd)
+        h.disable_ssl_certificate_validation = True
+
+        maxRetries = 3
+        retries = 0
+        lastException = None
+        while retries < maxRetries:
+
+            try:
+                if encodedData:
+                    return h.request(url, method, encodedData)
+                else:
+                    return h.request(url, method)
+
+            except ssl.SSLError as e:
+                t = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+                print >> sys.stderr, 'SSL ERROR ENCOUNTERED (%s): %s' % (t, str(e))
+                lastException = e
+                retries += 1
+            except httplib2.ssl_SSLError as e:
+                t = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+                print >> sys.stderr, 'SSL ERROR ENCOUNTERED (%s): %s' % (t, str(e))
+                lastException = e
+                retries += 1
+
+        raise lastException
 
 
 class IscsiPersistentDisk(PersistentDisk):
