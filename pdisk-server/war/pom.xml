@@ -9,7 +9,7 @@
   <parent>
     <groupId>eu.stratuslab.storage</groupId>
     <artifactId>storage-pdisk-server-pom</artifactId>
-    <version>13.05.0.RC2-SNAPSHOT</version>
+    <version>13.05.0</version>
   </parent>
 
   <dependencies>
