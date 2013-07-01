@@ -4,8 +4,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigInteger;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
@@ -20,6 +21,7 @@ import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
@@ -27,6 +29,7 @@ import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.client.entity.GzipDecompressingEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
@@ -38,13 +41,13 @@ import org.apache.http.protocol.HttpContext;
 import eu.stratuslab.marketplace.metadata.MetadataUtils;
 
 public class DownloadUtils {
-
+	
     public static Map<String, BigInteger> copyUrlContentsToFile(String url, File file)
             throws IOException {
 
         Map<String, BigInteger> streamInfo = new HashMap<String, BigInteger>();
 
-        DefaultHttpClient client = getHttpClient();
+        DefaultHttpClient client = getHttpClientWithProxy(url);
 
         try {
 
@@ -85,7 +88,7 @@ public class DownloadUtils {
         return streamInfo;
     }
 
-    private static class GzipRequestInterceptor implements
+	private static class GzipRequestInterceptor implements
             HttpRequestInterceptor {
 
         public void process(final HttpRequest request, final HttpContext context)
@@ -121,7 +124,17 @@ public class DownloadUtils {
 
     }
 
-    private static DefaultHttpClient getHttpClient() {
+    public static DefaultHttpClient getHttpClientWithProxy(String url) {
+		DefaultHttpClient client = getHttpClient();
+	    try {
+			setProxy(client, url);
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+		return client;
+	}
+
+	private static DefaultHttpClient getHttpClient() {
 
         try {
 
@@ -156,7 +169,7 @@ public class DownloadUtils {
                     schemeRegistry);
 
             DefaultHttpClient client = new DefaultHttpClient(cm);
-
+            
             // client.addRequestInterceptor(new GzipRequestInterceptor());
             // client.addResponseInterceptor(new GzipResponseInterceptor());
 
@@ -167,5 +180,36 @@ public class DownloadUtils {
             throw new RuntimeException(e.getMessage());
         }
     }
+
+	private static void setProxy(DefaultHttpClient client, String url)
+			throws MalformedURLException {
+		if (noProxy(url))
+			return;
+
+		HttpHost proxy = getHttpProxyFromEnv();
+		if (proxy != null)
+			client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY,
+					proxy);
+	}
+
+	private static boolean noProxy(String destination)
+			throws MalformedURLException {
+		URL url = new URL(destination);
+		if (System.getenv("no_proxy") != null) {
+			return System.getenv("no_proxy").contains(url.getHost());
+		} else {
+			return false;
+		}
+	}
+
+	private static HttpHost getHttpProxyFromEnv() throws MalformedURLException {
+		String httpProxy = System.getenv("http_proxy");
+		if (httpProxy != null && !httpProxy.isEmpty()) {
+			URL url = new URL(httpProxy);
+			return new HttpHost(url.getHost(), url.getPort(), "http");
+		} else {
+			return null;
+		}
+	}
 
 }
