@@ -25,8 +25,7 @@ public class DownloadUtilsTest {
 				ConnRoutePNames.DEFAULT_PROXY);
 		if (DownloadUtils.isEnvProxySet()) {
 			assertNotNull(proxy);
-			String proxyUrl = DownloadUtils.getEnvProxy();
-			URL url = new URL(proxyUrl);
+			URL url = new URL(DownloadUtils.getEnvProxy());
 			assertThat(proxy.getHostName(), is(url.getHost()));
 			assertThat(proxy.getPort(), is(url.getPort()));
 		} else {
