@@ -415,6 +415,7 @@ class IscsiPersistentDisk(PersistentDisk):
                 msg = "attach: storage path (%s) did not appear" % path
                 raise AttachPersistentDiskException(msg)
             sleep(1)
+            call("sudo %s --mode session --rescan" % (iscsiadm), shell=True)
 
     def _wait_until_disappears(self):
         path = self.image_storage()
