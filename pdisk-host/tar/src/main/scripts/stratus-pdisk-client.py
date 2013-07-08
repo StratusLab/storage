@@ -396,6 +396,8 @@ class PersistentDisk:
                 lastException = e
                 retries += 1
 
+            sleep(2)
+
         raise lastException
 
 
