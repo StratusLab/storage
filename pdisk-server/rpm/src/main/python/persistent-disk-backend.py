@@ -36,6 +36,7 @@ import syslog
 import ConfigParser
 import uuid
 import socket
+import time
 
 # Initializations
 verbosity = 0
@@ -649,6 +650,9 @@ class Command:
   cmd_output_start = '<<<<<<<<<<'
   cmd_output_end = '>>>>>>>>>>'
   
+  RETRY_ERRORS = [(255, re.compile('^Connection to .* closed by remote host.'))]
+  MAX_RETRIES = 3
+  
   def __init__(self,action,cmd,successMsgs=None):
     self.action = action
     self.action_cmd = cmd
@@ -671,8 +675,7 @@ class Command:
   def checkStatus(self):
     optInfo = None
     try:
-      retcode = self.proc.wait()
-      output = self.proc.communicate()[0]
+      retcode, output = self._getStatusOutputOrRetry()
       if retcode != 0:
           abort('An error occured during %s action (error=%s). Command output:\n%s\n%s\n%s' % (self.action,retcode,self.cmd_output_start,output,self.cmd_output_end))
       else:
@@ -702,6 +705,30 @@ class Command:
       abort('Failed to execute %s action: %s' % (self.action,details))  
     return retcode,optInfo
 
+  def _getStatusOutputOrRetry(self):
+    retcode, output = self._getStatusOutput()
+    return self._retryOnError(retcode, output)
+
+  def _getStatusOutput(self):
+    retcode = self.proc.wait()
+    return retcode, self.proc.communicate()[0]
+
+  def _retryOnError(self, retcode, output):
+    retries = 0
+    while self._needToRetry(retcode, output) and retries < self.MAX_RETRIES:
+        time.sleep(1)
+        self.execute()
+        retcode, output = self._getStatusOutput()
+        retries += 1
+    return retcode, output
+
+  def _needToRetry(self, retcode, output):
+    if retcode == 0:
+      return False
+    for rc, re_out in self.RETRY_ERRORS:
+        if rc == retcode and re_out.match(output):
+            return True
+    return False
 
 ###############################
 # Functions to handle logging #
