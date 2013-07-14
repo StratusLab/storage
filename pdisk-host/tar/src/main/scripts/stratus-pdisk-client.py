@@ -404,12 +404,18 @@ class PersistentDisk:
 class IscsiPersistentDisk(PersistentDisk):
     _unix_device_path = '/dev/disk/by-path/'
 
+    @staticmethod
+    def _rescan_sessions():
+        return call("sudo %s --mode session --rescan" % (iscsiadm), 
+                    shell=True)    
+
     def __init__(self, pdisk_class, turl):
         self.__copy__(pdisk_class)
         self.__image2iqn__(pdisk_class.image)
 
     def _wait_until_appears(self):
         path = self.image_storage()
+        self._rescan_sessions()
         iteration = 0
         while not os.path.exists(path):
             iteration += 1
@@ -417,7 +423,7 @@ class IscsiPersistentDisk(PersistentDisk):
                 msg = "attach: storage path (%s) did not appear" % path
                 raise AttachPersistentDiskException(msg)
             sleep(1)
-            call("sudo %s --mode session --rescan" % (iscsiadm), shell=True)
+            self._rescan_sessions()
 
     def _wait_until_disappears(self):
         path = self.image_storage()
@@ -457,9 +463,7 @@ class IscsiPersistentDisk(PersistentDisk):
             self.volumeCheck.insertVolume(filename, options.turl)
         if retcode != 0:
             if retcode == 15:
-                cmd = "sudo %s --mode session --rescan" % (
-                    iscsiadm)
-                retcode = call(cmd, shell=True)
+                retcode = self._rescan_sessions()
                 if retcode == 0:
                     filename = '%s-%s-%s' % (__portal_ip__, __portal__.group('port'), self.iqn)
                     self.volumeCheck.insertVolume(filename, options.turl)
