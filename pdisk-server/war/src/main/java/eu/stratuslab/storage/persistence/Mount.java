@@ -128,7 +128,7 @@ public class Mount implements Serializable {
 
 		String nextTarget = null;
 
-		for (char driveLetter = 'a'; driveLetter <= 'z'; driveLetter++) {
+		for (char driveLetter = 'z'; driveLetter >= 'a'; driveLetter--) {
 			String device = DEVICE_PREFIX + driveLetter;
 			if (instance.getMounts().containsKey(device)) {
 				continue;
