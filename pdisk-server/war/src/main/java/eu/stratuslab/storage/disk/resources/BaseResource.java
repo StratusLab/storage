@@ -109,8 +109,14 @@ public class BaseResource extends ServerResource {
 
     }
 
-    private static String stripCNProxy(String username) {
-        return username.replaceFirst("^CN\\s*=\\s*proxy\\s*,\\s*", "");
+    //                                                                                          
+    // Different proxy versions have different DN structures. Old style has                     
+    // explicitly CN=proxy at the beginning. The new RFC proxies use                            
+    // CN=serial-no with 'serial-no' being a string of digits.                                  
+    //                                                                                          
+    public static String stripCNProxy(String username) {
+        return username.replaceFirst("^CN\\s*=\\s*proxy\\s*,\\s*", "")
+                .replaceFirst("^CN\\s*=\\s*\\d+\\s*,\\s*", "");
     }
 
     protected String getBaseUrl() {
