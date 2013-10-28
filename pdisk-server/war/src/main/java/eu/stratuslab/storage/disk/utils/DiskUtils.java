@@ -29,405 +29,414 @@ import eu.stratuslab.storage.persistence.Disk.DiskType;
  */
 public final class DiskUtils {
 
-    private static final Logger LOGGER = Logger.getLogger("org.restlet");
+	private static final Logger LOGGER = Logger.getLogger("org.restlet");
 
-    // This defines one GibiByte (GiB, 2^30 bytes). GigaBytes (GB) is used
-    // as a synonym for GiB throughout the code and in the API.
-    public static final long BYTES_IN_GiB = 1024L * 1024L * 1024L;
-    public static final double BYTES_IN_GiB_DOUBLE = (double) BYTES_IN_GiB;
+	// This defines one GibiByte (GiB, 2^30 bytes). GigaBytes (GB) is used
+	// as a synonym for GiB throughout the code and in the API.
+	public static final long BYTES_IN_GiB = 1024L * 1024L * 1024L;
+	public static final double BYTES_IN_GiB_DOUBLE = (double) BYTES_IN_GiB;
 
-    private DiskUtils() {
+	private DiskUtils() {
 
-    }
+	}
 
-    private static BackEndStorage getDiskStorage() {
+	private static BackEndStorage getDiskStorage() {
 
-        return new BackEndStorage();
+		return new BackEndStorage();
 
-    }
+	}
 
-    public static String getTurl(String diskUuid) {
-        BackEndStorage backend = getDiskStorage();
-        return backend.getTurl(diskUuid);
-    }
+	public static String getTurl(String diskUuid) {
+		BackEndStorage backend = getDiskStorage();
+		return backend.getTurl(diskUuid);
+	}
 
-    public static void createDisk(Disk disk) {
+	public static void createDisk(Disk disk) {
 
-        BackEndStorage diskStorage = getDiskStorage();
+		BackEndStorage diskStorage = getDiskStorage();
 
-        diskStorage.create(disk.getUuid(), disk.getSize());
-        diskStorage.map(disk.getUuid());
+		diskStorage.create(disk.getUuid(), disk.getSize());
+		diskStorage.map(disk.getUuid());
 
-        disk.store();
+		disk.store();
 
-    }
+	}
 
-    public static Disk createMachineImageCoWDisk(Disk disk) {
+	public static Disk createMachineImageCoWDisk(Disk disk) {
 
-        BackEndStorage diskStorage = getDiskStorage();
+		BackEndStorage diskStorage = getDiskStorage();
 
-        Disk cowDisk = createCowDisk(disk);
+		Disk cowDisk = createCowDisk(disk);
 
-        diskStorage.createCopyOnWrite(disk.getUuid(), cowDisk.getUuid(),
-                disk.getSize());
+		diskStorage.createCopyOnWrite(disk.getUuid(), cowDisk.getUuid(),
+				disk.getSize());
 
-        cowDisk.setType(DiskType.MACHINE_IMAGE_LIVE);
-        diskStorage.map(cowDisk.getUuid());
+		cowDisk.setType(DiskType.MACHINE_IMAGE_LIVE);
+		diskStorage.map(cowDisk.getUuid());
 
-        cowDisk.store();
+		cowDisk.store();
 
-        return cowDisk;
-    }
+		return cowDisk;
+	}
 
-    protected static Disk createCowDisk(Disk disk) {
-        Disk cowDisk = new Disk();
-        cowDisk.setType(DiskType.DATA_IMAGE_LIVE);
-        cowDisk.setBaseDiskUuid(disk.getUuid());
-        cowDisk.setSize(disk.getSize());
-        cowDisk.setIdentifier("snapshot:" + disk.getUuid());
-        return cowDisk;
-    }
+	protected static Disk createCowDisk(Disk disk) {
+		Disk cowDisk = new Disk();
+		cowDisk.setType(DiskType.DATA_IMAGE_LIVE);
+		cowDisk.setBaseDiskUuid(disk.getUuid());
+		cowDisk.setSize(disk.getSize());
+		cowDisk.setIdentifier("snapshot:" + disk.getUuid());
+		return cowDisk;
+	}
 
-    public static String rebaseDisk(Disk disk) {
+	public static String rebaseDisk(Disk disk) {
 
-        BackEndStorage diskStorage = getDiskStorage();
+		BackEndStorage diskStorage = getDiskStorage();
 
-        return diskStorage.rebase(disk);
-    }
+		return diskStorage.rebase(disk);
+	}
 
-    public static void removeDisk(String uuid) {
-        getDiskStorage().unmap(uuid);
-        getDiskStorage().delete(uuid);
-    }
+	public static void removeDisk(String uuid) {
+		getDiskStorage().unmap(uuid);
+		getDiskStorage().delete(uuid);
+	}
 
-    public static String getDiskId(String host, int port, String uuid) {
-        return String.format("pdisk:%s:%d:%s", host, port, uuid);
-    }
+	public static String getDiskId(String host, int port, String uuid) {
+		return String.format("pdisk:%s:%d:%s", host, port, uuid);
+	}
 
-    public static void attachHotplugDisk(String serviceName, int servicePort,
-            String node, String vmId, String diskUuid, String target,
-            String turl) {
+	public static void attachHotplugDisk(String serviceName, int servicePort,
+			String node, String vmId, String diskUuid, String target,
+			String turl) {
 
-        // Do NOT use the --register flag here. This may cause an infinite loop
-        // in the process because it calls the pdisk service again.
+		// Do NOT use the --register flag here. This may cause an infinite loop
+		// in the process because it calls the pdisk service again.
 
-        List<String> cmd = createHotPlugCommand(node);
-        cmd.add("--op up");
+		List<String> cmd = createHotPlugCommand(node);
+		cmd.add("--op up");
 
-        cmd.add("--attach");
-        cmd.add("--mark");
-        cmd.add("--link");
-        cmd.add("--mount");
+		cmd.add("--attach");
+		cmd.add("--mark");
+		cmd.add("--link");
+		cmd.add("--mount");
 
-        cmd.add("--pdisk-id");
-        cmd.add(getDiskId(serviceName, servicePort, diskUuid));
+		cmd.add("--pdisk-id");
+		cmd.add(getDiskId(serviceName, servicePort, diskUuid));
 
-        cmd.add("--target");
-        cmd.add(target);
+		cmd.add("--target");
+		cmd.add(target);
 
-        cmd.add("--vm-id");
-        cmd.add(vmId);
+		cmd.add("--vm-id");
+		cmd.add(vmId);
 
-        cmd.add("--turl");
-        cmd.add(turl);
+		cmd.add("--turl");
+		cmd.add(turl);
+
+		cmd.add("--vm-disk-name");
+		cmd.add(getDiskId(serviceName, servicePort, diskUuid));
 
-        cmd.add("--vm-disk-name");
-        cmd.add(getDiskId(serviceName, servicePort, diskUuid));
+		ProcessBuilder pb = new ProcessBuilder(cmd);
+		ProcessUtils.execute(pb, "Unable to attach persistent disk");
+	}
 
-        ProcessBuilder pb = new ProcessBuilder(cmd);
-        ProcessUtils.execute(pb, "Unable to attach persistent disk");
-    }
+	public static String attachHotplugDisk(String diskUuid) {
+		int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
+		String host = "localhost";
+		String tmpVmId = DiskUtils.generateUUID();
 
-    public static String attachHotplugDisk(String diskUuid) {
-        int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
-        String host = "localhost";
-        String tmpVmId = DiskUtils.generateUUID();
+		String turl = getTurl(diskUuid);
 
-        String turl = getTurl(diskUuid);
+		// FIXME: host is most probably wrong for the last parameter
+		attachHotplugDisk(host, port, host, tmpVmId, diskUuid, host, turl);
 
-        // FIXME: host is most probably wrong for the last parameter
-        attachHotplugDisk(host, port, host, tmpVmId, diskUuid, host, turl);
+		return tmpVmId;
+	}
 
-        return tmpVmId;
-    }
+	protected static String getDiskLocation(String vmId, String diskUuid) {
+		String attachedDisk = RootApplication.CONFIGURATION.CLOUD_NODE_VM_DIR
+				+ "/" + vmId + "/images/pdisk-" + diskUuid;
+		return attachedDisk;
+	}
 
-    protected static String getDiskLocation(String vmId, String diskUuid) {
-        String attachedDisk = RootApplication.CONFIGURATION.CLOUD_NODE_VM_DIR
-                + "/" + vmId + "/images/pdisk-" + diskUuid;
-        return attachedDisk;
-    }
+	public static void detachHotplugDisk(String serviceName, int servicePort,
+			String node, String vmId, String diskUuid, String target,
+			String turl) {
 
-    public static void detachHotplugDisk(String serviceName, int servicePort,
-            String node, String vmId, String diskUuid, String target,
-            String turl) {
+		// Do NOT use the --register flag here. This may cause an infinite loop
+		// in the process because it calls the pdisk service again.
 
-        // Do NOT use the --register flag here. This may cause an infinite loop
-        // in the process because it calls the pdisk service again.
+		List<String> cmd = createHotPlugCommand(node);
+		cmd.add("--op down");
 
-        List<String> cmd = createHotPlugCommand(node);
-        cmd.add("--op down");
+		cmd.add("--attach");
+		cmd.add("--mark");
+		cmd.add("--link");
+		cmd.add("--mount");
 
-        cmd.add("--attach");
-        cmd.add("--mark");
-        cmd.add("--link");
-        cmd.add("--mount");
+		cmd.add("--pdisk-id");
+		cmd.add(getDiskId(serviceName, servicePort, diskUuid));
 
-        cmd.add("--pdisk-id");
-        cmd.add(getDiskId(serviceName, servicePort, diskUuid));
+		cmd.add("--target");
+		cmd.add(target);
 
-        cmd.add("--target");
-        cmd.add(target);
+		cmd.add("--vm-id");
+		cmd.add(vmId);
 
-        cmd.add("--vm-id");
-        cmd.add(vmId);
+		cmd.add("--turl");
+		cmd.add(turl);
 
-        cmd.add("--turl");
-        cmd.add(turl);
+		cmd.add("--vm-disk-name");
+		cmd.add(getDiskId(serviceName, servicePort, diskUuid));
 
-        cmd.add("--vm-disk-name");
-        cmd.add(getDiskId(serviceName, servicePort, diskUuid));
+		ProcessBuilder pb = new ProcessBuilder(cmd);
+		ProcessUtils.execute(pb, "Unable to detach persistent disk");
+	}
 
-        ProcessBuilder pb = new ProcessBuilder(cmd);
-        ProcessUtils.execute(pb, "Unable to detach persistent disk");
-    }
+	protected static List<String> createHotPlugCommand(String node) {
+		List<String> cmd = new ArrayList<String>();
+		cmd.add("ssh");
+		cmd.add("-p");
+		cmd.add("22");
+		cmd.add("-o");
+		cmd.add("ConnectTimeout=5");
+		cmd.add("-o");
+		cmd.add("StrictHostKeyChecking=no");
+		cmd.add("-i");
+		cmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
+		cmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN + "@" + node);
+		cmd.add("/usr/sbin/stratus-pdisk-client.py");
+		return cmd;
+	}
 
-    protected static List<String> createHotPlugCommand(String node) {
-        List<String> cmd = new ArrayList<String>();
-        cmd.add("ssh");
-        cmd.add("-p");
-        cmd.add("22");
-        cmd.add("-o");
-        cmd.add("ConnectTimeout=5");
-        cmd.add("-o");
-        cmd.add("StrictHostKeyChecking=no");
-        cmd.add("-i");
-        cmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_SSH_KEY);
-        cmd.add(RootApplication.CONFIGURATION.CLOUD_NODE_ADMIN + "@" + node);
-        cmd.add("/usr/sbin/stratus-pdisk-client.py");
-        return cmd;
-    }
+	public static String generateUUID() {
+		return UUID.randomUUID().toString();
+	}
 
-    public static String generateUUID() {
-        return UUID.randomUUID().toString();
-    }
+	public static boolean isValidUUID(String uuid) {
+		try {
+			UUID.fromString(uuid);
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
 
-    public static String calculateHash(String uuid)
-            throws FileNotFoundException {
+	public static String calculateHash(String uuid)
+			throws FileNotFoundException {
 
-        InputStream fis = null;// = new FileInputStream(getDevicePath() + uuid);
+		InputStream fis = null;// = new FileInputStream(getDevicePath() + uuid);
 
-        return calculateHash(fis);
+		return calculateHash(fis);
 
-    }
+	}
 
-    public static String calculateHash(File file) throws FileNotFoundException {
+	public static String calculateHash(File file) throws FileNotFoundException {
 
-        InputStream fis = new FileInputStream(file);
+		InputStream fis = new FileInputStream(file);
 
-        return calculateHash(fis);
+		return calculateHash(fis);
 
-    }
+	}
 
-    public static String calculateHash(InputStream fis)
-            throws FileNotFoundException {
+	public static String calculateHash(InputStream fis)
+			throws FileNotFoundException {
 
-        Map<String, BigInteger> info = MetadataUtils.streamInfo(fis);
+		Map<String, BigInteger> info = MetadataUtils.streamInfo(fis);
 
-        BigInteger sha1Digest = info.get("SHA-1");
+		BigInteger sha1Digest = info.get("SHA-1");
 
-        String identifier = MetadataUtils.sha1ToIdentifier(sha1Digest);
+		String identifier = MetadataUtils.sha1ToIdentifier(sha1Digest);
 
-        return identifier;
+		return identifier;
 
-    }
+	}
 
-    public static String getDevicePath() {
-        return "";// RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
-    }
+	public static String getDevicePath() {
+		return "";// RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
+	}
 
-    public static void createAndPopulateDiskLocal(Disk disk) {
+	public static void createAndPopulateDiskLocal(Disk disk) {
 
-        String uuid = disk.getUuid();
+		String uuid = disk.getUuid();
 
-        File cachedDiskFile = FileUtils.getCachedDiskFile(uuid);
-        String cachedDisk = cachedDiskFile.getAbsolutePath();
-        try {
+		File cachedDiskFile = FileUtils.getCachedDiskFile(uuid);
+		String cachedDisk = cachedDiskFile.getAbsolutePath();
+		try {
 
-            createDisk(disk);
+			createDisk(disk);
 
-            try {
-                copyContentsToVolume(uuid, cachedDisk);
+			try {
+				copyContentsToVolume(uuid, cachedDisk);
 
-                // Size has already been set on the disk.
-                disk.setType(DiskType.DATA_IMAGE_RAW_READONLY);
-                disk.setSeed(true);
+				// Size has already been set on the disk.
+				disk.setType(DiskType.DATA_IMAGE_RAW_READONLY);
+				disk.setSeed(true);
 
-            } catch (RuntimeException e) {
-                removeDisk(disk.getUuid());
-            }
+			} catch (RuntimeException e) {
+				removeDisk(disk.getUuid());
+			}
 
-        } finally {
-            if (!cachedDiskFile.delete()) {
-                LOGGER.warning("could not delete upload cache file: "
-                        + cachedDisk);
-            }
-        }
-    }
+		} finally {
+			if (!cachedDiskFile.delete()) {
+				LOGGER.warning("could not delete upload cache file: "
+						+ cachedDisk);
+			}
+		}
+	}
 
-    private static void copyContentsToVolume(String uuid, String cachedDisk) {
-        String diskLocation = attachDiskToThisHost(uuid);
-        try {
-            FileUtils.copyFile(cachedDisk, diskLocation);
-        } finally {
-            detachDiskFromThisHost(uuid);
-            getDiskStorage().unmap(uuid);
-        }
-    }
+	private static void copyContentsToVolume(String uuid, String cachedDisk) {
+		String diskLocation = attachDiskToThisHost(uuid);
+		try {
+			FileUtils.copyFile(cachedDisk, diskLocation);
+		} finally {
+			detachDiskFromThisHost(uuid);
+			getDiskStorage().unmap(uuid);
+		}
+	}
 
-    public static Map<String, BigInteger> copyUrlToVolume(String uuid,
-            String url) throws IOException {
+	public static Map<String, BigInteger> copyUrlToVolume(String uuid,
+			String url) throws IOException {
 
-        File diskLocation = new File(attachDiskToThisHost(uuid));
-        try {
-            return DownloadUtils.copyUrlContentsToFile(url, diskLocation);
-        } finally {
-            detachDiskFromThisHost(uuid);
-            getDiskStorage().unmap(uuid);
-        }
-    }
+		File diskLocation = new File(attachDiskToThisHost(uuid));
+		try {
+			return DownloadUtils.copyUrlContentsToFile(url, diskLocation);
+		} finally {
+			detachDiskFromThisHost(uuid);
+			getDiskStorage().unmap(uuid);
+		}
+	}
 
-    /**
-     * Returns the minimum number of whole GibiBytes (2^30 bytes) that contains
-     * at least the number of bytes given as the argument. If the argument is
-     * not positive, then the return value is 1L.
-     * 
-     * @param sizeInBytes
-     */
-    public static long convertBytesToGibiBytes(long sizeInBytes) {
-        long inGiB = (long) Math.ceil(sizeInBytes / BYTES_IN_GiB_DOUBLE);
-        return (inGiB <= 0 ? 1L : inGiB);
-    }
+	/**
+	 * Returns the minimum number of whole GibiBytes (2^30 bytes) that contains
+	 * at least the number of bytes given as the argument. If the argument is
+	 * not positive, then the return value is 1L.
+	 * 
+	 * @param sizeInBytes
+	 */
+	public static long convertBytesToGibiBytes(long sizeInBytes) {
+		long inGiB = (long) Math.ceil(sizeInBytes / BYTES_IN_GiB_DOUBLE);
+		return (inGiB <= 0 ? 1L : inGiB);
+	}
 
-    public static void createCompressedDisk(String uuid) {
+	public static void createCompressedDisk(String uuid) {
 
-        String diskLocation = attachDiskToThisHost(uuid);
+		String diskLocation = attachDiskToThisHost(uuid);
 
-        ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c",
-                RootApplication.CONFIGURATION.GZIP_CMD + " -f -c "
-                        + diskLocation + " > "
-                        + getCompressedDiskLocation(uuid));
-        ProcessUtils.execute(pb, "Unable to compress disk " + uuid);
+		ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c",
+				RootApplication.CONFIGURATION.GZIP_CMD + " -f -c "
+						+ diskLocation + " > "
+						+ getCompressedDiskLocation(uuid));
+		ProcessUtils.execute(pb, "Unable to compress disk " + uuid);
 
-        detachDiskFromThisHost(uuid);
-    }
+		detachDiskFromThisHost(uuid);
+	}
 
-    private static String attachDiskToThisHost(String uuid) {
+	private static String attachDiskToThisHost(String uuid) {
 
-        String host = "localhost";
-        int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
+		String host = "localhost";
+		int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
 
-        String linkName = getLinkedVolumeInDownloadCache(uuid);
+		String linkName = getLinkedVolumeInDownloadCache(uuid);
 
-        String turl = getTurl(uuid);
+		String turl = getTurl(uuid);
 
-        List<String> cmd = getCommandAttachAndLinkLocal(uuid, host, port,
-                linkName, turl);
+		List<String> cmd = getCommandAttachAndLinkLocal(uuid, host, port,
+				linkName, turl);
 
-        ProcessBuilder pb = new ProcessBuilder(cmd);
-        ProcessUtils.execute(pb, "Unable to attach persistent disk");
+		ProcessBuilder pb = new ProcessBuilder(cmd);
+		ProcessUtils.execute(pb, "Unable to attach persistent disk");
 
-        return linkName;
-    }
+		return linkName;
+	}
 
-    private static void detachDiskFromThisHost(String uuid) {
-        unlinkVolumeFromDownloadCache(uuid);
+	private static void detachDiskFromThisHost(String uuid) {
+		unlinkVolumeFromDownloadCache(uuid);
 
-        String host = "localhost";
-        int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
+		String host = "localhost";
+		int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
 
-        BackEndStorage backend = getDiskStorage();
-        String turl = backend.getTurl(uuid);
+		BackEndStorage backend = getDiskStorage();
+		String turl = backend.getTurl(uuid);
 
-        List<String> cmd = getCommandDetachLocal(uuid, host, port, turl);
+		List<String> cmd = getCommandDetachLocal(uuid, host, port, turl);
 
-        ProcessBuilder pb = new ProcessBuilder(cmd);
-        ProcessUtils.execute(pb, "Unable to detach persistent disk");
-    }
+		ProcessBuilder pb = new ProcessBuilder(cmd);
+		ProcessUtils.execute(pb, "Unable to detach persistent disk");
+	}
 
-    private static void unlinkVolumeFromDownloadCache(String uuid) {
-        String linkName = getLinkedVolumeInDownloadCache(uuid);
-        File file = new File(linkName);
-        if (!file.delete()) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "Failed deleting linked file: " + linkName);
-        }
-    }
+	private static void unlinkVolumeFromDownloadCache(String uuid) {
+		String linkName = getLinkedVolumeInDownloadCache(uuid);
+		File file = new File(linkName);
+		if (!file.delete()) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					"Failed deleting linked file: " + linkName);
+		}
+	}
 
-    private static List<String> getCommandAttachAndLinkLocal(String uuid,
-            String host, int port, String linkName, String turl) {
-        List<String> cmd = new ArrayList<String>();
+	private static List<String> getCommandAttachAndLinkLocal(String uuid,
+			String host, int port, String linkName, String turl) {
+		List<String> cmd = new ArrayList<String>();
 
-        cmd.add("/usr/sbin/stratus-pdisk-client.py");
+		cmd.add("/usr/sbin/stratus-pdisk-client.py");
 
-        cmd.add("--op");
-        cmd.add("up");
+		cmd.add("--op");
+		cmd.add("up");
 
-        cmd.add("--attach");
+		cmd.add("--attach");
 
-        cmd.add("--pdisk-id");
-        cmd.add(getDiskId(host, port, uuid));
+		cmd.add("--pdisk-id");
+		cmd.add(getDiskId(host, port, uuid));
 
-        cmd.add("--link-to");
-        cmd.add(linkName);
+		cmd.add("--link-to");
+		cmd.add(linkName);
 
-        cmd.add("--turl");
-        cmd.add(turl);
+		cmd.add("--turl");
+		cmd.add(turl);
 
-        return cmd;
-    }
+		return cmd;
+	}
 
-    private static List<String> getCommandDetachLocal(String uuid, String host,
-            int port, String turl) {
-        List<String> cmd = new ArrayList<String>();
+	private static List<String> getCommandDetachLocal(String uuid, String host,
+			int port, String turl) {
+		List<String> cmd = new ArrayList<String>();
 
-        cmd.add("/usr/sbin/stratus-pdisk-client.py");
+		cmd.add("/usr/sbin/stratus-pdisk-client.py");
 
-        cmd.add("--op");
-        cmd.add("down");
+		cmd.add("--op");
+		cmd.add("down");
 
-        cmd.add("--attach");
+		cmd.add("--attach");
 
-        cmd.add("--pdisk-id");
-        cmd.add(getDiskId(host, port, uuid));
+		cmd.add("--pdisk-id");
+		cmd.add(getDiskId(host, port, uuid));
 
-        cmd.add("--turl");
-        cmd.add(turl);
+		cmd.add("--turl");
+		cmd.add(turl);
 
-        return cmd;
-    }
+		return cmd;
+	}
 
-    private static String getLinkedVolumeInDownloadCache(String uuid) {
-        return RootApplication.CONFIGURATION.CACHE_LOCATION + "/" + uuid
-                + ".link";
-    }
+	private static String getLinkedVolumeInDownloadCache(String uuid) {
+		return RootApplication.CONFIGURATION.CACHE_LOCATION + "/" + uuid
+				+ ".link";
+	}
 
-    public static String getCompressedDiskLocation(String uuid) {
-        return RootApplication.CONFIGURATION.CACHE_LOCATION + "/" + uuid
-                + ".gz";
-    }
+	public static String getCompressedDiskLocation(String uuid) {
+		return RootApplication.CONFIGURATION.CACHE_LOCATION + "/" + uuid
+				+ ".gz";
+	}
 
-    public static Boolean isCompressedDiskBuilding(String uuid) {
-        return FileUtils.isCachedDiskExists(uuid);
-    }
+	public static Boolean isCompressedDiskBuilding(String uuid) {
+		return FileUtils.isCachedDiskExists(uuid);
+	}
 
-    public static Boolean hasCompressedDiskExpire(String uuid) {
-        File zip = new File(FileUtils.getCompressedDiskLocation(uuid));
-        return hasCompressedDiskExpire(zip);
-    }
+	public static Boolean hasCompressedDiskExpire(String uuid) {
+		File zip = new File(FileUtils.getCompressedDiskLocation(uuid));
+		return hasCompressedDiskExpire(zip);
+	}
 
-    public static Boolean hasCompressedDiskExpire(File disk) {
-        Calendar cal = Calendar.getInstance();
-        return (cal.getTimeInMillis() > (disk.lastModified() + ServiceConfiguration.CACHE_EXPIRATION_DURATION));
-    }
+	public static Boolean hasCompressedDiskExpire(File disk) {
+		Calendar cal = Calendar.getInstance();
+		return (cal.getTimeInMillis() > (disk.lastModified() + ServiceConfiguration.CACHE_EXPIRATION_DURATION));
+	}
 
 }

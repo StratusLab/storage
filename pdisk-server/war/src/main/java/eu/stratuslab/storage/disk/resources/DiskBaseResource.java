@@ -138,6 +138,11 @@ public class DiskBaseResource extends BaseResource {
 
 	protected void validateNewDisk(Disk disk) {
 
+		if (disk.getIdentifier() == null) {
+			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
+					"Invalid UUID provided");
+		}
+
 		if (Disk.identifierExists(disk.getIdentifier())) {
 			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
 					"Disk already registered");

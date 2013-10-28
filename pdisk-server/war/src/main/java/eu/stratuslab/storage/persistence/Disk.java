@@ -26,334 +26,342 @@ import eu.stratuslab.storage.disk.utils.MiscUtils;
 @Entity
 @SuppressWarnings("serial")
 @NamedQueries({
-        @NamedQuery(name = "allDisks", query = "SELECT d FROM Disk d ORDER BY d.creation DESC"),
-        @NamedQuery(name = "allDisksByUser", query = "SELECT d FROM Disk d WHERE d.owner = :user ORDER BY d.creation DESC"),
-        @NamedQuery(name = "countAllDisksByIdentifier", query = "SELECT COUNT(d) FROM Disk d WHERE d.identifier = :identifier"),
-        @NamedQuery(name = "allDisksByIdentifier", query = "SELECT d FROM Disk d WHERE d.identifier = :identifier ORDER BY d.creation DESC") })
+		@NamedQuery(name = "allDisks", query = "SELECT d FROM Disk d ORDER BY d.creation DESC"),
+		@NamedQuery(name = "allDisksByUser", query = "SELECT d FROM Disk d WHERE d.owner = :user ORDER BY d.creation DESC"),
+		@NamedQuery(name = "countAllDisksByIdentifier", query = "SELECT COUNT(d) FROM Disk d WHERE d.identifier = :identifier"),
+		@NamedQuery(name = "allDisksByIdentifier", query = "SELECT d FROM Disk d WHERE d.identifier = :identifier ORDER BY d.creation DESC") })
 public class Disk implements Serializable {
 
-    public enum DiskType {
-        /**
-         * seed/cache of machine image seed (managed by Marketplace)
-         */
-        MACHINE_IMAGE_ORIGIN,
-        /**
-         * snapshot / cow of machine image (managed by Marketplace)
-         */
-        MACHINE_IMAGE_LIVE,
-        /**
-         * seed/cache of data image seed (managed by Marketplace)
-         */
-        DATA_IMAGE_ORIGIN,
-        /**
-         * snapshot / cow of machine image (managed by Marketplace)
-         */
-        DATA_IMAGE_LIVE,
-        /**
-         * simple read only data (raw data managed by user)
-         */
-        DATA_IMAGE_RAW_READONLY,
-        /**
-         * simple read/write data (raw data managed by user)
-         */
-        DATA_IMAGE_RAW_READ_WRITE
-    }
+	public enum DiskType {
+		/**
+		 * seed/cache of machine image seed (managed by Marketplace)
+		 */
+		MACHINE_IMAGE_ORIGIN,
+		/**
+		 * snapshot / cow of machine image (managed by Marketplace)
+		 */
+		MACHINE_IMAGE_LIVE,
+		/**
+		 * seed/cache of data image seed (managed by Marketplace)
+		 */
+		DATA_IMAGE_ORIGIN,
+		/**
+		 * snapshot / cow of machine image (managed by Marketplace)
+		 */
+		DATA_IMAGE_LIVE,
+		/**
+		 * simple read only data (raw data managed by user)
+		 */
+		DATA_IMAGE_RAW_READONLY,
+		/**
+		 * simple read/write data (raw data managed by user)
+		 */
+		DATA_IMAGE_RAW_READ_WRITE
+	}
 
-    public static final String STATIC_DISK_TARGET = "static";
-    public static final String UUID_KEY = "uuid";
-    public static final String DISK_VISIBILITY_KEY = "visibility";
-    public static final String DISK_SIZE_KEY = "size";
-    public static final String DISK_IDENTIFER_KEY = "Marketplace_id";
+	public static final String STATIC_DISK_TARGET = "static";
+	public static final String UUID_KEY = "uuid";
+	public static final String DISK_VISIBILITY_KEY = "visibility";
+	public static final String DISK_SIZE_KEY = "size";
+	public static final String DISK_IDENTIFER_KEY = "Marketplace_id";
 
-    public static Disk load(String uuid) {
-        EntityManager em = PersistenceUtil.createEntityManager();
-        Disk disk = em.find(Disk.class, uuid);
-        em.close();
-        return disk;
-    }
+	public static Disk load(String uuid) {
+		EntityManager em = PersistenceUtil.createEntityManager();
+		Disk disk = em.find(Disk.class, uuid);
+		em.close();
+		return disk;
+	}
 
-    public Disk store() {
-        EntityManager em = PersistenceUtil.createEntityManager();
-        EntityTransaction transaction = em.getTransaction();
-        transaction.begin();
-        Disk obj = em.merge(this);
-        transaction.commit();
-        em.close();
-        return obj;
-    }
+	public Disk store() {
+		EntityManager em = PersistenceUtil.createEntityManager();
+		EntityTransaction transaction = em.getTransaction();
+		transaction.begin();
+		Disk obj = em.merge(this);
+		transaction.commit();
+		em.close();
+		return obj;
+	}
 
-    public void remove() {
-        remove(getUuid());
-    }
+	public void remove() {
+		remove(getUuid());
+	}
 
-    public static void remove(String uuid) {
-        EntityManager em = PersistenceUtil.createEntityManager();
-        EntityTransaction transaction = em.getTransaction();
-        transaction.begin();
-        Disk fromDb = em.find(Disk.class, uuid);
-        if (fromDb != null) {
-            em.remove(fromDb);
-        }
-        transaction.commit();
-        em.close();
-    }
+	public static void remove(String uuid) {
+		EntityManager em = PersistenceUtil.createEntityManager();
+		EntityTransaction transaction = em.getTransaction();
+		transaction.begin();
+		Disk fromDb = em.find(Disk.class, uuid);
+		if (fromDb != null) {
+			em.remove(fromDb);
+		}
+		transaction.commit();
+		em.close();
+	}
 
-    @SuppressWarnings("unchecked")
-    public static List<DiskView> listAll() {
-        EntityManager em = PersistenceUtil.createEntityManager();
-        Query q = em.createNamedQuery("allDisks");
-        List<Disk> disks = q.getResultList();
-        List<DiskView> views = convertDisksToDiskViews(disks);
-        em.close();
-        return views;
-    }
+	@SuppressWarnings("unchecked")
+	public static List<DiskView> listAll() {
+		EntityManager em = PersistenceUtil.createEntityManager();
+		Query q = em.createNamedQuery("allDisks");
+		List<Disk> disks = q.getResultList();
+		List<DiskView> views = convertDisksToDiskViews(disks);
+		em.close();
+		return views;
+	}
 
-    @SuppressWarnings("unchecked")
-    public static List<DiskView> listAllByUser(String user) {
-        EntityManager em = PersistenceUtil.createEntityManager();
-        Query q = em.createNamedQuery("allDisksByUser");
-        q.setParameter("user", user);
-        List<Disk> disks = q.getResultList();
-        List<DiskView> views = convertDisksToDiskViews(disks);
-        em.close();
-        return views;
-    }
+	@SuppressWarnings("unchecked")
+	public static List<DiskView> listAllByUser(String user) {
+		EntityManager em = PersistenceUtil.createEntityManager();
+		Query q = em.createNamedQuery("allDisksByUser");
+		q.setParameter("user", user);
+		List<Disk> disks = q.getResultList();
+		List<DiskView> views = convertDisksToDiskViews(disks);
+		em.close();
+		return views;
+	}
 
-    private static List<DiskView> convertDisksToDiskViews(List<Disk> disks) {
-        List<DiskView> views = new ArrayList<DiskView>();
-        for (Disk d : disks) {
-            views.add(new DiskView(d.getUuid(), d.getTag(), d.getSize(), d
-                    .getUsersCount(), d.getOwner(), d.getQuarantine(), d
-                    .getIdentifier()));
-        }
-        return views;
-    }
+	private static List<DiskView> convertDisksToDiskViews(List<Disk> disks) {
+		List<DiskView> views = new ArrayList<DiskView>();
+		for (Disk d : disks) {
+			views.add(new DiskView(d.getUuid(), d.getTag(), d.getSize(), d
+					.getUsersCount(), d.getOwner(), d.getQuarantine(), d
+					.getIdentifier()));
+		}
+		return views;
+	}
 
-    @SuppressWarnings("unchecked")
-    public static boolean identifierExists(String identifier) {
-        if ("".equals(identifier)) {
-            return false;
-        }
-        EntityManager em = PersistenceUtil.createEntityManager();
-        Query q = em.createNamedQuery("allDisksByIdentifier");
-        q.setParameter("identifier", identifier);
-        List<Disk> disks = q.getResultList();
-        em.close();
-        return disks.size() > 0;
-    }
+	@SuppressWarnings("unchecked")
+	public static boolean identifierExists(String identifier) {
+		if ("".equals(identifier)) {
+			return false;
+		}
+		EntityManager em = PersistenceUtil.createEntityManager();
+		Query q = em.createNamedQuery("allDisksByIdentifier");
+		q.setParameter("identifier", identifier);
+		List<Disk> disks = q.getResultList();
+		em.close();
+		return disks.size() > 0;
+	}
 
-    public static int countSnapshots(String uuid) {
-        EntityManager em = PersistenceUtil.createEntityManager();
-        Query q = em.createNamedQuery("countAllDisksByIdentifier");
-        q.setParameter("identifier", "snapshot:" + uuid);
-        long count = (Long) q.getSingleResult();
-        em.close();
-        return (int) count;
-    }
+	public static int countSnapshots(String uuid) {
+		EntityManager em = PersistenceUtil.createEntityManager();
+		Query q = em.createNamedQuery("countAllDisksByIdentifier");
+		q.setParameter("identifier", "snapshot:" + uuid);
+		long count = (Long) q.getSingleResult();
+		em.close();
+		return (int) count;
+	}
 
-    public Disk() {
-        uuid = DiskUtils.generateUUID();
-    }
+	public Disk(String uuid) {
+		if (DiskUtils.isValidUUID(uuid)) {
+			this.uuid = uuid;
+		} else {
+			this.uuid = null;
+		}
+	}
 
-    @Id
-    private String uuid;
+	public Disk() {
+		this(DiskUtils.generateUUID());
+	}
 
-    private String owner = "";
-    private ArrayList<String> group_ = new ArrayList<String>();
-    private DiskVisibility visibility = DiskVisibility.PRIVATE;
+	@Id
+	private String uuid;
 
-    private String creation = MiscUtils.getTimestamp();
-    private String deletion = ""; // deleted timestamp
+	private String owner = "";
+	private ArrayList<String> group_ = new ArrayList<String>();
+	private DiskVisibility visibility = DiskVisibility.PRIVATE;
 
-    private String tag = "";
-    private long size = -1;
-    private String quarantine = ""; // quarantine start date
+	private String creation = MiscUtils.getTimestamp();
+	private String deletion = ""; // deleted timestamp
 
-    private String identifier = ""; // Marketplace identifier
+	private String tag = "";
+	private long size = -1;
+	private String quarantine = ""; // quarantine start date
 
-    private String homeUrl = ""; // Marketplace url
+	private String identifier = ""; // Marketplace identifier
 
-    private boolean seed = false; // original... don't delete!
+	private String homeUrl = ""; // Marketplace url
 
-    private String baseDiskUuid;
+	private boolean seed = false; // original... don't delete!
 
-    private DiskType type = DiskType.DATA_IMAGE_RAW_READ_WRITE;
+	private String baseDiskUuid;
 
-    @MapKey(name = "id")
-    @OneToMany(mappedBy = "disk", fetch = FetchType.EAGER)
-    @ElementMap(name = "mounts", required = false, data = true, valueType = Mount.class)
-    private Map<String, Mount> mounts = new HashMap<String, Mount>(); // key is
-                                                                      // vmId
+	private DiskType type = DiskType.DATA_IMAGE_RAW_READ_WRITE;
 
-    public String getUuid() {
-        return uuid;
-    }
+	@MapKey(name = "id")
+	@OneToMany(mappedBy = "disk", fetch = FetchType.EAGER)
+	@ElementMap(name = "mounts", required = false, data = true, valueType = Mount.class)
+	private Map<String, Mount> mounts = new HashMap<String, Mount>(); // key is
+																		// vmId
 
-    public void setUuid(String uuid) {
-        this.uuid = (uuid == null ? "" : uuid.trim());
-    }
+	public String getUuid() {
+		return uuid;
+	}
 
-    public String getOwner() {
-        return owner;
-    }
+	public void setUuid(String uuid) {
+		this.uuid = (uuid == null ? "" : uuid.trim());
+	}
 
-    public void setOwner(String owner) {
-        this.owner = owner;
-    }
+	public String getOwner() {
+		return owner;
+	}
 
-    public DiskVisibility getVisibility() {
-        return visibility;
-    }
+	public void setOwner(String owner) {
+		this.owner = owner;
+	}
 
-    public void setVisibility(DiskVisibility visibility) {
-        this.visibility = visibility;
-    }
+	public DiskVisibility getVisibility() {
+		return visibility;
+	}
 
-    public String getCreation() {
-        return creation;
-    }
+	public void setVisibility(DiskVisibility visibility) {
+		this.visibility = visibility;
+	}
 
-    public int getUsersCount() {
-        if (type == DiskType.MACHINE_IMAGE_ORIGIN) {
-            return countSnapshots(getUuid());
-        } else {
-            return mounts.size();
-        }
-    }
+	public String getCreation() {
+		return creation;
+	}
 
-    public String getTag() {
-        return tag;
-    }
+	public int getUsersCount() {
+		if (type == DiskType.MACHINE_IMAGE_ORIGIN) {
+			return countSnapshots(getUuid());
+		} else {
+			return mounts.size();
+		}
+	}
 
-    public void setTag(String tag) {
-        this.tag = tag;
-    }
+	public String getTag() {
+		return tag;
+	}
 
-    /**
-     * Returns the size of the disk as originally specified. This is in GB if
-     * the value is 1000 or less; it is in bytes otherwise.
-     */
-    public long getSize() {
-        return size;
-    }
-    
-    /**
-     * Returns the size of the disk in bytes.
-     */
-    public long getSizeInBytes() {
-        return (size > 1000) ? size : size * DiskUtils.BYTES_IN_GiB;
-    }
+	public void setTag(String tag) {
+		this.tag = tag;
+	}
 
-    /**
-     * Sets the size of the disk, where the size is assumed to be in GB if size
-     * <= 1000 and in bytes otherwise.
-     * 
-     * @param size
-     *            in GB if < 1000, in bytes otherwise
-     * 
-     */
-    public void setSize(long size) {
-        this.size = size;
-    }
+	/**
+	 * Returns the size of the disk as originally specified. This is in GB if
+	 * the value is 1000 or less; it is in bytes otherwise.
+	 */
+	public long getSize() {
+		return size;
+	}
 
-    public String getIdentifier() {
-        return identifier;
-    }
+	/**
+	 * Returns the size of the disk in bytes.
+	 */
+	public long getSizeInBytes() {
+		return (size > 1000) ? size : size * DiskUtils.BYTES_IN_GiB;
+	}
 
-    public void setIdentifier(String identifier) {
-        this.identifier = identifier;
-    }
+	/**
+	 * Sets the size of the disk, where the size is assumed to be in GB if size
+	 * <= 1000 and in bytes otherwise.
+	 * 
+	 * @param size
+	 *            in GB if < 1000, in bytes otherwise
+	 * 
+	 */
+	public void setSize(long size) {
+		this.size = size;
+	}
 
-    public void setBaseDiskUuid(String uuid) {
-        this.baseDiskUuid = uuid;
-    }
+	public String getIdentifier() {
+		return identifier;
+	}
 
-    public String getBaseDiskUuid() {
-        return baseDiskUuid;
-    }
+	public void setIdentifier(String identifier) {
+		this.identifier = identifier;
+	}
 
-    public int getMountsCount() {
-        return mounts.size();
-    }
+	public void setBaseDiskUuid(String uuid) {
+		this.baseDiskUuid = uuid;
+	}
 
-    public String diskTarget(String mountId) {
+	public String getBaseDiskUuid() {
+		return baseDiskUuid;
+	}
 
-        if (!mounts.containsKey(mountId)) {
-            return STATIC_DISK_TARGET;
-        }
+	public int getMountsCount() {
+		return mounts.size();
+	}
 
-        return mounts.get(mountId).getDevice();
-    }
+	public String diskTarget(String mountId) {
 
-    public Map<String, Mount> getMounts() {
-        return mounts;
-    }
+		if (!mounts.containsKey(mountId)) {
+			return STATIC_DISK_TARGET;
+		}
 
-    public String getQuarantine() {
-        return quarantine;
-    }
+		return mounts.get(mountId).getDevice();
+	}
 
-    public void setQuarantine(String quarantineStartDate) {
-        this.quarantine = quarantineStartDate;
-    }
+	public Map<String, Mount> getMounts() {
+		return mounts;
+	}
 
-    public void setSeed(boolean isSeed) {
-        this.seed = isSeed;
-    }
+	public String getQuarantine() {
+		return quarantine;
+	}
 
-    public boolean isSeed() {
-        return seed;
-    }
+	public void setQuarantine(String quarantineStartDate) {
+		this.quarantine = quarantineStartDate;
+	}
 
-    public String getHomeUrl() {
-        return homeUrl;
-    }
+	public void setSeed(boolean isSeed) {
+		this.seed = isSeed;
+	}
 
-    public void setHomeUrl(String homeUrl) {
-        this.homeUrl = homeUrl;
-    }
+	public boolean isSeed() {
+		return seed;
+	}
 
-    public String getDeletion() {
-        return deletion;
-    }
+	public String getHomeUrl() {
+		return homeUrl;
+	}
 
-    public void setDeletion(String deletion) {
-        this.deletion = deletion;
-    }
+	public void setHomeUrl(String homeUrl) {
+		this.homeUrl = homeUrl;
+	}
 
-    public void setType(DiskType type) {
-        this.type = type;
-    }
+	public String getDeletion() {
+		return deletion;
+	}
 
-    public DiskType getType() {
-        return type;
-    }
+	public void setDeletion(String deletion) {
+		this.deletion = deletion;
+	}
 
-    public String getGroup() {
-        StringBuffer group = new StringBuffer();
-        for (String user : this.group_) {
-            group.append(user + ", ");
-        }
-        return group.toString();
-    }
+	public void setType(DiskType type) {
+		this.type = type;
+	}
 
-    public void addGroupShare(String username) {
-        group_.add(username);
-    }
+	public DiskType getType() {
+		return type;
+	}
 
-    public boolean groupContainsUser(String username) {
-        return group_.contains(username);
-    }
+	public String getGroup() {
+		StringBuffer group = new StringBuffer();
+		for (String user : this.group_) {
+			group.append(user + ", ");
+		}
+		return group.toString();
+	}
 
-    public void setGroup(String group) {
-        ArrayList<String> list = new ArrayList<String>();
-        for (String user : group.split(",")) {
-            String trimmed = user.trim();
-            if (!"".equals(trimmed)) {
-                list.add(user.trim());
-            }
-        }
-        group_ = list;
-    }
+	public void addGroupShare(String username) {
+		group_.add(username);
+	}
+
+	public boolean groupContainsUser(String username) {
+		return group_.contains(username);
+	}
+
+	public void setGroup(String group) {
+		ArrayList<String> list = new ArrayList<String>();
+		for (String user : group.split(",")) {
+			String trimmed = user.trim();
+			if (!"".equals(trimmed)) {
+				list.add(user.trim());
+			}
+		}
+		group_ = list;
+	}
 
 }
