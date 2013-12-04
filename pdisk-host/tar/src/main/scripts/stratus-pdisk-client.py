@@ -46,6 +46,11 @@ volume_mgmt_dir=/var/run/stratuslab
 
 [iscsi]
 iscsiadm=/usr/sbin/iscsiadm
+
+[rbd]
+binary=/usr/bin/rbd
+devices=/dev/rbd
+identity=cloud
 """
 CONFFILE = '/etc/stratuslab/pdisk-host.conf'
 config = ConfigParser.RawConfigParser()
@@ -56,6 +61,11 @@ login = config.get("main", "pdisk_user")
 pswd = config.get("main", "pdisk_passwd")
 vm_dir = config.get("main", "vm_dir")
 VOLUME_MGMT_DIR = config.get("main", "volume_mgmt_dir")
+
+# Retrieve RBD configuration
+rbd_bin = config.get('rbd', 'binary')
+rbd_dev = config.get('rbd', 'devices')
+rbd_id = config.get('rbd', 'identity')
 
 register_filename = config.get('main', 'register_filename')
 if not register_filename:
@@ -338,7 +348,7 @@ class PersistentDisk:
             __url__ = "iscsi://" + self.endpoint + ":3260/iqn.2011-01.eu.stratuslab:" + self.disk_uuid + ":1"
         else:
             __url__ = turl
-        __uri__ = re.match(r"(?P<protocol>.*)://(?P<server>.*)/(?P<image>.*)", __url__)
+        __uri__ = re.match(r"(?P<protocol>.*)://(?P<server>[^/]*)/(?P<image>.*)", __url__)
         try:
             self.protocol = __uri__.group('protocol')
             self.server = __uri__.group('server')
@@ -535,6 +545,96 @@ class FilePersistentDisk(PersistentDisk):
     def detach(self):
         pass
 
+class RBDPersistentDisk(PersistentDisk):
+    """
+    This class manages RBD images. It uses RBD kernel module to map/unmap
+    images to the host and thus to the virtual machines.
+
+    In order to work, the host must be configured to use a Ceph cluster (i.e.
+    by setting the monitor endpoints) and to have the appropriated permissions
+    to manage RBD images (i.e. by setting an identity).
+    """
+
+    def __init__(self, pdisk, binary='/usr/bin/rbd', devices='/dev/rbd', identity='cloud'):
+        # Copy information from master class.
+        self.__copy__(pdisk)
+
+        # This variable defines the path to the RBD command.
+        self.binary = binary
+
+        # This variable defines the base path where the symlinks of mapped
+        # images are created.
+        self.devices = devices
+
+        # This variable defines the identity to use to authenticate the host.
+        # The associated keyring file must match
+        # "ceph.client.<identity>.keyring" and must contain the secret.
+        self.identity = identity
+
+        # The <image> variable provided by the master class contains the image
+        # fullname, i.e. <poolname>/<imagename>[@<snapshot-name>]. That's why
+        # all components are extracted.
+        self._extract_image_components()
+
+        # The <server> variable provided by the master class contains the
+        # "extended" server name of a Ceph monitor. To avoid this SPoF, it
+        # should not be used directly but only in case of failure from the
+        # other monitors indicated in the Ceph configuration.
+        self._extract_server_components()
+
+    def attach(self):
+        """ Attach the RBD image to the host. """
+        cmd = self._build_command('map', self.image)
+        retcode = call(cmd, shell=True)
+        if retcode != 0:
+            msg = "attach: error mapping RBD image to the host (%d)" % retcode
+            raise AttachPersistentDiskException(msg)
+
+    def build_mapped_device(self):
+        """
+        Build the device path of the image. The returned path is a symlink to a
+        real device.
+        """
+        return os.path.join(self.devices, self.image)
+
+    def detach(self):
+        """ Detach the RBD image from the host. """
+        cmd = self._build_command('unmap', self.build_mapped_device())
+        retcode = call(cmd, shell=True)
+        if retcode != 0:
+            msg = "detach: error unmapping RBD image from the host (%d)" % retcode
+            raise AttachPersistentDiskException(msg)
+
+    def image_storage(self):
+        """ Return the device mapped to the image. """
+        return self.build_mapped_device()
+
+    def _build_command(self, operation, *parameters):
+        """ Build a command from a RBD operation and its parameters. """
+        command = 'sudo %s --id %s %s' % (self.binary, self.identity, operation)
+        if parameters:
+            command = '%s %s' % (command, ' '.join(parameters))
+        return command
+
+    def _extract_image_components(self):
+        """
+        Extract RBD image components (pool, image, snapshot) from the image
+        fullname.
+        """
+        p = re.search(r'((?P<pool_name>.*)/)?(?P<image_name>)[^@]+(@(?P<snapshot_name>.*))?', self.image)
+        self.pool_name = p.group('pool_name')
+        self.image_name = p.group('image_name')
+        self.snapshot_name = p.group('snapshot_name')
+
+    def _extract_server_components(self):
+        """
+        Extract Ceph monitor components (endpoint, port) from the "extended"
+        server name.
+        """
+        p = re.match(r'(?P<host>.*):(?P<port>.*)', self.server)
+        self.monitor_host = p.group('host')
+        self.monitor_port = p.group('port')
+
 
 class PersistentDiskException(Exception):
     pass
@@ -670,6 +770,8 @@ def __main__():
         pdisk = IscsiPersistentDisk(global_pdisk, options.turl)
     elif global_pdisk.protocol == "file":
         pdisk = FilePersistentDisk(global_pdisk, options.turl)
+    elif global_pdisk.protocol == 'rbd':
+        pdisk = RBDPersistentDisk(global_pdisk, rbd_bin, rbd_dev, rbd_id)
     else:
         print >> sys.stderr, "Protocol " + global_pdisk.protocol + " not supported"
         exit(1)
