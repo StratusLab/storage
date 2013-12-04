@@ -677,7 +677,7 @@ class Command:
     try:
       retcode, output = self._getStatusOutputOrRetry()
       if retcode != 0:
-          abort('An error occured during %s action (error=%s). Command output:\n%s\n%s\n%s' % (self.action,retcode,self.cmd_output_start,output,self.cmd_output_end))
+        debug(0, 'An error occurred during %s action (%s). Command output:\n%s\n%s\n%s' % (self.action, retcode, self.cmd_output_start, output, self.cmd_output_end))
       else:
           # Need to check if the command is expected to return an output when successfull
           success = False
