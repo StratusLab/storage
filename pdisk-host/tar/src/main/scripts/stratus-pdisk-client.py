@@ -56,16 +56,37 @@ CONFFILE = '/etc/stratuslab/pdisk-host.conf'
 config = ConfigParser.RawConfigParser()
 config.read(CONFFILE)
 
-iscsiadm = config.get("iscsi", "iscsiadm")
 login = config.get("main", "pdisk_user")
 pswd = config.get("main", "pdisk_passwd")
 vm_dir = config.get("main", "vm_dir")
 VOLUME_MGMT_DIR = config.get("main", "volume_mgmt_dir")
 
+# ISCSI configuration
+iscsiadm = None
+try:
+    iscsiadm = config.get("iscsi", "iscsiadm")
+except:
+    pass
+
 # Retrieve RBD configuration
-rbd_bin = config.get('rbd', 'binary')
-rbd_dev = config.get('rbd', 'devices')
-rbd_id = config.get('rbd', 'identity')
+rbd_bin = None
+rbd_dev = None
+rbd_id = None
+
+try:
+    rbd_bin = config.get('rbd', 'binary')
+except:
+    pass
+
+try:
+    rbd_dev = config.get('rbd', 'devices')
+except:
+    pass
+
+try:
+    rbd_id = config.get('rbd', 'identity')
+except:
+    pass
 
 register_filename = config.get('main', 'register_filename')
 if not register_filename:
