@@ -156,15 +156,6 @@ mkdir -p $TMPDIR
 JETTY_INSTALL_TRACE_FILE="etc/jetty.xml"
 
 ##################################################
-# Start tgtd
-##################################################
-start_tgtd() {
-    TGT_SERV="/etc/init.d/tgtd"
-    $TGT_SERV status &>/dev/null
-    [ $? -gt 0 ] && $TGT_SERV start 
-}
-
-##################################################
 # Try to determine JETTY_HOME if not set
 ##################################################
 if [ -z "$JETTY_HOME" ] 
@@ -450,7 +441,6 @@ case "$ACTION" in
       fi
 
       echo "STARTED Jetty `date`" 
-      start_tgtd
     fi
 
     ;;
