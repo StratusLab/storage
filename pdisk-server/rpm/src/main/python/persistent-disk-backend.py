@@ -335,7 +335,7 @@ class NetAppBackend(Backend):
     self.mgtPrivKey = mgtPrivKey
     self.volumePath = volume
     self.volumeName = volume.split('/')[-1]
-    self.namespace = ("%s%s" % (self.volumePath,namespace)).rstrip('/')
+    self.namespace = ("%s/%s" % (self.volumePath.rstrip('/'),namespace)).rstrip('/')
     self.initiatorGroup = initiatorGroup
     self.snapshotPrefix = snapshotPrefix
     # Command to connect to NetApp filer (always ssh)
