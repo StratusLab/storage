@@ -950,6 +950,25 @@ def debug(level,msg):
       logger.debug(msg)
 
 
+#############
+# Utilities #
+#############
+
+def read_configuration(config_defaults):
+    """Read configuration file. The file must exists as there is no 
+    sensible default value for several options.
+    """
+    config = ConfigParser.ConfigParser()
+    config.readfp(config_defaults)
+    try:
+      config.readfp(open(options.config_file))
+    except IOError, (errno,errmsg):
+      if errno == 2:
+        abort('Configuration file (%s) is missing.' % (options.config_file))
+      else:
+        abort('Error opening configuration file (%s): %s (errno=%s)' % (options.config_file,errmsg,errno))
+    return config
+
 
 #############
 # Main code #
@@ -1014,20 +1033,8 @@ else:
     debug(0,"No action specified\n")
   parser.print_help()
   abort("")
-    
 
-# Read configuration file.
-# The file must exists as there is no sensible default value for several options.
-
-config = ConfigParser.ConfigParser()
-config.readfp(config_defaults)
-try:
-  config.readfp(open(options.config_file))
-except IOError, (errno,errmsg):
-  if errno == 2:
-    abort('Configuration file (%s) is missing.' % (options.config_file))
-  else:
-    abort('Error opening configuration file (%s): %s (errno=%s)' % (options.config_file,errmsg,errno))
+config = read_configuration(config_defaults)
   
 logfile_handler = None
 try:
