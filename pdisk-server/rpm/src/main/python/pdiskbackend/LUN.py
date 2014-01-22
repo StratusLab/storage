@@ -1,7 +1,7 @@
 import re
 import uuid
 
-from .Command import Command
+from pdiskbackend.CommandRunner import CommandRunner
 
 #################################################################
 # Class describing a LUN and implementing the supported actions #
@@ -97,30 +97,28 @@ class LUN(object):
   # Special values for commands are:
   #  - None: action is not implemented
   #  - empty list: action does nothing  
-  def __executeAction__(self,action):
-    status = 0         # Assume success
+  def __executeAction__(self, action):
+    
     optInfos = None
-    for cmd_toks,successMsg,failure_cmd_toks,backend_action in self.proxy.getCmd(action):
-      optInfo = None
-      # When returned command for action is None, it means that the action is not implemented
-      if cmd_toks == None:
-        abort("Action '%s' not implemented by back-end type '%s'" % (action,self.proxy.getType()))
-      command = Command(backend_action,self.parseCmd(cmd_toks),successMsg)
-      command.execute()
-      status,optInfo = command.checkStatus()
-      #print status,optInfo
-      if status != 0 and failure_cmd_toks:
-        command = Command(backend_action,self.parseCmd(failure_cmd_toks),successMsg)
-        command.execute()
-        status_,optInfo_ = command.checkStatus()        
+
+    for backendCmd in self.getBackendCmd(action):
+
+      if not backendCmd:
+        abort("Action '%s' not implemented by back-end type '%s'" % \
+                                                (action, self.getBackendType()))
+
+      status, optInfo = self.runCommand(backendCmd)
+      if status != 0 and backendCmd.on_failure_command():
+        status_, optInfo_ = self.runCommandOnFailure(backendCmd)
         if status_ != 0:
           if not optInfo_:
             optInfo_ = ()
-          print "Rollback command",failure_cmd_toks,"failed:",optInfo_
+          print "Rollback command",backendCmd.failure_command,"failed:",optInfo_
         break
-      # If failure_cmd_toks is an amtpy string, stop LUN action processing
-      elif failure_cmd_toks == '':
+      # Stop LUN action processing if no on-failure command defined. 
+      elif not backendCmd.on_failure_command():
         break
+    
       if optInfo:
         if optInfos:
           optInfos += optInfo
@@ -131,7 +129,7 @@ class LUN(object):
     if status == 0 and action in self.additional_opt_info:
       if not optInfos:
         optInfos = ()
-      optInfos += self.__parse__(self.additional_opt_info[action]),
+      optInfos += self._detokenize(self.additional_opt_info[action]),
       
     if optInfos:
       optInfosStr = self.proxy.formatOptInfos(action,optInfos)
@@ -140,14 +138,35 @@ class LUN(object):
     
     return status,optInfosStr
 
-  # Parse all variables related to current LUN in the command (passed and returned as a list of tokens).  
-  def parseCmd(self,action_cmd):
+  def runCommand(self, backendCmd):
+      command = CommandRunner(backendCmd.action,
+                              self.detokenizeCmd(backendCmd.parsed_command),
+                              backendCmd.success_patterns,
+                              backendCmd.failure_ok_patterns)
+      command.execute()
+      return command.checkStatus()
+
+  def runCommandOnFailure(self):
+        command = CommandRunner(backend_action,
+                                self.detokenizeCmd(backendCmd.failure_command),
+                                successMsg,
+                                failure_ok_patterns)
+        command.execute()
+        return command.checkStatus()        
+
+  def getBackendCmd(self, action):
+      return self.proxy.getCmd(action)
+
+  def getBackendType(self):
+      return self.proxy.getType()
+
+  def detokenizeCmd(self,action_cmd):
+    """LUN related de-tokenization."""
     for i in range(len(action_cmd)):
-      action_cmd[i] = self.__parse__(action_cmd[i])
+      action_cmd[i] = self._detokenize(action_cmd[i])
     return action_cmd
   
-  # Do the actual string parsing
-  def __parse__(self,string):
+  def _detokenize(self,string):
     if re.search('%%SIZE%%',string):
       string = re.sub('%%SIZE%%',self.size,string)
     elif re.search('%%SIZE_MB%%', string):

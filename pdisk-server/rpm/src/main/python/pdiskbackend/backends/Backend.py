@@ -2,6 +2,7 @@ import re
 import socket
 
 from pdiskbackend.utils import abort
+from pdiskbackend.backends.BackendCommand import BackendCommand
 
 ####################################################################
 # Superclass describing common aspect of every iSCSI backends      #
@@ -13,6 +14,8 @@ from pdiskbackend.utils import abort
 class Backend(object):
   # Command prefix to use to connect through ssh
   ssh_cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
+
+  cmd_prefix = []
 
   # Table defining mapping of LUN actions to NetApp actions.
   # This is a 1 to n mapping (several NetApp commands may be needed for one LUN action).
@@ -94,55 +97,59 @@ class Backend(object):
       else:
           abort("Internal error: LUN action '%s' unknown" % (lun_action))
       
-      # If None, means that the action is not implemented
       if backend_actions == None:
-          # yield BackendCommand()
-          yield [None] * 5
+          yield None
             
-      # Intialize parsed_command and success_patters in case backend_actions is an empty list
-      parsed_command = []
-      success_patterns = None
-      failure_ok_patterns = None
-      failure_command = None
       for action in backend_actions:
-          if action in self.backend_cmds.keys():
-              parsed_command = self.buildCmd(self.backend_cmds[action])
-          else:
-              abort("Internal error: action '%s' unknown" % (action))
-          
-          if action in self.success_msg_pattern:
-              success_patterns = self.success_msg_pattern[action]
-              if isinstance(success_patterns,str):
-                  success_patterns = [ success_patterns ]
-            
-          if action in self.backend_failure_cmds.keys():
-              failure_actions = self.backend_failure_cmds[action]
-              if lun_action in failure_actions:
-                  command = failure_actions[lun_action]
-              # '-' is a special key value meaning the alternate command applies to all LN actions
-              elif '-' in failure_actions:
-                  command = failure_actions['-']
-              else:
-                  command = None
-              if command:  
-                  failure_command = self.buildCmd(command)
-          
-          if action in self.failure_ok_msg_pattern:
-            failure_ok_patterns = self.failure_ok_msg_pattern[action]
-            if isinstance(failure_ok_patterns,str):
-              failure_ok_patterns = [ failure_ok_patterns ]
-          
-          backend_command = BackendCommand()
-          yield parsed_command,success_patterns,failure_command,action,failure_ok_patterns
+          yield BackendCommand(command=self._get_parsed_command(action), 
+                               success_patterns=self._get_success_patterns(action), 
+                               failure_command=self._get_failure_command(action),
+                               failure_ok_patterns=self._get_failure_ok_patterns(action), 
+                               action=action)
     
+  def _get_parsed_command(self, action):
+      if action in self.backend_cmds.keys():
+          return self._buildCmd(self.backend_cmds[action])
+      else:
+          abort("Internal error: action '%s' unknown" % (action))
+
+  def _get_success_patterns(self, action):
+      success_patterns = None
+      if action in self.success_msg_pattern:
+          success_patterns = self.success_msg_pattern[action]
+          if isinstance(success_patterns,str):
+              success_patterns = [ success_patterns ]
+      return success_patterns
+
+  def _get_failure_command(self, action):
+      failure_command = None
+      if action in self.backend_failure_cmds:
+          failure_actions = self.backend_failure_cmds[action]
+          if lun_action in failure_actions:
+              command = failure_actions[lun_action]
+          # '-' is a special key value meaning the alternate command applies to all LN actions
+          elif '-' in failure_actions:
+              command = failure_actions['-']
+          else:
+              command = None
+          if command:  
+              failure_command = self._buildCmd(command)
+
+      return failure_command
+
+  def _get_failure_ok_patterns(self, action):
+      failure_ok_patterns = None
+      if action in self.failure_ok_msg_pattern:
+          failure_ok_patterns = self.failure_ok_msg_pattern[action]
+          if isinstance(failure_ok_patterns,str):
+              failure_ok_patterns = [ failure_ok_patterns ]
+      return failure_ok_patterns
+
   # Method returning true if creation of a new LUN is required for a particular LUN action.
   # LUN creation is the responsibility of the caller.
   def newLunRequired(self,action):
-    if action in self.new_lun_required:
-      return True
-    else:
-      return False
-    
+    return action in self.new_lun_required
+     
   # Method formatting optional information returned by executed commands as a string.
   # Optional information are passed as a tuple.
   # Formatting instructions are retrieved in a backend-specific dictionnary with one entry
@@ -155,20 +162,20 @@ class Backend(object):
     if not optInfos:
       return
     if action in self.opt_info_format:
-      optInfosFmt = self.parse(self.opt_info_format[action])
+      optInfosFmt = self._detokenize(self.opt_info_format[action])
       return optInfosFmt % optInfos
     else:
       return ' '.join(optInfos)
 
   # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
   # Return parsed command as a list of token.
-  def buildCmd(self,command):    
+  def _buildCmd(self,command):  
     # Build command to execute
     action_cmd = []
     action_cmd.extend(self.cmd_prefix)
     action_cmd.extend(command)
     for i in range(len(action_cmd)):
-      action_cmd[i] = self.parse(action_cmd[i])
+      action_cmd[i] = self._detokenize(action_cmd[i])
     return action_cmd
 
   # Parse all variables related to iSCSI proxy in the string passed as argument.
@@ -176,7 +183,7 @@ class Backend(object):
   # Note that this class must generally be overridden in the derived class to process
   # attributes specific to this class. But it should normally call this method for
   # the common attributes.
-  def parse(self,string):    
+  def _detokenize(self,string):    
     if re.search('%%ISCSI_HOST%%',string):
       if self.proxyHost == "local":
         string = re.sub('%%ISCSI_HOST%%',socket.gethostname()+":3260",string)
@@ -189,7 +196,3 @@ class Backend(object):
     elif string == '%%VOLUME_NAME%%':
       string = self.volumeName
     return string
-
-class BackendCommand(object):
-    def __init__(self):
-        pass
