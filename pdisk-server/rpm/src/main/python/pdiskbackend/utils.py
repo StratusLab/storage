@@ -35,8 +35,8 @@ def abort(msg):
     sys.exit(EXITCODE_PDISK_OP_FAILED)
 
 def debug(level, msg):
-  if level <= verbosity:
-    if level == 0:
-      logger.info(msg)
-    else:
-      logger.debug(msg)
+    if level <= verbosity:
+        if level == 0:
+            logger.info(msg)
+        else:
+            logger.debug(msg)
