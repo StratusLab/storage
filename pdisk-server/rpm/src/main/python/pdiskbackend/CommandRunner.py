@@ -1,7 +1,7 @@
 
 import re
 import time
-from subprocess import *
+from subprocess import Popen, PIPE, STDOUT
 
 from pdiskbackend.utils import debug, abort
 
