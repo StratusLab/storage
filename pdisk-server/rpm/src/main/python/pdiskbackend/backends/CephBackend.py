@@ -193,4 +193,4 @@ class CephBackend(Backend):
 
     string = string.replace('%%SNAPSHOT_NAME%%', self.snapshotName)
 
-    return Backend.parse(self, string)
+    return Backend.detokenize(self, string)
