@@ -81,11 +81,11 @@ class LUN(object):
     
     def snapshot(self, snapshot_lun):
         self.associatedLUN = snapshot_lun
-        status, optInfo = self.__executeAction__('snapshot')
+        status, _ = self.__executeAction__('snapshot')
         return status
     
     def unmap(self):
-        status, optInfo = self.__executeAction__('unmap')
+        status, _ = self.__executeAction__('unmap')
         return status
     
     
