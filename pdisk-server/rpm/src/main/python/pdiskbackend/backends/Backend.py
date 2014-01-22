@@ -85,6 +85,12 @@ class Backend(object):
   new_lun_required = {
                       }
 
+  def __init__(self):
+      self.proxyHost = ''
+      self.mgtPrivKey = ''
+      self.volumeName = ''
+      self.mgtUser = ''
+
   # Generator function returning:
   #    - the command corresponding to the action as a list of tokens, with iSCSI proxy related
   #      variables parsed.
