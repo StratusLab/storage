@@ -103,7 +103,7 @@ class Backend(object):
       for action in backend_actions:
           yield BackendCommand(command=self._get_parsed_command(action), 
                                success_patterns=self._get_success_patterns(action), 
-                               failure_command=self._get_failure_command(action),
+                               failure_command=self._get_failure_command(lun_action, action),
                                failure_ok_patterns=self._get_failure_ok_patterns(action), 
                                action=action)
     
@@ -121,7 +121,7 @@ class Backend(object):
               success_patterns = [ success_patterns ]
       return success_patterns
 
-  def _get_failure_command(self, action):
+  def _get_failure_command(self, lun_action, action):
       failure_command = None
       if action in self.backend_failure_cmds:
           failure_actions = self.backend_failure_cmds[action]
