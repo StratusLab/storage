@@ -82,7 +82,7 @@ class LVMBackend(Backend):
       string = re.sub('%%LOGVOL_PATH%%',self.volumeName+"/%%UUID%%",string)
     elif re.search('%%NEW_LOGVOL_PATH%%',string):
       string = re.sub('%%NEW_LOGVOL_PATH%%',self.volumeName+"/%%SNAP_UUID%%",string)
-    return Backend.parse(self,string)
+    return Backend.detokenize(self,string)
     
   # Return iSCSI back-end type
   def getType(self):

@@ -97,7 +97,7 @@ class NetAppBackend(Backend):
       string = self.namespace + "/%%UUID%%"
     elif string == '%%SNAP_NAME%%':
       string = self.namespace + "/%%SNAP_UUID%%"
-    return Backend.parse(self,string)
+    return Backend.detokenize(self,string)
     
   # Return iSCSI back-end type
   def getType(self):

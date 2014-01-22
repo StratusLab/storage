@@ -162,7 +162,7 @@ class Backend(object):
     if not optInfos:
       return
     if action in self.opt_info_format:
-      optInfosFmt = self._detokenize(self.opt_info_format[action])
+      optInfosFmt = self.detokenize(self.opt_info_format[action])
       return optInfosFmt % optInfos
     else:
       return ' '.join(optInfos)
@@ -175,7 +175,7 @@ class Backend(object):
     action_cmd.extend(self.cmd_prefix)
     action_cmd.extend(command)
     for i in range(len(action_cmd)):
-      action_cmd[i] = self._detokenize(action_cmd[i])
+      action_cmd[i] = self.detokenize(action_cmd[i])
     return action_cmd
 
   # Parse all variables related to iSCSI proxy in the string passed as argument.
@@ -183,7 +183,7 @@ class Backend(object):
   # Note that this class must generally be overridden in the derived class to process
   # attributes specific to this class. But it should normally call this method for
   # the common attributes.
-  def _detokenize(self,string):    
+  def detokenize(self,string):    
     if re.search('%%ISCSI_HOST%%',string):
       if self.proxyHost == "local":
         string = re.sub('%%ISCSI_HOST%%',socket.gethostname()+":3260",string)
