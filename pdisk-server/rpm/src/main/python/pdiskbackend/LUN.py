@@ -108,7 +108,7 @@ class LUN(object):
                                                 (action, self.getBackendType()))
 
       status, optInfo = self.runCommand(backendCmd)
-      if status != 0 and backendCmd.on_failure_command():
+      if status != 0 and backendCmd.run_on_failure():
         status_, optInfo_ = self.runCommandOnFailure(backendCmd)
         if status_ != 0:
           if not optInfo_:
@@ -116,7 +116,7 @@ class LUN(object):
           print "Rollback command",backendCmd.failure_command,"failed:",optInfo_
         break
       # Stop LUN action processing if no on-failure command defined. 
-      elif not backendCmd.on_failure_command():
+      elif not backendCmd.run_on_failure():
         break
     
       if optInfo:

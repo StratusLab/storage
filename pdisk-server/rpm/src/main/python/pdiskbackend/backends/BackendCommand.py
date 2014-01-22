@@ -30,5 +30,5 @@ class BackendCommand(object):
     def action(self):
         return self._action
 
-    def on_failure_command(self):
+    def run_on_failure(self):
         return self._failure_command and True or False
