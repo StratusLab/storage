@@ -2,6 +2,7 @@
 import os.path
 import random
 
+from pdiskbackend.utils import debug
 from .Backend import Backend
 
 class CephBackend(Backend):
