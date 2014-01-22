@@ -1,5 +1,5 @@
 
-from pdiskbackend.Backend import Backend
+from pdiskbackend.backends.Backend import Backend
 
 ############################################
 # Class describing a NetApp iSCSI back-end #
