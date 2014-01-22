@@ -2,8 +2,8 @@
 import sys
 import logging
 
-__all__ = ['abort', 
-           'debug', 
+__all__ = ['abort',
+           'debug',
            'EXITCODE_PDISK_OP_FAILED']
 
 verbosity = 0
@@ -19,10 +19,10 @@ logging_source = 'stratuslab-pdisk'
 logger = logging.getLogger(logging_source)
 logger.setLevel(logging.DEBUG)
 
-#fmt=logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-fmt=logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+# fmt=logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+fmt = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 # Handler used to report to SVN must display only the message to allow proper XML formatting
-svn_fmt=logging.Formatter("%(message)s")
+svn_fmt = logging.Formatter("%(message)s")
 
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.DEBUG)

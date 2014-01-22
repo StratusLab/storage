@@ -13,7 +13,7 @@ from pdiskbackend.backends.BackendCommand import BackendCommand
 
 class Backend(object):
   # Command prefix to use to connect through ssh
-  ssh_cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%','%%ISCSI_PROXY%%' ]
+  ssh_cmd_prefix = [ 'ssh', '-x', '-i', '%%PRIVKEY%%', '%%ISCSI_PROXY%%' ]
 
   cmd_prefix = []
 
@@ -34,7 +34,7 @@ class Backend(object):
                              'snapshot':None,
                              'unmap':None,
                             }
-  
+
   # Definitions of NetApp commands used to implement actions.
   backend_cmds = {
                   }
@@ -57,10 +57,10 @@ class Backend(object):
   # Keys must match an existing key in backend_cmds
   success_msg_pattern = {
                         }
-  
-  # Some commands may fail (exit with return code greater than zero), but depending 
-  # on the operation and by examining its output we might want to decide to mark the 
-  # operation as successful. The following dictionary lists exceptions and provides 
+
+  # Some commands may fail (exit with return code greater than zero), but depending
+  # on the operation and by examining its output we might want to decide to mark the
+  # operation as successful. The following dictionary lists exceptions and provides
   # a pattern matching output in case of failure.
   # Keys must match an existing key in backend_cmds
   failure_ok_msg_pattern = {
@@ -75,7 +75,7 @@ class Backend(object):
   # Value must be a valid formatting instruction.
   opt_info_format = {
                     }
-  
+
   # The creation of a new LUN may be required by some operations
   # on some backends (e.g. rebase with LVM backend).
   # This dictionnary allows to define which LUN actions (same keys
@@ -97,22 +97,22 @@ class Backend(object):
   #    - the expected message patterns in case of success if the command output is not empty. This is returned as
   #      a list of patterns (a simple string is converted to a list).
   # This function must be called from an iteration loop control statement
-  def getCmd(self,lun_action):
+  def getCmd(self, lun_action):
       if lun_action in self.lun_backend_cmd_mapping:
           backend_actions = self.lun_backend_cmd_mapping[lun_action]
       else:
           abort("Internal error: LUN action '%s' unknown" % (lun_action))
-      
+
       if backend_actions == None:
           yield None
-            
+
       for action in backend_actions:
-          yield BackendCommand(command=self._get_parsed_command(action), 
-                               success_patterns=self._get_success_patterns(action), 
+          yield BackendCommand(command=self._get_parsed_command(action),
+                               success_patterns=self._get_success_patterns(action),
                                failure_command=self._get_failure_command(lun_action, action),
-                               failure_ok_patterns=self._get_failure_ok_patterns(action), 
+                               failure_ok_patterns=self._get_failure_ok_patterns(action),
                                action=action)
-    
+
   def _get_parsed_command(self, action):
       if action in self.backend_cmds.keys():
           return self._buildCmd(self.backend_cmds[action])
@@ -123,7 +123,7 @@ class Backend(object):
       success_patterns = None
       if action in self.success_msg_pattern:
           success_patterns = self.success_msg_pattern[action]
-          if isinstance(success_patterns,str):
+          if isinstance(success_patterns, str):
               success_patterns = [ success_patterns ]
       return success_patterns
 
@@ -138,7 +138,7 @@ class Backend(object):
               command = failure_actions['-']
           else:
               command = None
-          if command:  
+          if command:
               failure_command = self._buildCmd(command)
 
       return failure_command
@@ -147,15 +147,15 @@ class Backend(object):
       failure_ok_patterns = None
       if action in self.failure_ok_msg_pattern:
           failure_ok_patterns = self.failure_ok_msg_pattern[action]
-          if isinstance(failure_ok_patterns,str):
+          if isinstance(failure_ok_patterns, str):
               failure_ok_patterns = [ failure_ok_patterns ]
       return failure_ok_patterns
 
   # Method returning true if creation of a new LUN is required for a particular LUN action.
   # LUN creation is the responsibility of the caller.
-  def newLunRequired(self,action):
+  def newLunRequired(self, action):
     return action in self.new_lun_required
-     
+
   # Method formatting optional information returned by executed commands as a string.
   # Optional information are passed as a tuple.
   # Formatting instructions are retrieved in a backend-specific dictionnary with one entry
@@ -164,7 +164,7 @@ class Backend(object):
   # appropriate value.
   # If there is no specific instructions for a given action, just join all list elements as a space
   # separated string.
-  def formatOptInfos(self,action,optInfos):
+  def formatOptInfos(self, action, optInfos):
     if not optInfos:
       return
     if action in self.opt_info_format:
@@ -175,7 +175,7 @@ class Backend(object):
 
   # Add command prefix and parse all variables related to iSCSI proxy in the command (passed as a list of tokens).
   # Return parsed command as a list of token.
-  def _buildCmd(self,command):  
+  def _buildCmd(self, command):
     # Build command to execute
     action_cmd = []
     action_cmd.extend(self.cmd_prefix)
@@ -189,14 +189,14 @@ class Backend(object):
   # Note that this class must generally be overridden in the derived class to process
   # attributes specific to this class. But it should normally call this method for
   # the common attributes.
-  def detokenize(self,string):    
-    if re.search('%%ISCSI_HOST%%',string):
+  def detokenize(self, string):
+    if re.search('%%ISCSI_HOST%%', string):
       if self.proxyHost == "local":
-        string = re.sub('%%ISCSI_HOST%%',socket.gethostname()+":3260",string)
+        string = re.sub('%%ISCSI_HOST%%', socket.gethostname() + ":3260", string)
       else:
-        string = re.sub('%%ISCSI_HOST%%',self.proxyHost+":3260",string)
+        string = re.sub('%%ISCSI_HOST%%', self.proxyHost + ":3260", string)
     elif string == '%%ISCSI_PROXY%%':
-      string = "%s@%s" % (self.mgtUser,self.proxyHost)
+      string = "%s@%s" % (self.mgtUser, self.proxyHost)
     elif string == '%%PRIVKEY%%':
       string = self.mgtPrivKey
     elif string == '%%VOLUME_NAME%%':

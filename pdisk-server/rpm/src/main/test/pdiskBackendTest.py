@@ -11,7 +11,7 @@ class BackendTest(unittest.TestCase):
 
     def tearDown(self):
         pass
-    
+
     def test_getCmd_missing_action(self):
         backend = Backend()
         try:
