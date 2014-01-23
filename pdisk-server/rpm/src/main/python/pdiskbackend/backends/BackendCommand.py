@@ -9,10 +9,10 @@ class BackendCommand(object):
         self._action = action
 
     @property
-    def parsed_command(self):
+    def command(self):
         return self._command
-    @parsed_command.setter
-    def parsed_command(self, value):
+    @command.setter
+    def command(self, value):
         self._command = value
     @property
     def success_patterns(self):

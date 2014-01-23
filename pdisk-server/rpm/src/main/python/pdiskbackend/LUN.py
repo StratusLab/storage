@@ -99,18 +99,19 @@ class LUN(object):
     #  - None: action is not implemented
     #  - empty list: action does nothing
     def __executeAction__(self, action):
-    
         optInfos = None
-        
-        for backendCmd in self.getBackendCmd(action):
-        
+
+        for backendCmd in self._getBackendCmd(action):
+
             if not backendCmd:
                 abort("Action '%s' not implemented by back-end type '%s'" % \
-                                                      (action, self.getBackendType()))
-            
-            status, optInfo = self.runCommand(backendCmd)
+                                                      (action, self._getBackendType()))
+
+            self._detokenizeBackendCmd(backendCmd)
+
+            status, optInfo = self._runCommand(backendCmd)
             if status != 0 and backendCmd.run_on_failure():
-                status_, optInfo_ = self.runCommandOnFailure(backendCmd)
+                status_, optInfo_ = self._runCommandOnFailure(backendCmd)
                 if status_ != 0:
                     if not optInfo_:
                         optInfo_ = ()
@@ -139,29 +140,36 @@ class LUN(object):
         
         return status, optInfosStr
     
-    def runCommand(self, backendCmd):
-        command = CommandRunner(backendCmd.action,
-                                self.detokenizeCmd(backendCmd.parsed_command),
-                                backendCmd.success_patterns,
-                                backendCmd.failure_ok_patterns)
+    def _runCommand(self, backendCmd):
+        return self._run_command(backendCmd.action,
+                                 backendCmd.command,
+                                 backendCmd.success_patterns,
+                                 backendCmd.failure_ok_patterns)
+    
+    def _runCommandOnFailure(self, backendCmd):
+        return self._run_command(backendCmd.action,
+                                 backendCmd.failure_command,
+                                 backendCmd.success_patterns,
+                                 backendCmd.failure_ok_patterns)
+
+    @staticmethod
+    def _run_command(action, command, success_patterns, failure_ok_patterns):
+        command = CommandRunner(action, command, success_patterns, 
+                                failure_ok_patterns)
         command.execute()
         return command.checkStatus()
-    
-    def runCommandOnFailure(self, backendCmd):
-        command = CommandRunner(backendCmd.action,
-                                self.detokenizeCmd(backendCmd.failure_command),
-                                backendCmd.success_patterns,
-                                backendCmd.failure_ok_patterns)
-        command.execute()
-        return command.checkStatus()
-    
-    def getBackendCmd(self, action):
+
+    def _getBackendCmd(self, action):
         return self.proxy.getCmd(action)
     
-    def getBackendType(self):
+    def _getBackendType(self):
         return self.proxy.getType()
     
-    def detokenizeCmd(self, action_cmd):
+    def _detokenizeBackendCmd(self, backendCmd):
+        backendCmd.command = self._detokenizeCmd(backendCmd.command)
+        backendCmd.failure_command = self._detokenizeCmd(backendCmd.failure_command)
+        
+    def _detokenizeCmd(self, action_cmd):
         """LUN related de-tokenization."""
         for i in range(len(action_cmd)):
             action_cmd[i] = self._detokenize(action_cmd[i])

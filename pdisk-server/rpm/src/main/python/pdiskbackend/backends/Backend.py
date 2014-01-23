@@ -98,11 +98,8 @@ class Backend(object):
     #      a list of patterns (a simple string is converted to a list).
     # This function must be called from an iteration loop control statement
     def getCmd(self, lun_action):
-        if lun_action in self.lun_backend_cmd_mapping:
-            backend_actions = self.lun_backend_cmd_mapping[lun_action]
-        else:
-            abort("Internal error: LUN action '%s' unknown" % (lun_action))
-    
+        backend_actions = self._get_backend_actions(lun_action)
+
         if backend_actions == None:
             yield None
     
@@ -112,9 +109,15 @@ class Backend(object):
                                  failure_command=self._get_failure_command(lun_action, action),
                                  failure_ok_patterns=self._get_failure_ok_patterns(action),
                                  action=action)
-    
+
+    def _get_backend_actions(self, lun_action):
+        try:
+            return self.lun_backend_cmd_mapping[lun_action]
+        except KeyError:
+            abort("Internal error: LUN action '%s' unknown" % (lun_action))
+
     def _get_parsed_command(self, action):
-        if action in self.backend_cmds.keys():
+        if action in self.backend_cmds:
             return self._buildCmd(self.backend_cmds[action])
         else:
             abort("Internal error: action '%s' unknown" % (action))
