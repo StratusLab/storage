@@ -16,7 +16,7 @@ class LUN(object):
     # In addition to these optional informations produced by the command, it is possible
     # to add a value built from LUN class attributes. This value s appended to other
     # optional values, if any.
-    # In the following dictionnary, the key is an action for which this additional
+    # In the following dictionary, the key is an action for which this additional
     # information must be produced. And the value is a string defining the returned
     # value using the same tokens as commands.
     # This information is returned only on successful execution of action.

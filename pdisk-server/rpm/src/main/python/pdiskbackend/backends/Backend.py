@@ -17,8 +17,8 @@ class Backend(object):
     
     cmd_prefix = []
     
-    # Table defining mapping of LUN actions to NetApp actions.
-    # This is a 1 to n mapping (several NetApp commands may be needed for one LUN action).
+    # Table defining mapping of LUN actions to backend actions.
+    # This is a 1 to n mapping (several backend commands may be needed for one LUN action).
     # map and unmap are necessary as separate actions as they are not necessarily executed on
     # the same LUN as the other operations (eg. snapshot action).
     # Special values for commands are:
@@ -35,17 +35,17 @@ class Backend(object):
                                'unmap':None,
                               }
     
-    # Definitions of NetApp commands used to implement actions.
+    # Definitions of backend commands used to implement actions.
     backend_cmds = {
                     }
     
     # Commands to execute when a given backend command fails.
-    # This is a dictionnary where key is one of the backend_cmds key and the value is another dictionnary
+    # This is a dictionary where key is one of the backend_cmds key and the value is another dictionary
     # whose key is the name of lun action (as defined in lun_backend_cmd_mapping) that defines the
     # context of the backend command and the value is the key of another command in backend_cmds).
     # IF the context is '-', the alternate command will be executed in any context (lun actions) in case of errors.
     # If the value (alternate command) is an empty string, further backend commands part of the same LUN action are skipped.
-    # If it is None,processing of further actions contnues as if there was no entry for the command in the dictionnary.
+    # If it is None,processing of further actions contnues as if there was no entry for the command in the dictionary.
     # IF a backup command fails and has no entry in this dictionary, the execution continues
     # with next command if any.
     backend_failure_cmds = {
@@ -78,7 +78,7 @@ class Backend(object):
     
     # The creation of a new LUN may be required by some operations
     # on some backends (e.g. rebase with LVM backend).
-    # This dictionnary allows to define which LUN actions (same keys
+    # This dictionary allows to define which LUN actions (same keys
     # as in lun_backend_cmd_mapping, value ignored).
     # By default, this variable is empty: redefine it appropriately in
     # the context of a particular backend if needed.
@@ -158,7 +158,7 @@ class Backend(object):
     
     # Method formatting optional information returned by executed commands as a string.
     # Optional information are passed as a tuple.
-    # Formatting instructions are retrieved in a backend-specific dictionnary with one entry
+    # Formatting instructions are retrieved in a backend-specific dictionary with one entry
     # per action requiring a specific formatting of optional informations. The value is
     # a standard formatting instruction that may contain %%KWORD%% that are substituted with
     # appropriate value.
