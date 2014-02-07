@@ -19,22 +19,21 @@
 __version__ = "1.0"
 __author__ = "Guillaume PHILIPPON <guillaume.philippon@lal.in2p3.fr>"
 
-import sys
-
-sys.path.append('/var/lib/stratuslab/python')
-
 import os
 import re
 from optparse import OptionParser, OptionGroup
 import ConfigParser
 import socket
-import httplib2
 import json
 import ssl
 from StringIO import StringIO
 from urllib import urlencode
 from subprocess import call
 from time import sleep, gmtime, strftime
+
+import sys
+sys.path.append('/var/lib/stratuslab/python')
+import httplib2
 
 sample_example = """
 [main]
