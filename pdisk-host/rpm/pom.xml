@@ -75,7 +75,7 @@
             Packaging of scripts needed to support persistent disks on hosts.
           </description>
           <requires>
-               <require>stratuslab-cli-user &gt; 1.0</require>
+               <require>stratuslab-api-externals</require>
           </requires>
           <conflicts>
             <conflict>pdisk-host</conflict>
