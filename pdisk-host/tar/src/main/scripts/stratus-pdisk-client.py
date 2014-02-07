@@ -435,6 +435,12 @@ class PersistentDisk:
 class IscsiPersistentDisk(PersistentDisk):
     _unix_device_path = '/dev/disk/by-path/'
 
+    ISCSI_SUCCESS = 0
+    ISCSI_ERR_SESS_EXISTS = 15 # session is logged in
+    ISCSI_ERR_NO_OBJS_FOUND = 21 # no records/targets/sessions/portals found to execute operation on
+    
+    detach_retcodes_ok = [ISCSI_SUCCESS, ISCSI_ERR_SESS_EXISTS, ISCSI_ERR_NO_OBJS_FOUND]
+    
     @staticmethod
     def _rescan_sessions():
         return call("sudo %s --mode session --rescan" % (iscsiadm), 
@@ -442,9 +448,13 @@ class IscsiPersistentDisk(PersistentDisk):
 
     def __init__(self, pdisk_class, turl):
         self.__copy__(pdisk_class)
-        self.__image2iqn__(pdisk_class.image)
+        self._image2iqn(pdisk_class.image)
+        _portal = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
+        self._portal_host = _portal.group('server')
+        self._portal_port = _portal.group('port')
+        self._hostname = socket.gethostname()
 
-    def _wait_until_appears(self):
+    def _wait_lun_appears(self):
         path = self.image_storage()
         self._rescan_sessions()
         iteration = 0
@@ -456,8 +466,9 @@ class IscsiPersistentDisk(PersistentDisk):
             sleep(1)
             self._rescan_sessions()
 
-    def _wait_until_disappears(self):
+    def _wait_lun_disappears(self):
         path = self.image_storage()
+        self._rescan_sessions()
         iteration = 0
         while os.path.exists(path):
             iteration += 1
@@ -465,86 +476,91 @@ class IscsiPersistentDisk(PersistentDisk):
                 msg = "detach: storage path (%s) did not disappear" % path
                 raise AttachPersistentDiskException(msg)
             sleep(1)
+            self._rescan_sessions()
 
     def image_storage(self):
-        __portal__ = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
-        __portal_ip__ = socket.gethostbyname(__portal__.group('server'))
-
         dev = "ip-%s:%s-iscsi-%s-lun-%s" % (
-            __portal_ip__, __portal__.group('port'), self.iqn, self.lun)
+            self._portal_host, self._portal_port, self.iqn, self.lun)
 
         return self._unix_device_path + dev
 
     def attach(self):
-        __portal__ = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
-        __portal_ip__ = socket.gethostbyname(__portal__.group('server'))
+        self._login_to_iscsi_target()
+        # Seems to be a problem with the device by path being instantly available.
+        self._wait_lun_appears()
 
-        reg = "sudo %s --mode node --portal %s:%s --target %s -o new" % (
-            iscsiadm, __portal_ip__, __portal__.group('port'), self.iqn)
-        retcode = call(reg, shell=True)
-        if retcode != 0:
-            msg = "attach: error registering iSCSI disk with hypervisor (%d)" % retcode
-            raise AttachPersistentDiskException(msg)
+    def _login_to_iscsi_target(self):
+        self._register_new_target()        
+        self._login_to_target()
 
-        cmd = "sudo %s --mode node --portal %s:%s --target %s --login" % (
-            iscsiadm, __portal_ip__, __portal__.group('port'), self.iqn)
+    def _register_new_target(self):
+        self._iscsiadm('-o new', 
+                       'attach: error registering iSCSI disk with hypervisor %s' %
+                                                                    self._hostname)        
+
+    def _login_to_target(self):
+        cmd = "%s --login" % self.self._get_iscsiadm_cmd_base()
         retcode = call(cmd, shell=True)
-        if retcode == 0:
-            filename = '%s-%s-%s' % (__portal_ip__, __portal__.group('port'), self.iqn)
+        filename = '%s-%s-%s' % (self._portal_host, self._portal_port, self.iqn)
+        if retcode == self.ISCSI_SUCCESS:
             self.volumeCheck.insertVolume(filename, options.turl)
-        if retcode != 0:
-            if retcode == 15:
+        else:
+            if retcode == self.ISCSI_ERR_SESS_EXISTS:
                 retcode = self._rescan_sessions()
-                if retcode == 0:
-                    filename = '%s-%s-%s' % (__portal_ip__, __portal__.group('port'), self.iqn)
+                if retcode == self.ISCSI_SUCCESS:
                     self.volumeCheck.insertVolume(filename, options.turl)
                 else:
-                    msg = "attach: error rescanning in iSCSI disk session (%d)" % retcode
+                    msg = "attach: error rescanning in iSCSI disk session on hypervisor %s (%d)" % \
+                                                                            (self._hostname, retcode)
                     raise AttachPersistentDiskException(msg)
             else:
-                msg = "attach: error logging in iSCSI disk session (%d)" % retcode
+                msg = "attach: error logging in iSCSI disk session on hypervisor %s (%d)" % \
+                                                                    (self._hostname, retcode)
                 raise AttachPersistentDiskException(msg)
 
-        # Seems to be a problem with the device by path being instantly available.
-        self._wait_until_appears()
-
     def detach(self):
-        portal = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
-        portal_ip = socket.gethostbyname(portal.group('server'))
-        hostname = socket.gethostname()
-
-        filename = '%s-%s-%s' % (portal_ip, portal.group('port'), self.iqn)
+        filename = '%s-%s-%s' % (self._portal_host, self._portal_port, self.iqn)
         self.volumeCheck.deleteVolume(filename, options.turl)
 
         if self.volumeCheck.isFree(filename):
-            cmd = 'sudo %s --mode node --portal %s:%s --target %s --logout' % (
-                iscsiadm, portal_ip, portal.group('port'), self.iqn)
-            retcode = call(cmd, shell=True)
-            if retcode != 0:
-                msg = 'detach: error detaching iSCSI disk from node %s (%s)' % (hostname, retcode)
-                raise AttachPersistentDiskException(msg)
-
-            sleep(2)
-
-            unreg = "sudo %s --mode node --portal %s:%s --target %s -o delete" % (
-                iscsiadm, portal_ip, portal.group('port'), self.iqn)
-            retcode = call(unreg, shell=True)
-            if retcode != 0:
-                msg = 'detach: error unregistering iSCSI disk from node %s (%s)' % (hostname, retcode)
-                raise AttachPersistentDiskException(msg)
-
+            self._logout_from_iscsi_target()
             # Seems to be a problem with the device by path being instantly unavailable.
-            self._wait_until_disappears()
-
+            self._wait_lun_disappears()
             self.volumeCheck.deleteTarget(filename)
 
         # Give time for backend system to catch up.
         sleep(2)
 
-    def __image2iqn__(self, s):
-        __iqn__ = re.match(r"(?P<iqn>.*:.*):(?P<lun>.*)", s)
-        self.iqn = __iqn__.group('iqn')
-        self.lun = __iqn__.group('lun')
+    def _logout_from_iscsi_target(self):
+        self._logout_from_target()
+        sleep(2)
+        self._delete_target_from_db()
+        
+    def _logout_from_target(self):
+        self._iscsiadm('--logout', 
+                       'detach: error detaching iSCSI disk from hypervisor %s' % self._hostname, 
+                       retcodes_ok=self.detach_retcodes_ok)
+
+    def _delete_target_from_db(self):
+        self._iscsiadm('-o delete', 
+                       'detach: error unregistering iSCSI disk from hypervisor %s' % self._hostname, 
+                       retcodes_ok=self.detach_retcodes_ok)
+    
+    def _get_iscsiadm_cmd_base(self):
+        return "sudo %s --mode node --portal %s:%s --target %s" % (
+            iscsiadm, self._portal_host, self._portal_port, self.iqn)
+
+    def _iscsiadm(self, op, ex_msg, retcodes_ok=[IscsiPersistentDisk.ISCSI_SUCCESS]):
+        """Parameters: operation, exception message, list of success return codes."""
+        cmd = "%s %s" % (self._get_iscsiadm_cmd_base(), op)
+        retcode = call(cmd, shell=True)
+        if retcode not in retcodes_ok:
+            raise AttachPersistentDiskException("%s (%d)" % (ex_msg, retcode))
+
+    def _image2iqn(self, s):
+        _iqn = re.match(r"(?P<iqn>.*:.*):(?P<lun>.*)", s)
+        self.iqn = _iqn.group('iqn')
+        self.lun = _iqn.group('lun')
 
 
 class FilePersistentDisk(PersistentDisk):
