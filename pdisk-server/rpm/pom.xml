@@ -177,6 +177,7 @@
             <require>java-1.7.0-openjdk</require>          
             <require>mysql-libs</require>
             <require>stratuslab-pdisk-host</require>
+            <require>stratuslab-api</require>
           </requires>
           <conflicts>
             <conflict>pdisk-server</conflict>
