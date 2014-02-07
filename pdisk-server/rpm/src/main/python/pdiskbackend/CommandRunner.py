@@ -42,7 +42,7 @@ class CommandRunner(object):
             retcode, output = self._getStatusOutputOrRetry()
             output = output.strip()
             if retcode != 0 and output:
-                debug(0, '1 An error occurred during %s action (%s). Command output:\n%s\n%s\n%s' % \
+                debug(0, "ERROR: %s action, exit code %s. Command output:\n%s\n%s\n%s" % \
                            (self.action, retcode, self.cmd_output_start, output, self.cmd_output_end))
                 # In some cases we are OK when failure happens.
                 for failurePattern in self.failureOkMsgs.get(self.action, []):
@@ -50,10 +50,10 @@ class CommandRunner(object):
                     matcher = output_regexp.search(output)
                     if matcher:
                         retcode = 0
-                        debug(0, '... But we OK to proceed. Setting retcode to 0.')
+                        debug(0, '... But we are OK to proceed. Setting retcode to 0.')
                         break
             else:
-                # Need to check if the command is expected to return an output when successfull
+                # Need to check if the command is expected to return an output when successful
                 success = False
                 if self.successMsgs:
                     for successPattern in self.successMsgs:
@@ -69,22 +69,29 @@ class CommandRunner(object):
                     if len(output) == 0:
                         success = True
                 if success:
-                    debug(1, '%s action completed successfully.' % (self.action))
+                    debug(1, "SUCCESS: %s action completed successfully." % (self.action))
                     if len(output) > 0:
                         debug(2, 'Command output:\n%s\n%s\n%s' % (self.cmd_output_start, output, self.cmd_output_end))
                 else:
+                    debug(0, "ERROR: %s action, exit code %s. But a failure case detected after parsing the output. Command output:\n%s\n%s\n%s" % \
+                              (self.action, retcode, self.cmd_output_start, output, self.cmd_output_end))
                     retcode = -1
-                    debug(0, '2 An error occured during %s action. Command output:\n%s\n%s\n%s' % \
-                              (self.action, self.cmd_output_start, output, self.cmd_output_end))
-        except OSError, details:
-            abort('Failed to execute %s action: %s' % (self.action, details))
+                    debug(0, 'exit code was reset to %i' % retcode)
+        except OSError as ex:
+            abort('Failed to execute %s action: %s' % (self.action, ex))
+
         if self.action in ['map', 'delete'] and retcode == 255 and not output.strip():
             retcode = 0
+            debug(0, 'map and delete actions (command exited with 255 and no output returned) - exit code was reset to %i.' % retcode)
+
         if retcode == 255:
             if self.action in ['map', 'delete'] and not output.strip():
                 retcode = 0
+                debug(0, 'map and delete actions (no output returned) - exit code was reset to %i.' % retcode)
             if self.action in ['unmap']:
                 retcode = 0
+                debug(0, 'unmap action - exit code was reset to %i.' % retcode)
+
         return retcode, optInfo
     
     def _getStatusOutputOrRetry(self):
