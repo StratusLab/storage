@@ -29,11 +29,11 @@ from optparse import OptionParser
 import logging.handlers
 import ConfigParser
 
-from pdiskbackend.LUN import LUN
-from pdiskbackend.backends.CephBackend import CephBackend
-from pdiskbackend.backends.FileBackend import FileBackend
-from pdiskbackend.backends.LVMBackend import LVMBackend
-from pdiskbackend.backends.NetAppBackend import getNetAppBackend, NETAPP_FLAVOURS
+from stratuslab.pdiskbackend.LUN import LUN
+from stratuslab.pdiskbackend.backends.CephBackend import CephBackend
+from stratuslab.pdiskbackend.backends.FileBackend import FileBackend
+from stratuslab.pdiskbackend.backends.LVMBackend import LVMBackend
+from stratuslab.pdiskbackend.backends.NetAppBackend import getNetAppBackend, NETAPP_FLAVOURS
 
 # Initializations
 action_default = ''
