@@ -33,7 +33,7 @@ from pdiskbackend.LUN import LUN
 from pdiskbackend.backends.CephBackend import CephBackend
 from pdiskbackend.backends.FileBackend import FileBackend
 from pdiskbackend.backends.LVMBackend import LVMBackend
-from pdiskbackend.backends.NetAppBackend import NetAppBackend
+from pdiskbackend.backends.NetAppBackend import getNetAppBackend, NETAPP_FLAVOURS
 
 # Initializations
 action_default = ''
@@ -195,7 +195,7 @@ except:
 
 # NetApp back-end configuration
 
-if backend_variant.lower() == 'netapp':
+if backend_variant.lower() in NETAPP_FLAVOURS:
   # Retrieve NetApp back-end mandatory attributes.
   # Mandatory attributes should be defined as keys of backend_attributes with an arbitrary value.
   # Key name must match the attribute name in the configuration file.
@@ -227,14 +227,13 @@ if backend_variant.lower() == 'netapp':
       abort("SSH private key to use for connecting to iSCSI proxy undefined")
   
   # Create iSCSI back-end object  
-  iscsi_proxy = NetAppBackend(iscsi_proxy_name,
-                              backend_attributes['mgt_user_name'],
-                              backend_attributes['mgt_user_private_key'],
-                              backend_attributes['volume_name'],
-                              backend_attributes['lun_namespace'],
-                              backend_attributes['initiator_group'],
-                              backend_attributes['volume_snapshot_prefix']
-                              )
+  iscsi_proxy = getNetAppBackend(backend_variant, iscsi_proxies,
+                                 backend_attributes['mgt_user_name'],
+                                 backend_attributes['mgt_user_private_key'],
+                                 backend_attributes['volume_name'],
+                                 backend_attributes['lun_namespace'],
+                                 backend_attributes['initiator_group'],
+                                 backend_attributes['volume_snapshot_prefix'])
 
 # LVM back-end configuration
 elif backend_variant.lower() == 'lvm':

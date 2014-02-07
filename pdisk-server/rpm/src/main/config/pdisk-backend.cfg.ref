@@ -1,12 +1,19 @@
 [main]
 log_file =
 
-# Comma separated list of backend servers
+# Comma separated list of backend servers.
+# NB! at the moment only first proxy is used.
+# Hints:
+# * use hostname backed by RR DNS when the redundant access to the volumes is available.
 iscsi_proxies=nfsserv21,nfsserv22
 mgt_user_name=root
 mgt_user_private_key=/some/dir/key.rsa
 
 [nfsserv21]
+# Two NetApp flavors are implemented
+# 1. Data ONTAP 7-Mode    - parameter: "NetApp" or "NetApp-7mode" (default)
+# 2. Data ONTAP Clustered - parameter: "NetApp-cluster"
+# The parameter values are case insensitive.
 type=NetApp
 volume_name = /vol/iscsi_data
 lun_namespace = stratuslab
