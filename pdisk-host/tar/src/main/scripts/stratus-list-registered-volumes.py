@@ -18,8 +18,6 @@
 
 import sys
 
-sys.path.append('/var/lib/stratuslab/python')
-
 import os
 from optparse import OptionParser
 import ConfigParser
