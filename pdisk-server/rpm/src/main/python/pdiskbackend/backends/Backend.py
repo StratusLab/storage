@@ -104,7 +104,7 @@ class Backend(object):
             yield None
     
         for action in backend_actions:
-            yield BackendCommand(command=self._get_parsed_command(action),
+            yield BackendCommand(command=self._get_command(action),
                                  success_patterns=self._get_success_patterns(action),
                                  failure_command=self._get_failure_command(lun_action, action),
                                  failure_ok_patterns=self._get_failure_ok_patterns(action),
@@ -116,7 +116,7 @@ class Backend(object):
         except KeyError:
             abort("Internal error: LUN action '%s' unknown" % (lun_action))
 
-    def _get_parsed_command(self, action):
+    def _get_command(self, action):
         if action in self.backend_cmds:
             return self._buildCmd(self.backend_cmds[action])
         else:

@@ -39,7 +39,7 @@ class BackendTest(unittest.TestCase):
             assert None != backendCmd
             assert isinstance(backendCmd, BackendCommand)
             
-            assert ['bar'] == backendCmd.parsed_command
+            assert ['bar'] == backendCmd.command
         finally:
             Backend.lun_backend_cmd_mapping = _lun_backend_cmd_mapping
             Backend.backend_cmds = _backend_cmds
