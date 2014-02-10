@@ -26,14 +26,11 @@ Script used by StratusLab PDisk to manage Backend LUNs.
 import sys
 from optparse import OptionParser
 
-from stratuslab.pdiskbackend.utils import Logger 
 from stratuslab.pdiskbackend.LUN import LUN
+from stratuslab.pdiskbackend import defaults
+from stratuslab.pdiskbackend.utils import Logger 
 from stratuslab.pdiskbackend.ConfigHolder import ConfigHolder
 from stratuslab.pdiskbackend.PdiskBackendProxyFactory import PdiskBackendProxyFactory
-
-# Initializations
-action_default = ''
-status = 0           # Assume success
 
 # Keys are supported actions, values are the number of arguments required for the each action
 valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':1, 'snapshot':3 , 'getturl':1 , 'map':1 , 'unmap':1}
@@ -52,18 +49,21 @@ Parameters:
     action=unmap:    LUN_UUID
 """
 parser = OptionParser(usage=usage_text)
-parser.add_option('--config', dest='config_file', action='store', default=config_file_default, 
-                  help='Name of the configuration file to use (D: %s)' % (config_file_default))
-parser.add_option('--action', dest='action', action='store', default=action_default, 
-                  help='Action to execute. Valid actions: %s'%(valid_actions_str))
-parser.add_option('-v', '--debug', '--verbose', dest='verbosity', action='count', 
-                  default=0, help='Increase verbosity level for debugging (multiple allowed)')
+parser.add_option('--config', dest='config_file', action='store', 
+                  default=defaults.CONFIG_FILE_NAME, 
+                  help='Name of the configuration file to use (D: %s)' %\
+                                                    defaults.CONFIG_FILE_NAME)
+parser.add_option('--action', dest='action', action='store', default='', 
+                  help='Action to execute. Valid actions: %s' % valid_actions_str)
+parser.add_option('-v', '--debug', '--verbose', dest='verbosity',
+                  action='count', default=defaults.VERBOSITY, 
+                  help='Increase verbosity level for debugging (multiple allowed)')
 options, args = parser.parse_args()
 
 
-configHolder = ConfigHolder(config_file_name=options.config_file, 
-                            verbosity=options.verbosity)
-logger = Logger(configHolder)
+ch = ConfigHolder(config_file_name=options.config_file, 
+                  verbosity=options.verbosity)
+logger = Logger(ch)
 
 
 if options.action in valid_actions:
@@ -79,25 +79,27 @@ else:
     parser.print_help()
     abort("")
 
-backend_proxy = PdiskBackendProxyFactory.createBackendProxy(configHolder)
+backend_proxy = PdiskBackendProxyFactory.createBackendProxy(ch)
 
 # Execute requested action
 
+status = 0
+
 if options.action == 'check':
     logger.debug(1,"Checking LUN existence...")
-    lun = LUN(args[0], proxy=backend_proxy)
+    lun = LUN(args[0], proxy=backend_proxy, configHolder=ch)
     status = lun.check()
 elif options.action == 'create':
     logger.debug(1,"Creating LUN...")
-    lun = LUN(args[0], size=args[1], proxy=backend_proxy)
+    lun = LUN(args[0], size=args[1], proxy=backend_proxy, configHolder=ch)
     status = lun.create()
 elif options.action == 'delete':
     logger.debug(1,"Deleting LUN...")
-    lun = LUN(args[0], proxy=backend_proxy)
+    lun = LUN(args[0], proxy=backend_proxy, configHolder=ch)
     status = lun.delete()
 elif options.action == 'getturl' :
     logger.debug(1,"Returning Transport URL...")
-    lun = LUN(args[0], proxy=backend_proxy)
+    lun = LUN(args[0], proxy=backend_proxy, configHolder=ch)
     turl = lun.getTurl()
     # If an error occured, it has already been signaled.
     # If it succeeds, rebasedLUN should always be defined...
@@ -108,7 +110,7 @@ elif options.action == 'getturl' :
         status = 10
 elif options.action == 'rebase':
     logger.debug(1,"Rebasing LUN...")
-    lun = LUN(args[0], proxy=backend_proxy)
+    lun = LUN(args[0], proxy=backend_proxy, configHolder=ch)
     rebasedLUN = lun.rebase()
     # If an error occured, it has already been signaled.
     # If it succeeds, rebasedLUN should always be defined...
@@ -119,17 +121,17 @@ elif options.action == 'rebase':
         status = 10
 elif options.action == 'snapshot':
     logger.debug(1,"Doing a LUN snapshot...")
-    lun = LUN(args[0],size=args[2],proxy=backend_proxy)
-    snapshot_lun = LUN(args[1],proxy=backend_proxy)
+    lun = LUN(args[0],size=args[2],proxy=backend_proxy, configHolder=ch)
+    snapshot_lun = LUN(args[1],proxy=backend_proxy, configHolder=ch)
     # Only the last error is returned
     status = lun.snapshot(snapshot_lun)
 elif options.action == 'map':
     logger.debug(1,"Mapping LUN...")
-    lun = LUN(args[0],proxy=backend_proxy)
+    lun = LUN(args[0],proxy=backend_proxy, configHolder=ch)
     status = lun.map()
 elif options.action == 'unmap':
     debug(1,"Unmapping LUN...")
-    lun = LUN(args[0],proxy=backend_proxy)
+    lun = LUN(args[0],proxy=backend_proxy, configHolder=ch)
     status = lun.unmap()
 else:
     abort("Internal error: unimplemented action (%s)" % options.action)
