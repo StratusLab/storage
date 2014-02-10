@@ -37,7 +37,7 @@ VALID_ACTIONS = {'check':1, 'create':2, 'delete':1, 'rebase':1,
                  'snapshot':3, 'getturl':1 , 'map':1 , 'unmap':1}
 VALID_ACTIONS_STR = ', '.join(VALID_ACTIONS.keys())
 
-def parse_args():
+def parse_args(parser):
     usage_text = """usage: %prog [options] action_parameters
     
 Parameters:
@@ -50,7 +50,7 @@ Parameters:
     action=snapshot: LUN_UUID New_LUN_UUID Snapshot_Size
     action=unmap:    LUN_UUID
 """
-    parser = OptionParser(usage=usage_text)
+    parser.set_usage(usage_text)
     parser.add_option('--config', dest='config_file', action='store', 
                       default=defaults.CONFIG_FILE_NAME, 
                       help='Name of the configuration file to use (D: %s)' %\
@@ -63,7 +63,9 @@ Parameters:
     options, args = parser.parse_args()
     return options, args
 
-options, args = parse_args()
+parser = OptionParser()
+options, args = parse_args(parser)
+
 ch = ConfigHolder(config_file_name=options.config_file, 
                   verbosity=options.verbosity)
 logger = Logger(ch)
