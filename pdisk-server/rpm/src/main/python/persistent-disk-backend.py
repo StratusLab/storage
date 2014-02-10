@@ -28,12 +28,13 @@ from optparse import OptionParser
 
 from stratuslab.pdiskbackend.LUN import LUN
 from stratuslab.pdiskbackend import defaults
-from stratuslab.pdiskbackend.utils import Logger 
+from stratuslab.pdiskbackend.utils import Logger
 from stratuslab.pdiskbackend.ConfigHolder import ConfigHolder
 from stratuslab.pdiskbackend.PdiskBackendProxyFactory import PdiskBackendProxyFactory
 
 # Keys are supported actions, values are the number of arguments required for the each action
-valid_actions = { 'check':1, 'create':2, 'delete':1, 'rebase':1, 'snapshot':3 , 'getturl':1 , 'map':1 , 'unmap':1}
+valid_actions = {'check':1, 'create':2, 'delete':1, 'rebase':1, 
+                 'snapshot':3, 'getturl':1 , 'map':1 , 'unmap':1}
 valid_actions_str = ', '.join(valid_actions.keys())
 
 usage_text = """usage: %prog [options] action_parameters
