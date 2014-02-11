@@ -26,6 +26,8 @@ Script used by StratusLab PDisk to manage Backend LUNs.
 import sys
 from optparse import OptionParser
 
+sys.path.append('/var/lib/stratuslab/python')
+
 from stratuslab.pdiskbackend.LUN import LUN
 from stratuslab.pdiskbackend import defaults
 from stratuslab.pdiskbackend.utils import Logger
