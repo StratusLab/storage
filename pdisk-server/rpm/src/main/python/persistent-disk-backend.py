@@ -71,7 +71,7 @@ options, args = parse_args(parser)
 ch = ConfigHolder(config_file_name=options.config_file, 
                   verbosity=options.verbosity)
 logger = Logger(ch)
-
+ch.logger = logger
 
 if options.action in VALID_ACTIONS:
     if len(args) < VALID_ACTIONS[options.action]:
