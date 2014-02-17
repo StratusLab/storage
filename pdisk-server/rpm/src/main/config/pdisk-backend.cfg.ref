@@ -1,5 +1,6 @@
 [main]
-log_file =
+# Log direction: console or syslog
+log_direction = console
 
 # Comma separated list of backend servers.
 # NB! at the moment only first proxy is used.

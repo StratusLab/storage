@@ -28,9 +28,10 @@ from optparse import OptionParser
 
 sys.path.append('/var/lib/stratuslab/python')
 
+from stratuslab.Util import printDetail
 from stratuslab.pdiskbackend.LUN import LUN
 from stratuslab.pdiskbackend import defaults
-from stratuslab.pdiskbackend.utils import Logger
+from stratuslab.pdiskbackend.utils import initialize_logger, abort, print_detail
 from stratuslab.pdiskbackend.ConfigHolder import ConfigHolder
 from stratuslab.pdiskbackend.PdiskBackendProxyFactory import PdiskBackendProxyFactory
 
@@ -70,19 +71,19 @@ options, args = parse_args(parser)
 
 ch = ConfigHolder(config_file_name=options.config_file, 
                   verbosity=options.verbosity)
-logger = Logger(ch)
-ch.logger = logger
-
+initialize_logger(ch.get(defaults.CONFIG_MAIN_SECTION, 'log_direction'),
+                  ch.verbosity)
+            
 if options.action in VALID_ACTIONS:
     if len(args) < VALID_ACTIONS[options.action]:
-        logger.debug(0, "Insufficient argument provided (%d required)" % VALID_ACTIONS[options.action])  
+        print_detail("Insufficient argument provided (%d required)" % VALID_ACTIONS[options.action], 0)  
         parser.print_help()
         abort("")
 else:
     if options.action:
-        logger.debug(0,"Invalid action requested (%s)\n" % options.action)
+        print_detail("Invalid action requested (%s)\n" % options.action, 0)
     else:
-        logger.debug(0,"No action specified\n")
+        print_detail("No action specified\n", 0)
     parser.print_help()
     abort("")
 
