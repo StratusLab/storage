@@ -76,14 +76,14 @@ initialize_logger(ch.get(defaults.CONFIG_MAIN_SECTION, 'log_direction'),
             
 if options.action in VALID_ACTIONS:
     if len(args) < VALID_ACTIONS[options.action]:
-        print_detail("Insufficient argument provided (%d required)" % VALID_ACTIONS[options.action], 0)  
+        print_detail("Insufficient argument provided (%d required)" % VALID_ACTIONS[options.action])  
         parser.print_help()
         abort("")
 else:
     if options.action:
-        print_detail("Invalid action requested (%s)\n" % options.action, 0)
+        print_detail("Invalid action requested (%s)\n" % options.action)
     else:
-        print_detail("No action specified\n", 0)
+        print_detail("No action specified\n")
     parser.print_help()
     abort("")
 
@@ -94,19 +94,19 @@ backend_proxy = PdiskBackendProxyFactory.createBackendProxy(ch)
 status = 0
 
 if options.action == 'check':
-    logger.debug(1,"Checking LUN existence...")
+    print_detail("Checking LUN existence...", 1)
     lun = LUN(args[0], proxy=backend_proxy, configHolder=ch)
     status = lun.check()
 elif options.action == 'create':
-    logger.debug(1,"Creating LUN...")
+    print_detail("Creating LUN...", 1)
     lun = LUN(args[0], size=args[1], proxy=backend_proxy, configHolder=ch)
     status = lun.create()
 elif options.action == 'delete':
-    logger.debug(1,"Deleting LUN...")
+    print_detail("Deleting LUN...", 1)
     lun = LUN(args[0], proxy=backend_proxy, configHolder=ch)
     status = lun.delete()
 elif options.action == 'getturl' :
-    logger.debug(1,"Returning Transport URL...")
+    print_detail("Returning Transport URL...", 1)
     lun = LUN(args[0], proxy=backend_proxy, configHolder=ch)
     turl = lun.getTurl()
     # If an error occured, it has already been signaled.
@@ -117,7 +117,7 @@ elif options.action == 'getturl' :
     else:
         status = 10
 elif options.action == 'rebase':
-    logger.debug(1,"Rebasing LUN...")
+    print_detail("Rebasing LUN...", 1)
     lun = LUN(args[0], proxy=backend_proxy, configHolder=ch)
     rebasedLUN = lun.rebase()
     # If an error occured, it has already been signaled.
@@ -128,17 +128,17 @@ elif options.action == 'rebase':
     else:
         status = 10
 elif options.action == 'snapshot':
-    logger.debug(1,"Doing a LUN snapshot...")
+    print_detail("Doing a LUN snapshot...", 1)
     lun = LUN(args[0],size=args[2],proxy=backend_proxy, configHolder=ch)
     snapshot_lun = LUN(args[1],proxy=backend_proxy, configHolder=ch)
     # Only the last error is returned
     status = lun.snapshot(snapshot_lun)
 elif options.action == 'map':
-    logger.debug(1,"Mapping LUN...")
+    print_detail("Mapping LUN...", 1)
     lun = LUN(args[0],proxy=backend_proxy, configHolder=ch)
     status = lun.map()
 elif options.action == 'unmap':
-    debug(1,"Unmapping LUN...")
+    print_detail("Unmapping LUN...", 1)
     lun = LUN(args[0],proxy=backend_proxy, configHolder=ch)
     status = lun.unmap()
 else:
