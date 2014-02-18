@@ -95,19 +95,19 @@ status = 0
 
 if options.action == 'check':
     print_detail("Checking LUN existence...", 1)
-    lun = LUN(args[0], proxy=backend_proxy, configHolder=ch)
+    lun = LUN(args[0], proxy=backend_proxy)
     status = lun.check()
 elif options.action == 'create':
     print_detail("Creating LUN...", 1)
-    lun = LUN(args[0], size=args[1], proxy=backend_proxy, configHolder=ch)
+    lun = LUN(args[0], size=args[1], proxy=backend_proxy)
     status = lun.create()
 elif options.action == 'delete':
     print_detail("Deleting LUN...", 1)
-    lun = LUN(args[0], proxy=backend_proxy, configHolder=ch)
+    lun = LUN(args[0], proxy=backend_proxy)
     status = lun.delete()
 elif options.action == 'getturl' :
     print_detail("Returning Transport URL...", 1)
-    lun = LUN(args[0], proxy=backend_proxy, configHolder=ch)
+    lun = LUN(args[0], proxy=backend_proxy)
     turl = lun.getTurl()
     # If an error occured, it has already been signaled.
     # If it succeeds, rebasedLUN should always be defined...
@@ -118,7 +118,7 @@ elif options.action == 'getturl' :
         status = 10
 elif options.action == 'rebase':
     print_detail("Rebasing LUN...", 1)
-    lun = LUN(args[0], proxy=backend_proxy, configHolder=ch)
+    lun = LUN(args[0], proxy=backend_proxy)
     rebasedLUN = lun.rebase()
     # If an error occured, it has already been signaled.
     # If it succeeds, rebasedLUN should always be defined...
@@ -129,17 +129,17 @@ elif options.action == 'rebase':
         status = 10
 elif options.action == 'snapshot':
     print_detail("Doing a LUN snapshot...", 1)
-    lun = LUN(args[0],size=args[2],proxy=backend_proxy, configHolder=ch)
-    snapshot_lun = LUN(args[1],proxy=backend_proxy, configHolder=ch)
+    lun = LUN(args[0],size=args[2],proxy=backend_proxy)
+    snapshot_lun = LUN(args[1],proxy=backend_proxy)
     # Only the last error is returned
     status = lun.snapshot(snapshot_lun)
 elif options.action == 'map':
     print_detail("Mapping LUN...", 1)
-    lun = LUN(args[0],proxy=backend_proxy, configHolder=ch)
+    lun = LUN(args[0],proxy=backend_proxy)
     status = lun.map()
 elif options.action == 'unmap':
     print_detail("Unmapping LUN...", 1)
-    lun = LUN(args[0],proxy=backend_proxy, configHolder=ch)
+    lun = LUN(args[0],proxy=backend_proxy)
     status = lun.unmap()
 else:
     abort("Internal error: unimplemented action (%s)" % options.action)
