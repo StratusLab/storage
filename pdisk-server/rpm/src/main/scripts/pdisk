@@ -135,9 +135,9 @@ ACTION=$1
 shift
 
 ##################################################
-# Read any configuration files
+# Read pdisk configuration file
 ##################################################
-for CONFIG in /etc/default/jetty{,9} $HOME/.jettyrc; do
+for CONFIG in /etc/default/pdisk; do
   if [ -f "$CONFIG" ] ; then 
     readConfig "$CONFIG"
   fi
