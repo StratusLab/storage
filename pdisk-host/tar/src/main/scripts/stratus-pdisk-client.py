@@ -498,7 +498,7 @@ class IscsiPersistentDisk(PersistentDisk):
                                                                     self._hostname)        
 
     def _login_to_target(self):
-        cmd = "%s --login" % self.self._get_iscsiadm_cmd_base()
+        cmd = "%s --login" % self._get_iscsiadm_cmd_base()
         retcode = call(cmd, shell=True)
         filename = '%s-%s-%s' % (self._portal_host, self._portal_port, self.iqn)
         if retcode == self.ISCSI_SUCCESS:
@@ -549,7 +549,7 @@ class IscsiPersistentDisk(PersistentDisk):
         return "sudo %s --mode node --portal %s:%s --target %s" % (
             iscsiadm, self._portal_host, self._portal_port, self.iqn)
 
-    def _iscsiadm(self, op, ex_msg, retcodes_ok=[IscsiPersistentDisk.ISCSI_SUCCESS]):
+    def _iscsiadm(self, op, ex_msg, retcodes_ok=[0]):
         """Parameters: operation, exception message, list of success return codes."""
         cmd = "%s %s" % (self._get_iscsiadm_cmd_base(), op)
         retcode = call(cmd, shell=True)
