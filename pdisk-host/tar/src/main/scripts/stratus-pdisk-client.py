@@ -456,14 +456,16 @@ class IscsiPersistentDisk(PersistentDisk):
     def _wait_lun_appears(self):
         path = self.image_storage()
         self._rescan_sessions()
+        sleep(2)
         iteration = 0
         while not os.path.exists(path):
             iteration += 1
-            if iteration > 5:
+            if iteration >= 5:
                 msg = "attach: storage path (%s) did not appear" % path
                 raise AttachPersistentDiskException(msg)
-            sleep(1)
+            sleep(3)
             self._rescan_sessions()
+            sleep(2)
 
     def _wait_lun_disappears(self):
         path = self.image_storage()
@@ -474,7 +476,7 @@ class IscsiPersistentDisk(PersistentDisk):
             if iteration > 5:
                 msg = "detach: storage path (%s) did not disappear" % path
                 raise AttachPersistentDiskException(msg)
-            sleep(1)
+            sleep(3)
             self._rescan_sessions()
 
     def image_storage(self):
