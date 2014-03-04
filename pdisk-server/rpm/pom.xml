@@ -219,11 +219,13 @@
                     <include>logs/**/*</include>
                     <include>contexts/README.txt</include>
                   </includes>
-                  <!-- remove references to binary files -->
+                  <!-- remove references to binary files and deployment file -->
                   <excludes>
                     <exclude>lib/setuid/**/*</exclude>
                     <exclude>etc/jetty-setuid.xml</exclude>
                     <exclude>etc/jetty.conf</exclude>
+                    <exclude>etc/jetty-deploy.xml</exclude>
+                    <exclude>resources/log4j.properties</exclude>
                   </excludes>
                 </source>
               </sources>
