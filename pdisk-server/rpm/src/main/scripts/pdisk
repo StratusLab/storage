@@ -179,7 +179,7 @@ fi
 # if no JETTY_HOME, search likely locations.
 ##################################################
 if [ -z "$JETTY_HOME" ] ; then
-  POSSIBLE_JETTY_HOME="/opt/stratuslab/registration"
+  POSSIBLE_JETTY_HOME="/opt/stratuslab/storage/pdisk"
   if [ -d "$POSSIBLE_JETTY_HOME" ]; then
     JETTY_HOME=$POSSIBLE_JETTY_HOME
   fi
