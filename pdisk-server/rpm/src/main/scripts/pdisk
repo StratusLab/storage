@@ -179,40 +179,10 @@ fi
 # if no JETTY_HOME, search likely locations.
 ##################################################
 if [ -z "$JETTY_HOME" ] ; then
-  STANDARD_LOCATIONS=(
-	"/opt/stratuslab/storage"
-        )
-  JETTY_DIR_NAMES=(
-	"pdisk"
-        )
-        
-  for L in "${STANDARD_LOCATIONS[@]}"
-  do
-    for N in "${JETTY_DIR_NAMES[@]}"
-    do
-      POSSIBLE_JETTY_HOME=("$L/"$N)
-      if [ ! -d "$POSSIBLE_JETTY_HOME" ]
-      then
-        # Not a directory. skip.
-        unset POSSIBLE_JETTY_HOME
-      elif [ ! -f "$POSSIBLE_JETTY_HOME/$JETTY_INSTALL_TRACE_FILE" ]
-      then
-        # Trace file not found. skip.
-        unset POSSIBLE_JETTY_HOME
-      else
-        # Good hit, Use it
-        JETTY_HOME=$POSSIBLE_JETTY_HOME
-        # Break out of JETTY_DIR_NAMES loop
-        break
-      fi
-    done
-    if [ -n "$POSSIBLE_JETTY_HOME" ]
-    then
-      # We have found our JETTY_HOME
-      # Break out of STANDARD_LOCATIONS loop
-      break
-    fi
-  done
+  POSSIBLE_JETTY_HOME="/opt/stratuslab/registration"
+  if [ -d "$POSSIBLE_JETTY_HOME" ]; then
+    JETTY_HOME=$POSSIBLE_JETTY_HOME
+  fi
 fi
 
 
