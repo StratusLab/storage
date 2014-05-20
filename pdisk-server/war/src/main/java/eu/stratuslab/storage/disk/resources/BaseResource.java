@@ -29,6 +29,7 @@ import javax.security.auth.x500.X500Principal;
 import org.restlet.Request;
 import org.restlet.data.ChallengeResponse;
 import org.restlet.data.MediaType;
+import org.restlet.data.Reference;
 import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.resource.ServerResource;
 
@@ -36,6 +37,7 @@ import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.persistence.Disk;
 import freemarker.template.Configuration;
+import org.restlet.util.Series;
 
 public class BaseResource extends ServerResource {
 
@@ -109,22 +111,46 @@ public class BaseResource extends ServerResource {
 
     }
 
-    //                                                                                          
-    // Different proxy versions have different DN structures. Old style has                     
-    // explicitly CN=proxy at the beginning. The new RFC proxies use                            
-    // CN=serial-no with 'serial-no' being a string of digits.                                  
-    //                                                                                          
+    //
+    // Different proxy versions have different DN structures. Old style has
+    // explicitly CN=proxy at the beginning. The new RFC proxies use
+    // CN=serial-no with 'serial-no' being a string of digits.
+    //
     public static String stripCNProxy(String username) {
         return username.replaceFirst("^CN\\s*=\\s*proxy\\s*,\\s*", "")
                 .replaceFirst("^CN\\s*=\\s*\\d+\\s*,\\s*", "");
     }
 
     protected String getBaseUrl() {
-        return getRequest().getRootRef().toString();
+        return getBaseUrl(getRequest());
     }
 
+    // always has a trailing slash!
     public static String getBaseUrl(Request request) {
-        return request.getRootRef().toString();
+
+        Series headers = (Series) request.getAttributes().get("org.restlet.http.headers");
+
+        String scheme = null;
+        String authority = null;
+        if (headers != null) {
+            scheme = headers.getFirstValue("X-Forwarded-Scheme");
+            authority = headers.getFirstValue("Host");
+        }
+
+        Reference ref = request.getRootRef();
+        if (authority != null) {
+            ref.setAuthority(authority);
+        }
+        if (scheme != null) {
+            ref.setScheme(scheme);
+        }
+
+        String url = ref.toString();
+        if (url.endsWith("/")) {
+            return url;
+        } else {
+            return url + "/";
+        }
     }
 
     protected String getCurrentUrl() {

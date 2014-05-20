@@ -11,11 +11,12 @@
   <security-constraint>
     <web-resource-collection>
       <web-resource-name>JAAS Role</web-resource-name>
-      <url-pattern>/*</url-pattern>
+      <url-pattern>/pdisk/*</url-pattern>
     </web-resource-collection>
     <auth-constraint>
       <role-name>cloud-access</role-name>
     </auth-constraint>
+      <!-- FIXME: REMOVE THIS? -->
     <user-data-constraint>
       <transport-guarantee>CONFIDENTIAL</transport-guarantee>
     </user-data-constraint>
@@ -36,7 +37,7 @@
 
   <servlet-mapping>
     <servlet-name>RestletServlet</servlet-name>
-    <url-pattern>/*</url-pattern>
+    <url-pattern>/pdisk/*</url-pattern>
   </servlet-mapping>
 
 </web-app>
