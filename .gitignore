@@ -1,4 +1,5 @@
 *~
-.idea
 target
 bin
+.idea
+*.iml
