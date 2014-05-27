@@ -3,7 +3,7 @@
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
 
-  <Set name="contextPath">/pswd</Set>
+  <Set name="contextPath">/pdisk/pswd</Set>
   <Set name="war"><SystemProperty name="jetty.home" default="."/>/stratuslab-webapps/${authn-proxy-war}</Set>
 
   <Set name="extractWAR">true</Set>
