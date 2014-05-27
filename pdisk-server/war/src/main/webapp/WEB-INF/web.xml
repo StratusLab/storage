@@ -8,6 +8,7 @@
     <param-value>HTTP HTTPS CLAP FILE</param-value>
   </context-param>
 
+  <!--  Should this have been removed?
   <security-constraint>
     <web-resource-collection>
       <web-resource-name>JAAS Role</web-resource-name>
@@ -16,7 +17,6 @@
     <auth-constraint>
       <role-name>cloud-access</role-name>
     </auth-constraint>
-      <!-- FIXME: REMOVE THIS? -->
     <user-data-constraint>
       <transport-guarantee>CONFIDENTIAL</transport-guarantee>
     </user-data-constraint>
@@ -25,6 +25,7 @@
   <security-role>
     <role-name>cloud-access</role-name>
   </security-role>
+  -->
 
   <servlet>
     <servlet-name>RestletServlet</servlet-name>
