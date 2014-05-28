@@ -17,9 +17,9 @@
   </ul>
 </#if>
 
-<p>Disk: <a href="${baseurl}/disks/${uuid}">${uuid}</a></p>
+<p>Disk: <a href="${baseurl}disks/${uuid}">${uuid}</a></p>
 
-<form action="${baseurl}/disks/${uuid}/mounts/" enctype="application/x-www-form-urlencoded" method="POST">
+<form action="${baseurl}disks/${uuid}/mounts/" enctype="application/x-www-form-urlencoded" method="POST">
   <table>
     <thead>
       <tr>
@@ -35,17 +35,17 @@
           <input type="submit" value="Mount" />
         </td>
         <td>
-          <input type="text" name="vm_id" size="10" value="" /> 
+          <input type="text" name="vm_id" size="10" value="" />
         </td>
         <td>
-          <input type="text" name="node" size="40" value="" /> 
+          <input type="text" name="node" size="40" value="" />
         </td>
         <td>
           <select name="register_only">
               <option selected="selected" value="false">false</option>
               <option value="true">true</option>
           </select>
-          
+
         </td>
       </tr>
     </tbody>
@@ -54,9 +54,9 @@
 
 <hr/>
 <br/>
-    
+
 <#if mounts?has_content>
-	<table class="display">  
+	<table class="display">
 	  <thead>
 	    <tr>
 	      <th>VM ID</th>
@@ -66,14 +66,14 @@
 	  <tbody>
 	    <#list mounts as mount>
 	      <tr class="${zebra(mount_index)}">
-	        <td><a href="${baseurl}/disks/${uuid}/mounts/${mount.id}/">${mount.vmId}</a></td>
+	        <td><a href="${baseurl}disks/${uuid}/mounts/${mount.id}/">${mount.vmId}</a></td>
 	        <td class="center">${mount.device}</td>
 	      </tr>
 	    </#list>
 	  </tbody>
 	</table>
-<#else> 
+<#else>
   <p>No mounts.</p>
 </#if>
-    
+
 <#include "/html/footer.ftl">

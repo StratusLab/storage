@@ -9,11 +9,11 @@
   </ul>
 </#if>
 
-<p>Disk: <a href="${baseurl}/disks/${uuid}">${uuid}</a></p>
+<p>Disk: <a href="${baseurl}disks/${uuid}">${uuid}</a></p>
 
 <p>TURL: ${turl}</p>
 
 <hr/>
 <br/>
-        
+
 <#include "/html/footer.ftl">

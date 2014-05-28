@@ -6,7 +6,7 @@
     <tbody>
       <tr>
         <td><strong>Disk ID</strong></td>
-        <td><p><a href="${baseurl}/disks/${diskId}">${diskId}</a></p></td>
+        <td><p><a href="${baseurl}disks/${diskId}">${diskId}</a></p></td>
       </tr>
       <tr>
         <td><strong>Mount ID</strong></td>
@@ -22,8 +22,8 @@
       </tr>
       <tr>
         <td>
-          <form action="${currenturl}?method=delete" 
-                enctype="application/x-www-form-urlencoded" 
+          <form action="${currenturl}?method=delete"
+                enctype="application/x-www-form-urlencoded"
                 method="post">
             <input type="submit" value="Unmount"></p>
           </form>
