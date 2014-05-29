@@ -19,25 +19,22 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
-import java.security.cert.X509Certificate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.security.auth.x500.X500Principal;
-
+import eu.stratuslab.storage.disk.main.RootApplication;
+import eu.stratuslab.storage.persistence.Disk;
+import freemarker.template.Configuration;
 import org.restlet.Request;
 import org.restlet.data.ChallengeResponse;
 import org.restlet.data.MediaType;
 import org.restlet.data.Reference;
 import org.restlet.ext.freemarker.TemplateRepresentation;
 import org.restlet.resource.ServerResource;
-
-import eu.stratuslab.storage.disk.main.RootApplication;
-import eu.stratuslab.storage.disk.main.ServiceConfiguration;
-import eu.stratuslab.storage.persistence.Disk;
-import freemarker.template.Configuration;
 import org.restlet.util.Series;
+
+import javax.security.auth.x500.X500Principal;
+import java.security.cert.X509Certificate;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class BaseResource extends ServerResource {
 
@@ -47,14 +44,9 @@ public class BaseResource extends ServerResource {
         PRIVATE,
         // RESTRICTED,
         PUBLIC;
-
-        public static DiskVisibility valueOfIgnoreCase(String value) {
-            return valueOf(value.toUpperCase());
-        }
     }
 
-    public static Map<String, Object> createInfoStructure(String title,
-            Request request, String baseUrl) {
+    public static Map<String, Object> createInfoStructure(String title, Request request, String baseUrl) {
 
         Map<String, Object> info = new HashMap<String, Object>();
 
@@ -117,8 +109,7 @@ public class BaseResource extends ServerResource {
     // CN=serial-no with 'serial-no' being a string of digits.
     //
     public static String stripCNProxy(String username) {
-        return username.replaceFirst("^CN\\s*=\\s*proxy\\s*,\\s*", "")
-                .replaceFirst("^CN\\s*=\\s*\\d+\\s*,\\s*", "");
+        return username.replaceFirst("^CN\\s*=\\s*proxy\\s*,\\s*", "").replaceFirst("^CN\\s*=\\s*\\d+\\s*,\\s*", "");
     }
 
     //
@@ -164,7 +155,7 @@ public class BaseResource extends ServerResource {
         }
     }
 
-   protected String getCurrentUrl() {
+    protected String getCurrentUrl() {
         return getCurrentUrlWithQueryString().replaceAll("\\?.*", "");
     }
 
@@ -175,8 +166,7 @@ public class BaseResource extends ServerResource {
     }
 
     protected boolean isSuperUser(String username) {
-        return RootApplication.CONFIGURATION.CLOUD_SERVICE_USER
-                .equals(username);
+        return RootApplication.CONFIGURATION.CLOUD_SERVICE_USER.equals(username);
     }
 
     protected String serviceName() {
@@ -197,45 +187,42 @@ public class BaseResource extends ServerResource {
         }
     }
 
-    protected TemplateRepresentation createTemplateRepresentation(String tpl,
-            Map<String, Object> info, MediaType mediaType) {
+    protected TemplateRepresentation createTemplateRepresentation(String tpl, Map<String, Object> info,
+                                                                  MediaType mediaType) {
 
         Configuration freeMarkerConfig = getFreeMarkerConfiguration();
-        return createTemplateRepresentation(freeMarkerConfig, tpl, info,
-                mediaType);
+        return createTemplateRepresentation(freeMarkerConfig, tpl, info, mediaType);
 
     }
 
-	private Configuration getFreeMarkerConfiguration() {
-		return ((RootApplication) getApplication())
-				.getFreeMarkerConfiguration();
-	}
-    public static TemplateRepresentation createTemplateRepresentation(
-			Configuration freeMarkerConfig, String tpl,
-			Map<String, Object> info, MediaType mediaType) {
-		return new TemplateRepresentation(tpl, freeMarkerConfig, info,
-				mediaType);
-	}
+    private Configuration getFreeMarkerConfiguration() {
+        return ((RootApplication) getApplication()).getFreeMarkerConfiguration();
+    }
 
-	protected Map<String, Object> createInfoStructure(String title) {
+    public static TemplateRepresentation createTemplateRepresentation(Configuration freeMarkerConfig, String tpl,
+                                                                      Map<String, Object> info, MediaType mediaType) {
+        return new TemplateRepresentation(tpl, freeMarkerConfig, info, mediaType);
+    }
 
-		return createInfoStructure(title, getRequest(), getBaseUrl());
-	}
+    protected Map<String, Object> createInfoStructure(String title) {
 
-	protected Boolean hasSufficientRightsToView(Disk disk) {
-		String username = getUsername(getRequest());
-		if (username.equals(disk.getOwner()) || isSuperUser(username)) {
-			return true;
-		}
+        return createInfoStructure(title, getRequest(), getBaseUrl());
+    }
 
-		DiskVisibility visibility = disk.getVisibility();
+    protected Boolean hasSufficientRightsToView(Disk disk) {
+        String username = getUsername(getRequest());
+        if (username.equals(disk.getOwner()) || isSuperUser(username)) {
+            return true;
+        }
 
-		return visibility == DiskVisibility.PUBLIC;
-	}
+        DiskVisibility visibility = disk.getVisibility();
 
-	protected Boolean hasSufficientRightsToEdit(Disk disk) {
-		String username = getUsername(getRequest());
-		return username.equals(disk.getOwner()) || isSuperUser(username);
-	}
+        return visibility == DiskVisibility.PUBLIC;
+    }
+
+    protected Boolean hasSufficientRightsToEdit(Disk disk) {
+        String username = getUsername(getRequest());
+        return username.equals(disk.getOwner()) || isSuperUser(username);
+    }
 
 }
