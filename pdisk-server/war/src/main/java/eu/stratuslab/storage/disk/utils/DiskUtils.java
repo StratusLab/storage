@@ -138,26 +138,7 @@ public final class DiskUtils {
 		ProcessUtils.execute(pb, "Unable to attach persistent disk");
 	}
 
-	public static String attachHotplugDisk(String diskUuid) {
-		int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
-		String host = "localhost";
-		String tmpVmId = DiskUtils.generateUUID();
-
-		String turl = getTurl(diskUuid);
-
-		// FIXME: host is most probably wrong for the last parameter
-		attachHotplugDisk(host, port, host, tmpVmId, diskUuid, host, turl);
-
-		return tmpVmId;
-	}
-
-	protected static String getDiskLocation(String vmId, String diskUuid) {
-		String attachedDisk = RootApplication.CONFIGURATION.CLOUD_NODE_VM_DIR
-				+ "/" + vmId + "/images/pdisk-" + diskUuid;
-		return attachedDisk;
-	}
-
-	public static void detachHotplugDisk(String serviceName, int servicePort,
+    public static void detachHotplugDisk(String serviceName, int servicePort,
 			String node, String vmId, String diskUuid, String target,
 			String turl) {
 
