@@ -30,6 +30,7 @@ from StringIO import StringIO
 from urllib import urlencode
 from subprocess import call
 from time import sleep, gmtime, strftime
+import urlparse
 
 import sys
 sys.path.append('/var/lib/stratuslab/python')
@@ -93,7 +94,7 @@ if not register_filename:
 
 parser = OptionParser()
 parser.add_option("--pdisk-id", dest="persistent_disk_id",
-                  help="persistent disk id ( pdisk:endpoint:port:disk_uuid )", metavar="PID")
+                  help="persistent disk id ( pdisk://host:port/path/disk_uuid )", metavar="PID")
 
 parser.add_option("--vm-id", dest="vm_id",
                   help="VM ID", metavar="ID")
@@ -224,15 +225,19 @@ class PersistentDisk:
 
     def __init__(self, pdisk_id, turl):
         try:
-            __pdisk__ = re.match(r"pdisk:(?P<server>.*):(?P<port>.*):(?P<disk_uuid>.*)", pdisk_id)
+            url = urlparse.urlsplit(pdisk_id)
+            path_elements = path.rstrip('/').split('/')
+            uuid = path_elements.pop()
+            endpoint_path = '/'.join(path_elements)
             self.pdisk_uri = pdisk_id
-            self.endpoint = __pdisk__.group('server')
-            self.port = __pdisk__.group('port')
-            self.disk_uuid = __pdisk__.group('disk_uuid')
+            self.endpoint = urlparse.unsplit(("https", url.netloc, url.endpoint_path, '', ''))
+            self.port = (url.port or 443)
+            self.hostname = url.hostname
+            self.disk_uuid = uuid
             self.__checkTurl__(turl)
             self.volumeCheck = VolumeManagement(VOLUME_MGMT_DIR)
         except AttributeError:
-            raise PersistentDiskException('URI ' + pdisk_id + ' not match expression pdisk:endpoint:port:disk_uuid')
+            raise PersistentDiskException('URI ' + pdisk_id + ' not match pdisk://host:port/path/uuid')
 
     def __copy__(self, pdisk):
         """
@@ -241,6 +246,7 @@ class PersistentDisk:
         self.pdisk_uri = pdisk.pdisk_uri
         self.endpoint = pdisk.endpoint
         self.port = pdisk.port
+        self.hostname = pdisk.hostname
         self.disk_uuid = pdisk.disk_uuid
         self.protocol = pdisk.protocol
         self.server = pdisk.server
@@ -248,7 +254,7 @@ class PersistentDisk:
         self.volumeCheck = pdisk.volumeCheck
 
     def __registration_uri__(self):
-        return "https://" + self.endpoint + ":" + self.port + "/pswd/disks/" + self.disk_uuid + "/"
+        return "%s/pswd/disks/%s/" % (self.endpoint, self.disk_uuid)
 
     def register(self, login, pswd, vm_id):
         """
@@ -353,8 +359,7 @@ class PersistentDisk:
         json_output = json.load(io)
 
         if len(json_output) != 0:
-            disk_id = 'pdisk:%s:%s:%s' % (self.endpoint, self.port, self.disk_uuid)
-            msg = 'check_mount: %s is already mounted' % disk_id
+            msg = 'check_mount: volume already mounted ' % url
             raise CheckPersistentDiskException(msg)
 
         return False
@@ -365,7 +370,7 @@ class PersistentDisk:
         from pdisk id ( pdisk:endpoint:port:disk_uuid )
         """
         if turl == "":
-            __url__ = "iscsi://" + self.endpoint + ":3260/iqn.2011-01.eu.stratuslab:" + self.disk_uuid + ":1"
+            __url__ = "iscsi://" + self.hostname + ":3260/iqn.2011-01.eu.stratuslab:" + self.disk_uuid + ":1"
         else:
             __url__ = turl
         __uri__ = re.match(r"(?P<protocol>.*)://(?P<server>[^/]*)/(?P<image>.*)", __url__)
@@ -437,13 +442,13 @@ class IscsiPersistentDisk(PersistentDisk):
     ISCSI_SUCCESS = 0
     ISCSI_ERR_SESS_EXISTS = 15 # session is logged in
     ISCSI_ERR_NO_OBJS_FOUND = 21 # no records/targets/sessions/portals found to execute operation on
-    
+
     detach_retcodes_ok = [ISCSI_SUCCESS, ISCSI_ERR_SESS_EXISTS, ISCSI_ERR_NO_OBJS_FOUND]
-    
+
     @staticmethod
     def _rescan_sessions():
-        return call("sudo %s --mode session --rescan" % (iscsiadm), 
-                    shell=True)    
+        return call("sudo %s --mode session --rescan" % (iscsiadm),
+                    shell=True)
 
     def __init__(self, pdisk_class, turl):
         self.__copy__(pdisk_class)
@@ -491,13 +496,13 @@ class IscsiPersistentDisk(PersistentDisk):
         self._wait_lun_appears()
 
     def _login_to_iscsi_target(self):
-        self._register_new_target()        
+        self._register_new_target()
         self._login_to_target()
 
     def _register_new_target(self):
-        self._iscsiadm('-o new', 
+        self._iscsiadm('-o new',
                        'attach: error registering iSCSI disk with hypervisor %s' %
-                                                                    self._hostname)        
+                                                                    self._hostname)
 
     def _login_to_target(self):
         cmd = "%s --login" % self._get_iscsiadm_cmd_base()
@@ -536,17 +541,17 @@ class IscsiPersistentDisk(PersistentDisk):
         self._logout_from_target()
         sleep(2)
         self._delete_target_from_db()
-        
+
     def _logout_from_target(self):
-        self._iscsiadm('--logout', 
-                       'detach: error detaching iSCSI disk from hypervisor %s' % self._hostname, 
+        self._iscsiadm('--logout',
+                       'detach: error detaching iSCSI disk from hypervisor %s' % self._hostname,
                        retcodes_ok=self.detach_retcodes_ok)
 
     def _delete_target_from_db(self):
-        self._iscsiadm('-o delete', 
-                       'detach: error unregistering iSCSI disk from hypervisor %s' % self._hostname, 
+        self._iscsiadm('-o delete',
+                       'detach: error unregistering iSCSI disk from hypervisor %s' % self._hostname,
                        retcodes_ok=self.detach_retcodes_ok)
-    
+
     def _get_iscsiadm_cmd_base(self):
         return "sudo %s --mode node --portal %s:%s --target %s" % (
             iscsiadm, self._portal_host, self._portal_port, self.iqn)
