@@ -1,5 +1,9 @@
 package eu.stratuslab.storage.disk.main;
 
+import eu.stratuslab.storage.disk.utils.FileUtils;
+import org.restlet.data.Status;
+import org.restlet.resource.ResourceException;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,11 +11,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.Properties;
-
-import org.restlet.data.Status;
-import org.restlet.resource.ResourceException;
-
-import eu.stratuslab.storage.disk.utils.FileUtils;
 
 public class ServiceConfiguration {
 
@@ -46,8 +45,7 @@ public class ServiceConfiguration {
 
         CONFIGURATION = readConfigFile();
 
-        PDISK_SERVER_PORT = Integer
-                .parseInt(getConfigValue(PDISK_SERVER_PORT_PARAM_NAME));
+        PDISK_SERVER_PORT = Integer.parseInt(getConfigValue(PDISK_SERVER_PORT_PARAM_NAME));
 
         CLOUD_NODE_SSH_KEY = getConfigValue("disk.store.cloud.node.ssh_keyfile");
         CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
@@ -72,8 +70,7 @@ public class ServiceConfiguration {
 
         Reader reader = null;
         try {
-            reader = new InputStreamReader(new FileInputStream(cfgFile),
-                    Charset.defaultCharset());
+            reader = new InputStreamReader(new FileInputStream(cfgFile), Charset.defaultCharset());
             properties.load(reader);
         } catch (IOException consumed) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -92,8 +89,7 @@ public class ServiceConfiguration {
         if (!cfgFile.exists()) {
             cfgFile = new File(DEFAULT_CFG_LOCATION + DEFAULT_CFG_FILENAME);
             if (!cfgFile.exists()) {
-                throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                        "Configuration file does not exists.");
+                throw new ResourceException(Status.SERVER_ERROR_INTERNAL, "Configuration file does not exists.");
             }
         }
         return cfgFile;
@@ -101,8 +97,7 @@ public class ServiceConfiguration {
 
     private String getConfigValue(String key) {
         if (!CONFIGURATION.containsKey(key)) {
-            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    "Unable to retrieve configuration key: " + key);
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL, "Unable to retrieve configuration key: " + key);
         }
 
         return CONFIGURATION.getProperty(key);
@@ -115,18 +110,15 @@ public class ServiceConfiguration {
         if (cacheDir.exists()) {
             if (!cacheDir.isDirectory()) {
                 throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                        "Cache location " + cacheDir.getAbsolutePath()
-                                + " already in use");
+                        "Cache location " + cacheDir.getAbsolutePath() + " already in use");
             } else if (!cacheDir.canWrite()) {
                 throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                        "Cannot write cache location "
-                                + cacheDir.getAbsolutePath());
+                        "Cannot write cache location " + cacheDir.getAbsolutePath());
             }
         } else {
             if (!cacheDir.mkdirs()) {
                 throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                        "Unable to create cache location "
-                                + cacheDir.getAbsolutePath());
+                        "Unable to create cache location " + cacheDir.getAbsolutePath());
             }
         }
 
@@ -139,8 +131,7 @@ public class ServiceConfiguration {
 
         if (!FileUtils.isExecutable(exec)) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-                    configValue
-                            + " command does not exist or is not executable");
+                    configValue + " command does not exist or is not executable");
         }
 
         return configValue;

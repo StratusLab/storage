@@ -1,13 +1,7 @@
 package eu.stratuslab.storage.disk.main;
 
-import static org.restlet.data.MediaType.APPLICATION_JSON;
-import static org.restlet.data.MediaType.APPLICATION_XHTML;
-import static org.restlet.data.MediaType.TEXT_HTML;
-import static org.restlet.data.MediaType.TEXT_PLAIN;
-
-import java.util.List;
-import java.util.Map;
-
+import eu.stratuslab.storage.disk.resources.BaseResource;
+import freemarker.template.Configuration;
 import org.restlet.Request;
 import org.restlet.Response;
 import org.restlet.data.ClientInfo;
@@ -17,23 +11,25 @@ import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.service.StatusService;
 
-import eu.stratuslab.storage.disk.resources.BaseResource;
-import freemarker.template.Configuration;
+import java.util.List;
+import java.util.Map;
+
+import static org.restlet.data.MediaType.APPLICATION_JSON;
+import static org.restlet.data.MediaType.APPLICATION_XHTML;
+import static org.restlet.data.MediaType.TEXT_HTML;
+import static org.restlet.data.MediaType.TEXT_PLAIN;
 
 public class CommonStatusService extends StatusService {
 
     @Override
-    public Representation getRepresentation(Status status, Request request,
-            Response response) {
+    public Representation getRepresentation(Status status, Request request, Response response) {
 
         ClientInfo clientInfo = request.getClientInfo();
-        List<Preference<MediaType>> mediaTypes = clientInfo
-                .getAcceptedMediaTypes();
+        List<Preference<MediaType>> mediaTypes = clientInfo.getAcceptedMediaTypes();
 
         Map<String, Object> info = getErrorInfo(status, request);
 
-        Configuration freeMarkerConfiguration = BaseResource
-                .extractFmConfiguration(request);
+        Configuration freeMarkerConfiguration = BaseResource.extractFmConfiguration(request);
 
         if (freeMarkerConfiguration == null) {
             return null;
@@ -65,30 +61,22 @@ public class CommonStatusService extends StatusService {
         return toText(freeMarkerConfiguration, info);
     }
 
-    private Representation toText(Configuration freeMarkerConfiguration,
-            Map<String, Object> info) {
-        return BaseResource.createTemplateRepresentation(
-                freeMarkerConfiguration, "text/error.ftl", info, TEXT_PLAIN);
+    private Representation toText(Configuration freeMarkerConfiguration, Map<String, Object> info) {
+        return BaseResource.createTemplateRepresentation(freeMarkerConfiguration, "text/error.ftl", info, TEXT_PLAIN);
     }
 
-    private Representation toJson(Configuration freeMarkerConfiguration,
-            Map<String, Object> info) {
-        return BaseResource.createTemplateRepresentation(
-                freeMarkerConfiguration, "json/error.ftl", info,
-                APPLICATION_JSON);
+    private Representation toJson(Configuration freeMarkerConfiguration, Map<String, Object> info) {
+        return BaseResource
+                .createTemplateRepresentation(freeMarkerConfiguration, "json/error.ftl", info, APPLICATION_JSON);
     }
 
-    private Representation toHtml(Configuration freeMarkerConfiguration,
-            Map<String, Object> info) {
-        return BaseResource.createTemplateRepresentation(
-                freeMarkerConfiguration, "html/error.ftl", info, TEXT_HTML);
+    private Representation toHtml(Configuration freeMarkerConfiguration, Map<String, Object> info) {
+        return BaseResource.createTemplateRepresentation(freeMarkerConfiguration, "html/error.ftl", info, TEXT_HTML);
     }
 
-    private static Map<String, Object> getErrorInfo(Status status,
-            Request request) {
+    private static Map<String, Object> getErrorInfo(Status status, Request request) {
 
-        Map<String, Object> info = BaseResource.createInfoStructure("Error",
-                request, BaseResource.getBaseUrl(request));
+        Map<String, Object> info = BaseResource.createInfoStructure("Error", request, BaseResource.getBaseUrl(request));
 
         info.put("errorMsg", status.getDescription());
         info.put("errorCode", status.getCode());
