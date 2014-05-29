@@ -25,7 +25,7 @@ import eu.stratuslab.storage.persistence.Disk.DiskType;
 
 /**
  * For unit tests see {@link DiskUtilsTest}
- * 
+ *
  */
 public final class DiskUtils {
 
@@ -220,16 +220,7 @@ public final class DiskUtils {
 		}
 	}
 
-	public static String calculateHash(String uuid)
-			throws FileNotFoundException {
-
-		InputStream fis = null;// = new FileInputStream(getDevicePath() + uuid);
-
-		return calculateHash(fis);
-
-	}
-
-	public static String calculateHash(File file) throws FileNotFoundException {
+    public static String calculateHash(File file) throws FileNotFoundException {
 
 		InputStream fis = new FileInputStream(file);
 
@@ -250,11 +241,7 @@ public final class DiskUtils {
 
 	}
 
-	public static String getDevicePath() {
-		return "";// RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
-	}
-
-	public static void createAndPopulateDiskLocal(Disk disk) {
+    public static void createAndPopulateDiskLocal(Disk disk) {
 
 		String uuid = disk.getUuid();
 
@@ -309,7 +296,7 @@ public final class DiskUtils {
 	 * Returns the minimum number of whole GibiBytes (2^30 bytes) that contains
 	 * at least the number of bytes given as the argument. If the argument is
 	 * not positive, then the return value is 1L.
-	 * 
+	 *
 	 * @param sizeInBytes
 	 */
 	public static long convertBytesToGibiBytes(long sizeInBytes) {
