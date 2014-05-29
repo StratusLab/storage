@@ -169,14 +169,6 @@ public class BaseResource extends ServerResource {
         return RootApplication.CONFIGURATION.CLOUD_SERVICE_USER.equals(username);
     }
 
-    protected String serviceName() {
-        return getRequest().getHostRef().getHostDomain();
-    }
-
-    protected int servicePort() {
-        return getRequest().getHostRef().getHostPort();
-    }
-
     public static Configuration extractFmConfiguration(Request request) {
         try {
             Map<String, Object> attributes = request.getAttributes();
