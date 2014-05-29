@@ -1,17 +1,16 @@
 package eu.stratuslab.storage.disk.resources;
 
-import static org.restlet.data.MediaType.APPLICATION_JSON;
-import static org.restlet.data.MediaType.TEXT_HTML;
-
-import java.util.Map;
-
+import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.persistence.Disk;
 import org.restlet.data.Status;
 import org.restlet.representation.Representation;
 import org.restlet.resource.Get;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.utils.DiskUtils;
-import eu.stratuslab.storage.persistence.Disk;
+import java.util.Map;
+
+import static org.restlet.data.MediaType.APPLICATION_JSON;
+import static org.restlet.data.MediaType.TEXT_HTML;
 
 public class TurlResource extends BaseResource {
 
@@ -25,16 +24,14 @@ public class TurlResource extends BaseResource {
 
         Object diskIdValue = attributes.get("uuid");
         if (diskIdValue == null) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "missing UUID value");
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "missing UUID value");
         }
 
         uuid = diskIdValue.toString();
 
         Disk disk = Disk.load(uuid);
         if (disk == null) {
-            throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND,
-                    "Unknown disk: " + uuid);
+            throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "Unknown disk: " + uuid);
         }
 
         turl = DiskUtils.getTurl(uuid);
@@ -43,14 +40,12 @@ public class TurlResource extends BaseResource {
 
     @Get("html")
     public Representation getAsHtml() {
-        return createTemplateRepresentation("html/turl.ftl", getInfoMap(),
-                TEXT_HTML);
+        return createTemplateRepresentation("html/turl.ftl", getInfoMap(), TEXT_HTML);
     }
 
     @Get("json")
     public Representation getAsJson() {
-        return createTemplateRepresentation("json/turl.ftl", getInfoMap(),
-                APPLICATION_JSON);
+        return createTemplateRepresentation("json/turl.ftl", getInfoMap(), APPLICATION_JSON);
     }
 
     private Map<String, Object> getInfoMap() {

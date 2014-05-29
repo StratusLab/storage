@@ -19,53 +19,51 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
-import static org.restlet.data.MediaType.APPLICATION_JSON;
-import static org.restlet.data.MediaType.TEXT_HTML;
+import eu.stratuslab.storage.persistence.Instance;
+import eu.stratuslab.storage.persistence.InstanceView;
+import org.restlet.representation.Representation;
+import org.restlet.resource.Get;
 
 import java.util.List;
 import java.util.Map;
 
-import org.restlet.representation.Representation;
-import org.restlet.resource.Get;
-
-import eu.stratuslab.storage.persistence.Instance;
-import eu.stratuslab.storage.persistence.InstanceView;
+import static org.restlet.data.MediaType.APPLICATION_JSON;
+import static org.restlet.data.MediaType.TEXT_HTML;
 
 public class InstancesResource extends DiskBaseResource {
 
-	@Get("html")
-	public Representation getAsHtml() {
+    @Get("html")
+    public Representation getAsHtml() {
 
-		Map<String, Object> info = listInstances();
+        Map<String, Object> info = listInstances();
 
-		return createTemplateRepresentation("html/instances.ftl", info, TEXT_HTML);
-	}
+        return createTemplateRepresentation("html/instances.ftl", info, TEXT_HTML);
+    }
 
-	@Get("json")
-	public Representation getAsJson() {
+    @Get("json")
+    public Representation getAsJson() {
 
-		Map<String, Object> info = listInstances();
+        Map<String, Object> info = listInstances();
 
-		return createTemplateRepresentation("json/instances.ftl", info,
-				APPLICATION_JSON);
+        return createTemplateRepresentation("json/instances.ftl", info, APPLICATION_JSON);
 
-	}
+    }
 
-	private Map<String, Object> listInstances() {
-		Map<String, Object> info = createInfoStructure("Instances list");
+    private Map<String, Object> listInstances() {
+        Map<String, Object> info = createInfoStructure("Instances list");
 
-		addCreateFormDefaults(info);
+        addCreateFormDefaults(info);
 
-		String username = getUsername(getRequest());
-		List<InstanceView> instances;
-		if(isSuperUser(username)){
-			instances = Instance.listAll();
-		} else {
-			instances = Instance.listAllByUser(username);			
-		}
-		info.put("instances", instances);
+        String username = getUsername(getRequest());
+        List<InstanceView> instances;
+        if (isSuperUser(username)) {
+            instances = Instance.listAll();
+        } else {
+            instances = Instance.listAllByUser(username);
+        }
+        info.put("instances", instances);
 
-		return info;
-	}
+        return info;
+    }
 
 }

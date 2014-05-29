@@ -19,8 +19,21 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
-import static org.restlet.data.MediaType.APPLICATION_JSON;
-import static org.restlet.data.MediaType.TEXT_HTML;
+import eu.stratuslab.storage.disk.main.ServiceConfiguration;
+import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.disk.utils.FileUtils;
+import eu.stratuslab.storage.persistence.Disk;
+import eu.stratuslab.storage.persistence.DiskView;
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.restlet.data.Form;
+import org.restlet.data.Status;
+import org.restlet.ext.fileupload.RestletFileUpload;
+import org.restlet.representation.Representation;
+import org.restlet.resource.Get;
+import org.restlet.resource.Post;
+import org.restlet.resource.ResourceException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -36,22 +49,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.FileUploadException;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.restlet.data.Form;
-import org.restlet.data.Status;
-import org.restlet.ext.fileupload.RestletFileUpload;
-import org.restlet.representation.Representation;
-import org.restlet.resource.Get;
-import org.restlet.resource.Post;
-import org.restlet.resource.ResourceException;
-
-import eu.stratuslab.storage.disk.main.ServiceConfiguration;
-import eu.stratuslab.storage.disk.utils.DiskUtils;
-import eu.stratuslab.storage.disk.utils.FileUtils;
-import eu.stratuslab.storage.persistence.Disk;
-import eu.stratuslab.storage.persistence.DiskView;
+import static org.restlet.data.MediaType.APPLICATION_JSON;
+import static org.restlet.data.MediaType.TEXT_HTML;
 
 public class DisksResource extends DiskBaseResource {
 
@@ -74,8 +73,7 @@ public class DisksResource extends DiskBaseResource {
 
         Map<String, Object> info = listDisks();
 
-        return createTemplateRepresentation("json/disks.ftl", info,
-                APPLICATION_JSON);
+        return createTemplateRepresentation("json/disks.ftl", info, APPLICATION_JSON);
 
     }
 
@@ -100,8 +98,7 @@ public class DisksResource extends DiskBaseResource {
         info.put("key", Disk.UUID_KEY);
         info.put("value", disk.getUuid());
 
-        return createTemplateRepresentation("json/keyvalue.ftl", info,
-                APPLICATION_JSON);
+        return createTemplateRepresentation("json/keyvalue.ftl", info, APPLICATION_JSON);
 
     }
 
@@ -109,8 +106,7 @@ public class DisksResource extends DiskBaseResource {
     public void upload(Representation entity) {
 
         if (entity == null) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "post with null entity");
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "post with null entity");
         }
 
         Disk disk = saveAndInflateFiles();
@@ -133,9 +129,7 @@ public class DisksResource extends DiskBaseResource {
 
         createDisk(disk);
 
-        getLogger().info(
-                String.format("DisksResource created new disk: %s",
-                        disk.getUuid()));
+        getLogger().info(String.format("DisksResource created new disk: %s", disk.getUuid()));
 
         try {
             initializeContents(disk.getUuid(), form);
@@ -147,25 +141,18 @@ public class DisksResource extends DiskBaseResource {
         return disk;
     }
 
-    private void initializeContents(String uuid, Form form)
-            throws ResourceException {
+    private void initializeContents(String uuid, Form form) throws ResourceException {
 
         Map<String, BigInteger> streamInfo = null;
 
         String url = form.getFirstValue(URL_KEY);
         if (url == null) {
             // If no URL, then bail out; there is nothing to do.
-            getLogger().info(
-                    String.format(
-                            "DisksResource NOT initializing contents of %s",
-                            uuid));
+            getLogger().info(String.format("DisksResource NOT initializing contents of %s", uuid));
             return;
         }
 
-        getLogger().info(
-                String.format(
-                        "DisksResource initializing contents of %s from %s",
-                        uuid, url));
+        getLogger().info(String.format("DisksResource initializing contents of %s from %s", uuid, url));
 
         try {
             // FIXME: This provides the file information for the download
@@ -197,16 +184,12 @@ public class DisksResource extends DiskBaseResource {
             BigInteger expected = new BigInteger(bytes);
             BigInteger found = streamInfo.get("BYTES");
 
-            getLogger()
-                    .info(String
-                            .format("DisksResource copied bytes for %s: %s (copied), %s (expected)",
-                                    uuid, found, expected));
+            getLogger().info(String
+                    .format("DisksResource copied bytes for %s: %s (copied), %s (expected)", uuid, found, expected));
 
             if (!expected.equals(found)) {
                 throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                        String.format(
-                                "size mismatch: %s (found) != %s (expected)",
-                                found, expected));
+                        String.format("size mismatch: %s (found) != %s (expected)", found, expected));
             }
         }
 
@@ -216,21 +199,16 @@ public class DisksResource extends DiskBaseResource {
                 BigInteger expected = new BigInteger(sha1, 16);
                 BigInteger found = streamInfo.get("SHA-1");
 
-                getLogger()
-                        .info(String
-                                .format("DisksResource sha1 checksums for %s: %s (copied), %s (expected)",
-                                        uuid, found, expected));
+                getLogger().info(String
+                        .format("DisksResource sha1 checksums for %s: %s (copied), %s (expected)", uuid, found,
+                                expected));
 
                 if (!expected.equals(found)) {
-                    throw new ResourceException(
-                            Status.CLIENT_ERROR_BAD_REQUEST,
-                            String.format(
-                                    "checksum mismatch: %s (found) != %s (expected)",
-                                    found, expected));
+                    throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
+                            String.format("checksum mismatch: %s (found) != %s (expected)", found, expected));
                 }
             } catch (IllegalArgumentException e) {
-                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                        "invalid SHA-1 checksum: " + sha1);
+                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "invalid SHA-1 checksum: " + sha1);
             }
         }
 
@@ -259,8 +237,7 @@ public class DisksResource extends DiskBaseResource {
         try {
             items = upload.parseRequest(getRequest());
         } catch (FileUploadException e) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    e.getMessage());
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, e.getMessage());
         }
 
         FileItem lastFileItem = null;
@@ -279,8 +256,7 @@ public class DisksResource extends DiskBaseResource {
         if (lastFileItem != null) {
             return inflateAndProcessImage(lastFileItem);
         } else {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    "empty file uploaded");
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "empty file uploaded");
         }
     }
 
@@ -298,15 +274,13 @@ public class DisksResource extends DiskBaseResource {
                 long size = inflateFile(fi.getInputStream(), cachedDiskFile);
                 disk.setSize(size);
             } catch (IOException e) {
-                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                        "no valid file uploaded");
+                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "no valid file uploaded");
             }
 
             try {
                 disk.setIdentifier(DiskUtils.calculateHash(cachedDiskFile));
             } catch (FileNotFoundException e) {
-                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                        e.getMessage());
+                throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, e.getMessage());
             }
             validateNewDisk(disk);
             return disk;
@@ -314,9 +288,7 @@ public class DisksResource extends DiskBaseResource {
         } catch (RuntimeException e) {
             if (cachedDiskFile != null) {
                 if (!cachedDiskFile.delete()) {
-                    getLogger().warning(
-                            "could not delete file: "
-                                    + cachedDiskFile.getAbsolutePath());
+                    getLogger().warning("could not delete file: " + cachedDiskFile.getAbsolutePath());
                 }
             }
             throw e;
@@ -342,8 +314,7 @@ public class DisksResource extends DiskBaseResource {
             }
 
         } catch (IOException e) {
-            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST,
-                    e.getMessage());
+            throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, e.getMessage());
         } finally {
             FileUtils.closeIgnoringError(in);
             FileUtils.closeIgnoringError(out);

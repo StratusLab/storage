@@ -19,12 +19,11 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
-import static org.restlet.data.MediaType.APPLICATION_JSON;
-import static org.restlet.data.MediaType.TEXT_HTML;
-
-import java.util.HashMap;
-import java.util.Map;
-
+import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.disk.utils.FileUtils;
+import eu.stratuslab.storage.disk.utils.MiscUtils;
+import eu.stratuslab.storage.persistence.Disk;
+import eu.stratuslab.storage.persistence.Disk.DiskType;
 import org.restlet.data.Disposition;
 import org.restlet.data.Form;
 import org.restlet.data.MediaType;
@@ -37,297 +36,282 @@ import org.restlet.resource.Post;
 import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.utils.DiskUtils;
-import eu.stratuslab.storage.disk.utils.FileUtils;
-import eu.stratuslab.storage.disk.utils.MiscUtils;
-import eu.stratuslab.storage.persistence.Disk;
-import eu.stratuslab.storage.persistence.Disk.DiskType;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.restlet.data.MediaType.APPLICATION_JSON;
+import static org.restlet.data.MediaType.TEXT_HTML;
 
 public class DiskResource extends DiskBaseResource {
 
-	public static final String EDIT_QUERY_VALUE = "edit";
-	private static final String UUID_KEY_NAME = Disk.UUID_KEY;
-	private boolean isEdit = false;
+    public static final String EDIT_QUERY_VALUE = "edit";
+    private static final String UUID_KEY_NAME = Disk.UUID_KEY;
+    private boolean isEdit = false;
 
-	@Override
-	protected void doInit() throws ResourceException {
+    @Override
+    protected void doInit() throws ResourceException {
 
-		Disk disk = loadExistingDisk();
+        Disk disk = loadExistingDisk();
 
-		if (!hasSufficientRightsToView(disk)) {
-			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
-					"insufficient access rights to view disk (" + getDiskId()
-							+ ")");
-		}
+        if (!hasSufficientRightsToView(disk)) {
+            throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
+                    "insufficient access rights to view disk (" + getDiskId() + ")");
+        }
 
-		if (getRequest().getAttributes().containsKey(EDIT_QUERY_VALUE)) {
-			isEdit = Boolean.parseBoolean(getRequest().getAttributes()
-					.get(EDIT_QUERY_VALUE).toString());
-		}
-	}
+        if (getRequest().getAttributes().containsKey(EDIT_QUERY_VALUE)) {
+            isEdit = Boolean.parseBoolean(getRequest().getAttributes().get(EDIT_QUERY_VALUE).toString());
+        }
+    }
 
-	@Put("form")
-	public void updateForm(Representation entity) {
+    @Put("form")
+    public void updateForm(Representation entity) {
 
-		update(entity);
+        update(entity);
 
-		redirectSeeOther(getRequest().getResourceRef());
-	}
+        redirectSeeOther(getRequest().getResourceRef());
+    }
 
-	@Put("json")
-	public void updateJson(Representation entity) {
+    @Put("json")
+    public void updateJson(Representation entity) {
 
-		update(entity);
-	}
+        update(entity);
+    }
 
-	public void update(Representation entity) {
+    public void update(Representation entity) {
 
-		MiscUtils.checkForNullEntity(entity);
+        MiscUtils.checkForNullEntity(entity);
 
-		Disk disk = loadExistingDisk();
+        Disk disk = loadExistingDisk();
 
-		hasSufficientRightsToEdit(disk);
+        hasSufficientRightsToEdit(disk);
 
-		disk = processWebForm(disk, new Form(entity));
+        disk = processWebForm(disk, new Form(entity));
 
-		disk.setUuid(getDiskId());
+        disk.setUuid(getDiskId());
 
-		updateDisk(disk);
-	}
+        updateDisk(disk);
+    }
 
-	@Post("form:html")
-	public void createCopyOnWriteOrRebase(Representation entity) {
+    @Post("form:html")
+    public void createCopyOnWriteOrRebase(Representation entity) {
 
-		Disk newDisk = createCopyOnWriteOrRebase();
+        Disk newDisk = createCopyOnWriteOrRebase();
 
-		redirectSeeOther(getBaseUrl() + "/disks/" + newDisk.getUuid());
+        redirectSeeOther(getBaseUrl() + "/disks/" + newDisk.getUuid());
 
-	}
+    }
 
-	@Post("form:json")
-	public Representation createCopyOnWriteOrRebaseAsJson(Representation entity) {
+    @Post("form:json")
+    public Representation createCopyOnWriteOrRebaseAsJson(Representation entity) {
 
-		Disk newDisk = createCopyOnWriteOrRebase();
+        Disk newDisk = createCopyOnWriteOrRebase();
 
-		Map<String, Object> info = new HashMap<String, Object>();
-		addDiskToInfo(newDisk, info);
+        Map<String, Object> info = new HashMap<String, Object>();
+        addDiskToInfo(newDisk, info);
 
-		return createTemplateRepresentation("json/disk.ftl", info,
-				APPLICATION_JSON);
-	}
+        return createTemplateRepresentation("json/disk.ftl", info, APPLICATION_JSON);
+    }
 
-	private void addDiskToInfo(Disk newDisk, Map<String, Object> info) {
-		info.put("disk", newDisk);
-	}
+    private void addDiskToInfo(Disk newDisk, Map<String, Object> info) {
+        info.put("disk", newDisk);
+    }
 
-	protected Disk createCopyOnWriteOrRebase() {
-		Disk disk = Disk.load(getDiskId());
+    protected Disk createCopyOnWriteOrRebase() {
+        Disk disk = Disk.load(getDiskId());
 
-		if (disk == null) {
-			throw (new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "Disk "
-					+ getDiskId() + " doesn't exists"));
-		}
+        if (disk == null) {
+            throw (new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "Disk " + getDiskId() + " doesn't exists"));
+        }
 
-		Disk newDisk = null;
-		if (disk.getType() == DiskType.MACHINE_IMAGE_LIVE) {
-			newDisk = rebase(disk);
-		} else if (disk.getType() == DiskType.MACHINE_IMAGE_ORIGIN) {
-			newDisk = createMachineImageCoW(disk);
-		} else {
-			throw (new ResourceException(Status.CLIENT_ERROR_CONFLICT,
-					"Invalid disk state: " + disk.getType()
-							+ ". Cannot create copy or save as new image."));
-		}
-		return newDisk;
-	}
+        Disk newDisk = null;
+        if (disk.getType() == DiskType.MACHINE_IMAGE_LIVE) {
+            newDisk = rebase(disk);
+        } else if (disk.getType() == DiskType.MACHINE_IMAGE_ORIGIN) {
+            newDisk = createMachineImageCoW(disk);
+        } else {
+            throw (new ResourceException(Status.CLIENT_ERROR_CONFLICT,
+                    "Invalid disk state: " + disk.getType() + ". Cannot create copy or save as new image."));
+        }
+        return newDisk;
+    }
 
-	private Disk createMachineImageCoW(Disk disk) {
-		return DiskUtils.createMachineImageCoWDisk(disk);
-	}
+    private Disk createMachineImageCoW(Disk disk) {
+        return DiskUtils.createMachineImageCoWDisk(disk);
+    }
 
-	private Disk rebase(Disk disk) {
+    private Disk rebase(Disk disk) {
 
-		String rebasedUuid = DiskUtils.rebaseDisk(disk);
+        String rebasedUuid = DiskUtils.rebaseDisk(disk);
 
-		Disk newDisk = null;
+        Disk newDisk = null;
 
-		// some rebase implementation create new LUNs, others don't
-		if(rebasedUuid == null || "".equals(rebasedUuid)) {
-			newDisk = disk;
-		} else {
-			newDisk = initializeDisk();
-			newDisk.setUuid(rebasedUuid);
-		}
-		
-		newDisk.setType(DiskType.MACHINE_IMAGE_ORIGIN);
-		newDisk.setSize(disk.getSize());
-		newDisk.setSeed(true);
-		newDisk.setQuarantine("");
+        // some rebase implementation create new LUNs, others don't
+        if (rebasedUuid == null || "".equals(rebasedUuid)) {
+            newDisk = disk;
+        } else {
+            newDisk = initializeDisk();
+            newDisk.setUuid(rebasedUuid);
+        }
 
-		newDisk.store();
+        newDisk.setType(DiskType.MACHINE_IMAGE_ORIGIN);
+        newDisk.setSize(disk.getSize());
+        newDisk.setSeed(true);
+        newDisk.setQuarantine("");
 
-		return newDisk;
-	}
+        newDisk.store();
 
-	@Get("html")
-	public Representation getAsHtml() {
+        return newDisk;
+    }
 
-		getLogger().info("DiskResource getAsHtml: " + getDiskId());
+    @Get("html")
+    public Representation getAsHtml() {
 
-		Map<String, Object> info = loadDiskProperties();
+        getLogger().info("DiskResource getAsHtml: " + getDiskId());
 
-		addDiskUserHeader();
+        Map<String, Object> info = loadDiskProperties();
 
-		if (isEdit) {
-			return createTemplateRepresentation("html/disk-edit.ftl", info,
-					TEXT_HTML);
-		} else {
-			return createTemplateRepresentation("html/disk.ftl", info,
-					TEXT_HTML);
-		}
-	}
+        addDiskUserHeader();
 
-	@Get("json")
-	public Representation getAsJson() {
+        if (isEdit) {
+            return createTemplateRepresentation("html/disk-edit.ftl", info, TEXT_HTML);
+        } else {
+            return createTemplateRepresentation("html/disk.ftl", info, TEXT_HTML);
+        }
+    }
 
-		getLogger().info("DiskResource getAsJson: " + getDiskId());
+    @Get("json")
+    public Representation getAsJson() {
 
-		Map<String, Object> info = loadDiskProperties();
+        getLogger().info("DiskResource getAsJson: " + getDiskId());
 
-		addDiskUserHeader();
+        Map<String, Object> info = loadDiskProperties();
 
-		return createTemplateRepresentation("json/disk.ftl", info,
-				APPLICATION_JSON);
-	}
+        addDiskUserHeader();
 
-	@Get("gzip")
-	public Representation toZip() {
+        return createTemplateRepresentation("json/disk.ftl", info, APPLICATION_JSON);
+    }
 
-		String uuid = getDiskId();
+    @Get("gzip")
+    public Representation toZip() {
 
-		cleanCache(uuid);
+        String uuid = getDiskId();
 
-		if (isImageBeingCompressed(uuid)) {
-			waitWhileImageCompressed(uuid);
-		} else if (needToCompressImage(uuid)) {
-			compressImage();
-		}
+        cleanCache(uuid);
 
-		Representation image = new FileRepresentation(
-				DiskUtils.getCompressedDiskLocation(uuid),
-				MediaType.APPLICATION_GNU_ZIP);
-		image.getDisposition().setType(Disposition.TYPE_ATTACHMENT);
+        if (isImageBeingCompressed(uuid)) {
+            waitWhileImageCompressed(uuid);
+        } else if (needToCompressImage(uuid)) {
+            compressImage();
+        }
 
-		return image;
-	}
+        Representation image = new FileRepresentation(DiskUtils.getCompressedDiskLocation(uuid),
+                MediaType.APPLICATION_GNU_ZIP);
+        image.getDisposition().setType(Disposition.TYPE_ATTACHMENT);
 
-	/**
-	 * The compression logic removes the original file after compression
-	 * therefore, if the raw file exists means that the compression is ongoing
-	 */
-	private Boolean isImageBeingCompressed(String uuid) {
-		return DiskUtils.isCompressedDiskBuilding(uuid);
-	}
+        return image;
+    }
 
-	private void waitWhileImageCompressed(String uuid) {
-		while (isImageBeingCompressed(uuid)) {
-			getLogger().info("Waiting for file to be compressed...");
-			MiscUtils.sleep(5000);
-		}
-	}
+    /**
+     * The compression logic removes the original file after compression therefore, if the raw file exists means that
+     * the compression is ongoing
+     */
+    private Boolean isImageBeingCompressed(String uuid) {
+        return DiskUtils.isCompressedDiskBuilding(uuid);
+    }
 
-	private boolean needToCompressImage(String uuid) {
-		return !FileUtils.isCompressedDiskExists(uuid)
-				|| DiskUtils.hasCompressedDiskExpire(uuid);
-	}
+    private void waitWhileImageCompressed(String uuid) {
+        while (isImageBeingCompressed(uuid)) {
+            getLogger().info("Waiting for file to be compressed...");
+            MiscUtils.sleep(5000);
+        }
+    }
 
-	private void compressImage() {
-		getLogger().info("Creating compressed disk");
-		DiskUtils.createCompressedDisk(getDiskId());
-	}
+    private boolean needToCompressImage(String uuid) {
+        return !FileUtils.isCompressedDiskExists(uuid) || DiskUtils.hasCompressedDiskExpire(uuid);
+    }
 
-	@Delete("html")
-	public Representation deleteDiskAsHtml() {
+    private void compressImage() {
+        getLogger().info("Creating compressed disk");
+        DiskUtils.createCompressedDisk(getDiskId());
+    }
 
-		getLogger().info("DiskResource deleteDiskAsHtml: " + getDiskId());
+    @Delete("html")
+    public Representation deleteDiskAsHtml() {
 
-		processDeleteDiskRequest();
+        getLogger().info("DiskResource deleteDiskAsHtml: " + getDiskId());
 
-		redirectSeeOther(getBaseUrl() + "/disks/");
+        processDeleteDiskRequest();
 
-		Map<String, Object> info = createInfoStructure("redirect");
-		return createTemplateRepresentation("html/redirect.ftl", info,
-				TEXT_HTML);
-	}
+        redirectSeeOther(getBaseUrl() + "/disks/");
 
-	@Delete("json")
-	public Representation deleteDiskAsJson() {
+        Map<String, Object> info = createInfoStructure("redirect");
+        return createTemplateRepresentation("html/redirect.ftl", info, TEXT_HTML);
+    }
 
-		getLogger().info("DiskResource deleteDiskAsJson: " + getDiskId());
+    @Delete("json")
+    public Representation deleteDiskAsJson() {
 
-		processDeleteDiskRequest();
+        getLogger().info("DiskResource deleteDiskAsJson: " + getDiskId());
 
-		Map<String, Object> info = new HashMap<String, Object>();
-		info.put("key", UUID_KEY_NAME);
-		info.put("value", getDiskId());
+        processDeleteDiskRequest();
 
-		return createTemplateRepresentation("json/keyvalue.ftl", info,
-				APPLICATION_JSON);
-	}
+        Map<String, Object> info = new HashMap<String, Object>();
+        info.put("key", UUID_KEY_NAME);
+        info.put("value", getDiskId());
 
-	private Map<String, Object> loadDiskProperties() {
-		Map<String, Object> info = createInfoStructure("Disk Information");
+        return createTemplateRepresentation("json/keyvalue.ftl", info, APPLICATION_JSON);
+    }
 
-		addCreateFormDefaults(info);
+    private Map<String, Object> loadDiskProperties() {
+        Map<String, Object> info = createInfoStructure("Disk Information");
 
-		Disk disk = loadExistingDisk();
+        addCreateFormDefaults(info);
 
-		addDiskToInfo(disk, info);
-		info.put("currenturl", getCurrentUrl());
-		info.put("can_edit", hasSufficientRightsToEdit(disk));
+        Disk disk = loadExistingDisk();
 
-		return info;
+        addDiskToInfo(disk, info);
+        info.put("currenturl", getCurrentUrl());
+        info.put("can_edit", hasSufficientRightsToEdit(disk));
 
-	}
+        return info;
 
-	private void addDiskUserHeader() {
-		Form diskUserHeaders = (Form) getResponse().getAttributes().get(
-				"org.restlet.http.headers");
+    }
 
-		if (diskUserHeaders == null) {
-			diskUserHeaders = new Form();
-			getResponse().getAttributes().put("org.restlet.http.headers",
-					diskUserHeaders);
-		}
+    private void addDiskUserHeader() {
+        Form diskUserHeaders = (Form) getResponse().getAttributes().get("org.restlet.http.headers");
 
-	}
+        if (diskUserHeaders == null) {
+            diskUserHeaders = new Form();
+            getResponse().getAttributes().put("org.restlet.http.headers", diskUserHeaders);
+        }
 
-	private void processDeleteDiskRequest() {
+    }
 
-		Disk disk = loadExistingDisk();
+    private void processDeleteDiskRequest() {
 
-		if (!hasSufficientRightsToEdit(disk)) {
-			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
-					"insufficient rights to delete disk (" + disk.getUuid()
-							+ ")");
-		}
+        Disk disk = loadExistingDisk();
 
-		if (disk.getMountsCount() > 0) {
-			throw new ResourceException(Status.CLIENT_ERROR_CONFLICT, "disk ("
-					+ disk.getUuid() + ") is in use and can't be deleted");
-		}
+        if (!hasSufficientRightsToEdit(disk)) {
+            throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
+                    "insufficient rights to delete disk (" + disk.getUuid() + ")");
+        }
 
-		deleteDisk(disk);
-	}
+        if (disk.getMountsCount() > 0) {
+            throw new ResourceException(Status.CLIENT_ERROR_CONFLICT,
+                    "disk (" + disk.getUuid() + ") is in use and can't be deleted");
+        }
 
-	private void deleteDisk(Disk disk) {
-		disk.remove();
+        deleteDisk(disk);
+    }
 
-		try {
-			DiskUtils.removeDisk(disk.getUuid());
-		} catch (ResourceException ex) {
-			disk.store(); // store it back since remove failed
-			throw (ex);
-		}
-	}
+    private void deleteDisk(Disk disk) {
+        disk.remove();
+
+        try {
+            DiskUtils.removeDisk(disk.getUuid());
+        } catch (ResourceException ex) {
+            disk.store(); // store it back since remove failed
+            throw (ex);
+        }
+    }
 }

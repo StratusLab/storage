@@ -19,12 +19,12 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
-import static org.restlet.data.MediaType.TEXT_HTML;
+import org.restlet.representation.Representation;
+import org.restlet.resource.Get;
 
 import java.util.Map;
 
-import org.restlet.representation.Representation;
-import org.restlet.resource.Get;
+import static org.restlet.data.MediaType.TEXT_HTML;
 
 public class HomeResource extends BaseResource {
 

@@ -55,11 +55,7 @@ public final class MiscUtils {
 		return sb.toString();
 	}
 
-	public static <T> T last(T[] array) {
-		return array[array.length - 1];
-	}
-
-	public static void sleep(int ms) {
+    public static void sleep(int ms) {
 		try {
 			Thread.currentThread();
 			Thread.sleep(ms);
