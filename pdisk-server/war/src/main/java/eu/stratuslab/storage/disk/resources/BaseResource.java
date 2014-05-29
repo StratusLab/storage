@@ -121,12 +121,11 @@ public class BaseResource extends ServerResource {
                 .replaceFirst("^CN\\s*=\\s*\\d+\\s*,\\s*", "");
     }
 
-    protected String getBaseUrl() {
-        return getBaseUrl(getRequest());
-    }
-
-    // always has a trailing slash!
-    public static String getBaseUrl(Request request) {
+    //
+    // Resets the scheme and authority depending on the headers
+    // provided by the service proxy (if any).
+    //
+    private static Reference resetSchemeAndAuthority(Request request, Reference ref) {
 
         Series headers = (Series) request.getAttributes().get("org.restlet.http.headers");
 
@@ -137,13 +136,25 @@ public class BaseResource extends ServerResource {
             authority = headers.getFirstValue("Host");
         }
 
-        Reference ref = request.getRootRef();
+        Reference result = ref.clone();
         if (authority != null) {
-            ref.setAuthority(authority);
+            result.setAuthority(authority);
         }
         if (scheme != null) {
-            ref.setScheme(scheme);
+            result.setScheme(scheme);
         }
+
+        return result;
+    }
+
+    protected String getBaseUrl() {
+        return getBaseUrl(getRequest());
+    }
+
+    // always has a trailing slash!
+    public static String getBaseUrl(Request request) {
+
+        Reference ref = resetSchemeAndAuthority(request, request.getRootRef());
 
         String url = ref.toString();
         if (url.endsWith("/")) {
@@ -153,12 +164,14 @@ public class BaseResource extends ServerResource {
         }
     }
 
-    protected String getCurrentUrl() {
+   protected String getCurrentUrl() {
         return getCurrentUrlWithQueryString().replaceAll("\\?.*", "");
     }
 
     protected String getCurrentUrlWithQueryString() {
-        return getRequest().getResourceRef().toString();
+        Request request = getRequest();
+        Reference ref = resetSchemeAndAuthority(request, request.getResourceRef());
+        return ref.toString();
     }
 
     protected String getQueryString() {
