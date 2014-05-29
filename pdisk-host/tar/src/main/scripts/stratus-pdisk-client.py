@@ -226,11 +226,11 @@ class PersistentDisk:
     def __init__(self, pdisk_id, turl):
         try:
             url = urlparse.urlsplit(pdisk_id)
-            path_elements = path.rstrip('/').split('/')
+            path_elements = url.path.rstrip('/').split('/')
             uuid = path_elements.pop()
             endpoint_path = '/'.join(path_elements)
             self.pdisk_uri = pdisk_id
-            self.endpoint = urlparse.unsplit(("https", url.netloc, url.endpoint_path, '', ''))
+            self.endpoint = urlparse.urlunsplit(("https", url.netloc, endpoint_path, '', ''))
             self.port = (url.port or 443)
             self.hostname = url.hostname
             self.disk_uuid = uuid

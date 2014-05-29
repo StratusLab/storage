@@ -384,6 +384,9 @@
                   <includes>
                     <include>**/*</include>
                   </includes>
+                  <excludes>
+                    <exclude>pdisk.cfg</exclude>
+                  </excludes>
                 </source>
               </sources>
             </mapping>

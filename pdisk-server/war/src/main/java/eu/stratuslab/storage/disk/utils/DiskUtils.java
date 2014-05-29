@@ -295,7 +295,7 @@ public final class DiskUtils {
 
         String turl = getTurl(uuid);
 
-        List<String> cmd = getCommandAttachAndLinkLocal(uuid, "https://localhost:" + port, linkName, turl);
+        List<String> cmd = getCommandAttachAndLinkLocal(uuid, "https://localhost:" + port + "/pdisk", linkName, turl);
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
         ProcessUtils.execute(pb, "Unable to attach persistent disk");
@@ -311,7 +311,7 @@ public final class DiskUtils {
         BackEndStorage backend = getDiskStorage();
         String turl = backend.getTurl(uuid);
 
-        List<String> cmd = getCommandDetachLocal(uuid, "https://localhost:" + port, turl);
+        List<String> cmd = getCommandDetachLocal(uuid, "https://localhost:" + port + "/pdisk", turl);
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
         ProcessUtils.execute(pb, "Unable to detach persistent disk");
