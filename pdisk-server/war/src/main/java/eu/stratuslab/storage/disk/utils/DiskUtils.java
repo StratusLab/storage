@@ -15,6 +15,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -22,9 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 
-/**
- * For unit tests see {@link DiskUtilsTest}
- */
 public final class DiskUtils {
 
     private static final Logger LOGGER = Logger.getLogger("org.restlet");
@@ -97,11 +96,22 @@ public final class DiskUtils {
         getDiskStorage().delete(uuid);
     }
 
-    public static String getDiskId(String host, int port, String uuid) {
-        return String.format("pdisk:%s:%d:%s", host, port, uuid);
+    public static String getDiskUri(String endpoint, String uuid) {
+        try {
+            URI endpointUri = URI.create(endpoint);
+            String authority = endpointUri.getAuthority();
+            String path = endpointUri.getPath();
+            if (!path.endsWith("/")) {
+                path = path + "/";
+            }
+            URI diskUri = new URI("pdisk", authority, path, null, null);
+            return diskUri.resolve(uuid).toString();
+        } catch (URISyntaxException e) {
+            return null;
+        }
     }
 
-    public static void attachHotplugDisk(String serviceName, int servicePort, String node, String vmId, String diskUuid,
+    public static void attachHotplugDisk(String serviceEndpoint, String node, String vmId, String diskUuid,
                                          String target, String turl) {
 
         // Do NOT use the --register flag here. This may cause an infinite loop
@@ -116,7 +126,7 @@ public final class DiskUtils {
         cmd.add("--mount");
 
         cmd.add("--pdisk-id");
-        cmd.add(getDiskId(serviceName, servicePort, diskUuid));
+        cmd.add(getDiskUri(serviceEndpoint, diskUuid));
 
         cmd.add("--target");
         cmd.add(target);
@@ -128,13 +138,13 @@ public final class DiskUtils {
         cmd.add(turl);
 
         cmd.add("--vm-disk-name");
-        cmd.add(getDiskId(serviceName, servicePort, diskUuid));
+        cmd.add(getDiskUri(serviceEndpoint, diskUuid));
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
         ProcessUtils.execute(pb, "Unable to attach persistent disk");
     }
 
-    public static void detachHotplugDisk(String serviceName, int servicePort, String node, String vmId, String diskUuid,
+    public static void detachHotplugDisk(String serviceEndpoint, String node, String vmId, String diskUuid,
                                          String target, String turl) {
 
         // Do NOT use the --register flag here. This may cause an infinite loop
@@ -149,7 +159,7 @@ public final class DiskUtils {
         cmd.add("--mount");
 
         cmd.add("--pdisk-id");
-        cmd.add(getDiskId(serviceName, servicePort, diskUuid));
+        cmd.add(getDiskUri(serviceEndpoint, diskUuid));
 
         cmd.add("--target");
         cmd.add(target);
@@ -161,7 +171,7 @@ public final class DiskUtils {
         cmd.add(turl);
 
         cmd.add("--vm-disk-name");
-        cmd.add(getDiskId(serviceName, servicePort, diskUuid));
+        cmd.add(getDiskUri(serviceEndpoint, diskUuid));
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
         ProcessUtils.execute(pb, "Unable to detach persistent disk");
@@ -207,13 +217,8 @@ public final class DiskUtils {
     public static String calculateHash(InputStream fis) throws FileNotFoundException {
 
         Map<String, BigInteger> info = MetadataUtils.streamInfo(fis);
-
         BigInteger sha1Digest = info.get("SHA-1");
-
-        String identifier = MetadataUtils.sha1ToIdentifier(sha1Digest);
-
-        return identifier;
-
+        return MetadataUtils.sha1ToIdentifier(sha1Digest);
     }
 
     public static void createAndPopulateDiskLocal(Disk disk) {
@@ -265,12 +270,6 @@ public final class DiskUtils {
         }
     }
 
-    /**
-     * Returns the minimum number of whole GibiBytes (2^30 bytes) that contains at least the number of bytes given as
-     * the argument. If the argument is not positive, then the return value is 1L.
-     *
-     * @param sizeInBytes
-     */
     public static long convertBytesToGibiBytes(long sizeInBytes) {
         long inGiB = (long) Math.ceil(sizeInBytes / BYTES_IN_GiB_DOUBLE);
         return (inGiB <= 0 ? 1L : inGiB);
@@ -290,14 +289,13 @@ public final class DiskUtils {
 
     private static String attachDiskToThisHost(String uuid) {
 
-        String host = "localhost";
         int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
 
         String linkName = getLinkedVolumeInDownloadCache(uuid);
 
         String turl = getTurl(uuid);
 
-        List<String> cmd = getCommandAttachAndLinkLocal(uuid, host, port, linkName, turl);
+        List<String> cmd = getCommandAttachAndLinkLocal(uuid, "https://localhost:" + port, linkName, turl);
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
         ProcessUtils.execute(pb, "Unable to attach persistent disk");
@@ -308,13 +306,12 @@ public final class DiskUtils {
     private static void detachDiskFromThisHost(String uuid) {
         unlinkVolumeFromDownloadCache(uuid);
 
-        String host = "localhost";
         int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
 
         BackEndStorage backend = getDiskStorage();
         String turl = backend.getTurl(uuid);
 
-        List<String> cmd = getCommandDetachLocal(uuid, host, port, turl);
+        List<String> cmd = getCommandDetachLocal(uuid, "https://localhost:" + port, turl);
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
         ProcessUtils.execute(pb, "Unable to detach persistent disk");
@@ -328,7 +325,7 @@ public final class DiskUtils {
         }
     }
 
-    private static List<String> getCommandAttachAndLinkLocal(String uuid, String host, int port, String linkName,
+    private static List<String> getCommandAttachAndLinkLocal(String uuid, String endpoint, String linkName,
                                                              String turl) {
         List<String> cmd = new ArrayList<String>();
 
@@ -340,7 +337,7 @@ public final class DiskUtils {
         cmd.add("--attach");
 
         cmd.add("--pdisk-id");
-        cmd.add(getDiskId(host, port, uuid));
+        cmd.add(getDiskUri(endpoint, uuid));
 
         cmd.add("--link-to");
         cmd.add(linkName);
@@ -351,7 +348,7 @@ public final class DiskUtils {
         return cmd;
     }
 
-    private static List<String> getCommandDetachLocal(String uuid, String host, int port, String turl) {
+    private static List<String> getCommandDetachLocal(String uuid, String endpoint, String turl) {
         List<String> cmd = new ArrayList<String>();
 
         cmd.add("/usr/sbin/stratus-pdisk-client.py");
@@ -362,7 +359,7 @@ public final class DiskUtils {
         cmd.add("--attach");
 
         cmd.add("--pdisk-id");
-        cmd.add(getDiskId(host, port, uuid));
+        cmd.add(getDiskUri(endpoint, uuid));
 
         cmd.add("--turl");
         cmd.add(turl);

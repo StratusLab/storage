@@ -149,7 +149,7 @@ public class MountsResource extends BaseResource {
 			throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN,
 			"Mount already exists for: " + instance.getVmId() + " and " + disk.getUuid());
 		}
-		
+
 		getLogger().info(
 				"attachDisk: " + node + " " + vmId + " " + disk.getUuid() + " "
 						+ target);
@@ -159,7 +159,7 @@ public class MountsResource extends BaseResource {
 					"hotPlugDisk: " + node + " " + vmId + " " + disk.getUuid() + " "
 							+ target);
 			BackEndStorage backEndStorage = new BackEndStorage();
-			DiskUtils.attachHotplugDisk(serviceName(), servicePort(), node,
+			DiskUtils.attachHotplugDisk(getBaseUrl(), node,
 					vmId, disk.getUuid(), target,
 					backEndStorage.getTurl(disk.getUuid()));
 		}
@@ -169,7 +169,7 @@ public class MountsResource extends BaseResource {
 
 		disk.store();
 		instance.store();
-		
+
 
 		Mount mount = new Mount(instance, disk);
 		mount.setDevice(target);
