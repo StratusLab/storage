@@ -174,15 +174,6 @@ public class BaseResource extends ServerResource {
         return ref.toString();
     }
 
-    protected String getQueryString() {
-        return getRequest().getResourceRef().getQuery();
-    }
-
-    protected Boolean hasQueryString(String key) {
-        String queryString = getQueryString();
-        return (queryString != null && queryString.equals(key));
-    }
-
     protected boolean isSuperUser(String username) {
         return RootApplication.CONFIGURATION.CLOUD_SERVICE_USER
                 .equals(username);
@@ -196,32 +187,11 @@ public class BaseResource extends ServerResource {
         return getRequest().getHostRef().getHostPort();
     }
 
-    public Configuration extractFmConfiguration() {
-        Request request = getRequest();
-        return extractFmConfiguration(request);
-    }
-
     public static Configuration extractFmConfiguration(Request request) {
         try {
             Map<String, Object> attributes = request.getAttributes();
             Object value = attributes.get(RootApplication.FM_CONFIGURATION_KEY);
             return (Configuration) value;
-        } catch (ClassCastException e) {
-            return null;
-        }
-    }
-
-    public ServiceConfiguration extractSvcConfiguration() {
-        Request request = getRequest();
-        return extractSvcConfiguration(request);
-    }
-
-    public static ServiceConfiguration extractSvcConfiguration(Request request) {
-        try {
-            Map<String, Object> attributes = request.getAttributes();
-            Object value = attributes
-                    .get(RootApplication.SVC_CONFIGURATION_KEY);
-            return (ServiceConfiguration) value;
         } catch (ClassCastException e) {
             return null;
         }
