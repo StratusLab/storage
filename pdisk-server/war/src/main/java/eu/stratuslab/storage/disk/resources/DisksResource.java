@@ -82,7 +82,7 @@ public class DisksResource extends DiskBaseResource {
 
         Disk disk = validateAndCreateDisk();
 
-        redirectSeeOther(getBaseUrl() + "/disks/" + disk.getUuid());
+        redirectSeeOther(getBaseUrl() + "disks/" + disk.getUuid());
 
         return null;
     }
@@ -114,7 +114,7 @@ public class DisksResource extends DiskBaseResource {
         DiskUtils.createAndPopulateDiskLocal(disk);
         disk.store();
 
-        redirectSeeOther(getBaseUrl() + "/disks/" + disk.getUuid());
+        redirectSeeOther(getBaseUrl() + "disks/" + disk.getUuid());
 
     }
 
