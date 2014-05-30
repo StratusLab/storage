@@ -83,7 +83,7 @@ public class MountResource extends BaseResource {
 
         detachHotPluggedDisk();
 
-        redirectSeeOther(getBaseUrl() + "/disks/" + diskId + "/mounts/");
+        redirectSeeOther(getBaseUrl() + "disks/" + diskId + "/mounts/");
 
         Map<String, Object> info = createInfoStructure("redirect");
         return createTemplateRepresentation("html/redirect.ftl", info, TEXT_HTML);

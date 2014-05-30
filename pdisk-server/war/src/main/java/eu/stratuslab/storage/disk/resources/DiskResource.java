@@ -97,7 +97,7 @@ public class DiskResource extends DiskBaseResource {
 
         Disk newDisk = createCopyOnWriteOrRebase();
 
-        redirectSeeOther(getBaseUrl() + "/disks/" + newDisk.getUuid());
+        redirectSeeOther(getBaseUrl() + "disks/" + newDisk.getUuid());
 
     }
 

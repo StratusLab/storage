@@ -68,7 +68,7 @@ public class MountsResource extends BaseResource {
 
         mountDisk(entity);
 
-        redirectSeeOther(getBaseUrl() + "/disks/" + disk.getUuid() + "/mounts/" + mountId);
+        redirectSeeOther(getBaseUrl() + "disks/" + disk.getUuid() + "/mounts/" + mountId);
 
         return null;
     }
