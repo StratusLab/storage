@@ -254,7 +254,7 @@ class PersistentDisk:
         self.volumeCheck = pdisk.volumeCheck
 
     def __registration_uri__(self):
-        return "%s/disks/%s/" % (self.endpoint, self.disk_uuid)
+        return "%s/pswd//disks/%s/" % (self.endpoint, self.disk_uuid)
 
     def register(self, login, pswd, vm_id):
         """
