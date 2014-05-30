@@ -68,7 +68,7 @@ public class DiskResource extends DiskBaseResource {
 
         update(entity);
 
-        redirectSeeOther(getRequest().getResourceRef());
+        redirectSeeOther(getCurrentUrl());
     }
 
     @Put("json")
@@ -242,7 +242,7 @@ public class DiskResource extends DiskBaseResource {
 
         processDeleteDiskRequest();
 
-        redirectSeeOther(getBaseUrl() + "/disks/");
+        redirectSeeOther(getBaseUrl() + "disks/");
 
         Map<String, Object> info = createInfoStructure("redirect");
         return createTemplateRepresentation("html/redirect.ftl", info, TEXT_HTML);
