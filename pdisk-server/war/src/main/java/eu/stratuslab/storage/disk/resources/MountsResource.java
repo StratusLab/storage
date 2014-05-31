@@ -146,7 +146,7 @@ public class MountsResource extends BaseResource {
         if (!target.equals(Disk.STATIC_DISK_TARGET)) {
             getLogger().info("hotPlugDisk: " + node + " " + vmId + " " + disk.getUuid() + " " + target);
             BackEndStorage backEndStorage = new BackEndStorage();
-            DiskUtils.attachHotplugDisk(getBaseUrl(), node, vmId, disk.getUuid(), target,
+            DiskUtils.attachHotplugDisk(getServiceEndpoint(), node, vmId, disk.getUuid(), target,
                     backEndStorage.getTurl(disk.getUuid()));
         }
 

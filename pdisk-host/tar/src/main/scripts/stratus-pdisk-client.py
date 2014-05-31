@@ -253,8 +253,9 @@ class PersistentDisk:
         self.image = pdisk.image
         self.volumeCheck = pdisk.volumeCheck
 
+    # method always uses password authentication, so insert /pswd into URL
     def __registration_uri__(self):
-        return "%s/disks/%s/" % (self.endpoint, self.disk_uuid)
+        return "%s/pswd/disks/%s/" % (self.endpoint, self.disk_uuid)
 
     def register(self, login, pswd, vm_id):
         """

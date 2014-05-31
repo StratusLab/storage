@@ -31,10 +31,14 @@ import org.restlet.resource.ServerResource;
 import org.restlet.util.Series;
 
 import javax.security.auth.x500.X500Principal;
+import java.net.URI;
+import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class BaseResource extends ServerResource {
 
@@ -136,6 +140,13 @@ public class BaseResource extends ServerResource {
         }
 
         return result;
+    }
+
+    protected String getServiceEndpoint() {
+        String baseUrl = getBaseUrl();
+        Pattern p = Pattern.compile("^(.+/)[^/]+/$");
+        Matcher m = p.matcher(baseUrl);
+        return m.group(1);
     }
 
     protected String getBaseUrl() {

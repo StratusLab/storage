@@ -134,7 +134,7 @@ public class MountResource extends BaseResource {
                 BackEndStorage backEndStorage = new BackEndStorage();
                 String turl = backEndStorage.getTurl(diskId);
 
-                DiskUtils.detachHotplugDisk(getBaseUrl(), node, mount.getVmId(), diskId, diskTarget, turl);
+                DiskUtils.detachHotplugDisk(getServiceEndpoint(), node, mount.getVmId(), diskId, diskTarget, turl);
                 getLogger().info("hotDetach: " + node + ", " + mount.getVmId() + ", " + diskId + ", " + diskTarget);
             } catch (ResourceException e) {
                 getLogger().warning(
