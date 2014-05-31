@@ -138,7 +138,7 @@ public final class DiskUtils {
         cmd.add(turl);
 
         cmd.add("--vm-disk-name");
-        cmd.add(getDiskUri(serviceEndpoint, diskUuid));
+        cmd.add(diskUuid);
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
         ProcessUtils.execute(pb, "Unable to attach persistent disk");
@@ -171,7 +171,7 @@ public final class DiskUtils {
         cmd.add(turl);
 
         cmd.add("--vm-disk-name");
-        cmd.add(getDiskUri(serviceEndpoint, diskUuid));
+        cmd.add(diskUuid);
 
         ProcessBuilder pb = new ProcessBuilder(cmd);
         ProcessUtils.execute(pb, "Unable to detach persistent disk");
