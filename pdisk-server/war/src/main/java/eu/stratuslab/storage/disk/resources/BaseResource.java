@@ -42,6 +42,8 @@ import java.util.regex.Pattern;
 
 public class BaseResource extends ServerResource {
 
+    private static final Pattern serviceEndpointPattern = Pattern.compile("^(.+/)[^/]+/$");
+
     private static final String CLIENT_CERTS_ATTR = "org.restlet.https.clientCertificates";
 
     public enum DiskVisibility {
@@ -144,13 +146,12 @@ public class BaseResource extends ServerResource {
 
     protected String getServiceEndpoint() {
         String baseUrl = getBaseUrl();
-        Pattern p = Pattern.compile("^(.+/)[^/]+/$");
-        Matcher m = p.matcher(baseUrl);
-        try {
+        Matcher m = serviceEndpointPattern.matcher(baseUrl);
+        if (m.matches()) {
             return m.group(1);
-        } catch (RuntimeException e) {
-            getLogger().severe("bad pattern match: " + baseUrl);
-            throw e;
+        } else {
+            getLogger().severe("could not extract service endpoint; using " + baseUrl);
+            return baseUrl;
         }
     }
 
