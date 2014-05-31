@@ -146,7 +146,11 @@ public class BaseResource extends ServerResource {
         String baseUrl = getBaseUrl();
         Pattern p = Pattern.compile("^(.+/)[^/]+/$");
         Matcher m = p.matcher(baseUrl);
-        return m.group(1);
+        try {
+            return m.group(1);
+        } catch (Exception e) {
+            getLogger().severe("bad pattern match: " + baseUrl);
+        }
     }
 
     protected String getBaseUrl() {
