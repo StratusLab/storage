@@ -148,8 +148,9 @@ public class BaseResource extends ServerResource {
         Matcher m = p.matcher(baseUrl);
         try {
             return m.group(1);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             getLogger().severe("bad pattern match: " + baseUrl);
+            throw e;
         }
     }
 
