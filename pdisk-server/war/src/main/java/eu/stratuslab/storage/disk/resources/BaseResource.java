@@ -129,7 +129,7 @@ public class BaseResource extends ServerResource {
         String scheme = null;
         String authority = null;
         if (headers != null) {
-            scheme = headers.getFirstValue("X-Forwarded-Scheme");
+            scheme = headers.getFirstValue("X-Forwarded-Proto");
             authority = headers.getFirstValue("Host");
         }
 
