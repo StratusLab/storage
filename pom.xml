@@ -75,17 +75,17 @@
       <dependency>
 	<groupId>eu.stratuslab.metadata</groupId>
 	<artifactId>metadata</artifactId>
-	<version>14.06.0.RC1</version>
+	<version>${metadata.version}</version>
       </dependency>
       <dependency>
 	<groupId>eu.stratuslab.authn</groupId>
 	<artifactId>authn-ssl</artifactId>
-	<version>14.06.0.RC1</version>
+	<version>${authn.version}</version>
       </dependency>
       <dependency>
 	<groupId>eu.stratuslab.authn</groupId>
 	<artifactId>authn-login-module</artifactId>
-	<version>14.06.0.RC1</version>
+	<version>${authn.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
