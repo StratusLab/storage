@@ -40,8 +40,6 @@
   <properties> 
     <installation.dir>/opt/stratuslab/storage/pdisk</installation.dir>
     <configuration.dir>/etc/stratuslab/authn</configuration.dir>
-    <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format> 
-    <RELEASE>0.${maven.build.timestamp}.${package.os}</RELEASE>
     <!-- SHOULD THESE REALLY BE THE SAME FILE! -->
     <persistent-disk-war>storage-pdisk-server-war.war</persistent-disk-war>
     <authn-proxy-war>storage-pdisk-server-war.war</authn-proxy-war>
@@ -50,14 +48,6 @@
   <build>
     
     <plugins>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-release-plugin</artifactId>
-        <configuration>
-          <arguments>-DRELEASE=1</arguments>
-        </configuration>
-      </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
