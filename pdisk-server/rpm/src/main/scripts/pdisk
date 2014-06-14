@@ -1,4 +1,4 @@
-#!/usr/bin/env bash  
+#!/bin/bash -x
 #
 # Startup script for jetty under *nix systems (it works under NT/cygwin too).
 
