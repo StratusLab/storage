@@ -183,6 +183,11 @@
             <conflict>pdisk-server</conflict>
           </conflicts>
 
+          <defaultDirmode>755</defaultDirmode>
+          <defaultFilemode>644</defaultFilemode>
+          <defaultGroupname>root</defaultGroupname>
+          <defaultUsername>root</defaultUsername>
+
           <mappings>
 
             <mapping>
@@ -193,8 +198,6 @@
             <mapping>
               <directory>/usr/sbin</directory>
               <filemode>755</filemode>
-              <username>root</username>
-              <groupname>root</groupname>
               <directoryIncluded>false</directoryIncluded>
               <sources>
                 <source>
@@ -209,8 +212,6 @@
             <mapping>
               <directory>${installation.dir}</directory>
               <filemode>644</filemode>
-              <username>root</username>
-              <groupname>root</groupname>
               <directoryIncluded>false</directoryIncluded>
               <sources>
                 <source>
@@ -238,8 +239,6 @@
             <mapping>
               <directory>/etc/rc.d/init.d/</directory>
               <filemode>755</filemode>
-              <username>root</username>
-              <groupname>root</groupname>
               <directoryIncluded>false</directoryIncluded>
               <sources>
                 <source>
@@ -254,8 +253,6 @@
             <mapping>
               <directory>/etc/default</directory>
               <filemode>644</filemode>
-              <username>root</username>
-              <groupname>root</groupname>
               <directoryIncluded>false</directoryIncluded>
               <configuration>noreplace</configuration>
               <sources>
@@ -271,8 +268,6 @@
             <mapping>
               <directory>/etc/stratuslab/</directory>
               <filemode>0600</filemode>
-              <username>root</username>
-              <groupname>root</groupname>
               <directoryIncluded>false</directoryIncluded>
               <configuration>noreplace</configuration>
               <sources>
@@ -300,8 +295,6 @@
             <mapping>
               <directory>/var/lib/stratuslab/storage/pdisk</directory>
               <filemode>0755</filemode>
-              <username>root</username>
-              <groupname>root</groupname>
               <directoryIncluded>true</directoryIncluded>
             </mapping>
 
@@ -325,8 +318,6 @@
             <mapping>
               <directory>${installation.dir}/start.d</directory>
               <filemode>644</filemode>
-              <username>root</username>
-              <groupname>root</groupname>
               <directoryIncluded>true</directoryIncluded>
               <sources>
                 <source>
@@ -341,8 +332,6 @@
 	    <mapping>
 	      <directory>${installation.dir}/lib/ext</directory>
 	      <filemode>644</filemode>
-	      <username>root</username>
-	      <groupname>root</groupname>
 	      <directoryIncluded>false</directoryIncluded>
 	      <sources>
 		<source>
@@ -357,8 +346,6 @@
             <mapping>
               <directory>${installation.dir}/stratuslab-webapps</directory>
               <filemode>644</filemode>
-              <username>root</username>
-              <groupname>root</groupname>
               <directoryIncluded>false</directoryIncluded>
               <sources>
                 <source>
@@ -373,8 +360,6 @@
             <mapping>
               <directory>${installation.dir}/</directory>
               <filemode>644</filemode>
-              <username>root</username>
-              <groupname>root</groupname>
               <configuration>true</configuration>
               <directoryIncluded>false</directoryIncluded>
               <sources>
@@ -404,8 +389,6 @@
             <mapping>
               <directory>/usr/share/nginx/stratuslab</directory>
               <directoryIncluded>false</directoryIncluded>
-              <username>root</username>
-              <groupname>root</groupname>
               <sources>
                 <source>
                   <location>src/main/html</location>
