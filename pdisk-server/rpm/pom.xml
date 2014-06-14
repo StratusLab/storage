@@ -230,6 +230,7 @@
                     <exclude>lib/setuid/**/*</exclude>
                     <exclude>etc/jetty-setuid.xml</exclude>
                     <exclude>etc/jetty-deploy.xml</exclude>
+                    <exclude>etc/jetty.conf</exclude>
                     <exclude>resources/log4j.properties</exclude>
                   </excludes>
                 </source>
