@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/usr/bin/env bash  
 #
 # Startup script for jetty under *nix systems (it works under NT/cygwin too).
 
@@ -436,7 +436,7 @@ case "$ACTION" in
           disown \$!
           echo \$! > '$JETTY_PID'"
       else
-        "${RUN_CMD[@]}" &
+        "${RUN_CMD[@]}" </dev/null >/dev/null 2>&1 &
         disown $!
         echo $! > "$JETTY_PID"
       fi
