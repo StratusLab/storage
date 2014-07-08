@@ -185,6 +185,7 @@
 
           <postinstallScriptlet>
             <script>
+/sbin/service nginx reload || true
 /sbin/chkconfig --add pdisk || true
 </script>
           </postinstallScriptlet>
@@ -194,6 +195,11 @@
 /sbin/chkconfig --del pdisk || true
 </script>
           </preremoveScriptlet>
+          <postremoveScriptlet>
+            <script>
+/sbin/service nginx reload || true
+</script>
+          </postremoveScriptlet>
 
           <defaultDirmode>755</defaultDirmode>
           <defaultFilemode>644</defaultFilemode>
