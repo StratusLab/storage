@@ -183,6 +183,18 @@
             <conflict>pdisk-server</conflict>
           </conflicts>
 
+          <postinstallScriptlet>
+            <script>
+/sbin/chkconfig --add pdisk || true
+</script>
+          </postinstallScriptlet>
+          <preremoveScriptlet>
+            <script>
+/sbin/service pdisk stop || true
+/sbin/chkconfig --del pdisk || true
+</script>
+          </preremoveScriptlet>
+
           <defaultDirmode>755</defaultDirmode>
           <defaultFilemode>644</defaultFilemode>
           <defaultGroupname>root</defaultGroupname>
