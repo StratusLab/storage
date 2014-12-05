@@ -20,7 +20,6 @@ import javax.persistence.Query;
 
 import org.simpleframework.xml.ElementMap;
 
-import eu.stratuslab.storage.disk.backend.BackEndStorage;
 import eu.stratuslab.storage.disk.resources.BaseResource.DiskVisibility;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
@@ -376,16 +375,21 @@ public class Disk implements Serializable {
 	}
 
 	public String[] getBackendProxiesArray() {
+		String proxies = getBackendProxies();
+		if (proxies == null || proxies.isEmpty()) {
+			return new String[] {};
+		}
 		return getBackendProxies().split(",");
 	}
 
 	public String getRandomBackendProxy() {
 		String[] proxies = getBackendProxiesArray();
-		if (proxies.length <= 1) {
-			return backenproxies;
+		if (proxies.length == 0) {
+			return "";
+		} else {
+    		int ind = new Random().nextInt(proxies.length);
+    		return proxies[ind];
 		}
-		int ind = new Random().nextInt(proxies.length);
-		return proxies[ind];
 	}
 
 	public void setBackendProxies(String proxies) {

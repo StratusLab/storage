@@ -41,9 +41,9 @@ import org.apache.http.protocol.HttpContext;
 import eu.stratuslab.marketplace.metadata.MetadataUtils;
 
 public class DownloadUtils {
-	
+
 	private static final String ENV_PROXY = "http_proxy";
-	
+
     public static Map<String, BigInteger> copyUrlContentsToFile(String url, File file)
             throws IOException {
 
@@ -171,7 +171,7 @@ public class DownloadUtils {
                     schemeRegistry);
 
             DefaultHttpClient client = new DefaultHttpClient(cm);
-            
+
             // client.addRequestInterceptor(new GzipRequestInterceptor());
             // client.addResponseInterceptor(new GzipResponseInterceptor());
 
@@ -212,15 +212,15 @@ public class DownloadUtils {
 			return null;
 		}
 	}
-	
+
 	public static boolean isEnvProxySet() {
 		return isEnvVarInitialised(DownloadUtils.ENV_PROXY);
 	}
-	
+
 	public static String getEnvProxy() {
 		return System.getenv(DownloadUtils.ENV_PROXY);
 	}
-	
+
 	private static boolean isEnvVarInitialised(String name) {
 		String value = System.getenv(name);
 		return value != null && !value.isEmpty();

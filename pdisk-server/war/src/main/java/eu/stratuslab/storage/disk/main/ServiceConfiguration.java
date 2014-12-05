@@ -156,7 +156,7 @@ public class ServiceConfiguration {
     }
 
     private List<String> getBackendProxies() {
-    	String[] backendProxies = getConfigValue("disk.store.iscsi.proxies").split(",\\s+?");
+    	String[] backendProxies = getConfigValue("disk.store.iscsi.proxies").split(",");
     	if (backendProxies.length == 0) {
     		throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
     				"disk.store.iscsi.proxies should not be empty.");
