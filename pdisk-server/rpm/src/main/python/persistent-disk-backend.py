@@ -32,8 +32,8 @@ from stratuslab.Util import printDetail
 from stratuslab.pdiskbackend.LUN import LUN
 from stratuslab.pdiskbackend import defaults
 from stratuslab.pdiskbackend.utils import initialize_logger, abort, print_detail
-from stratuslab.pdiskbackend.ConfigHolder_test import ConfigHolder
-from stratuslab.pdiskbackend.PdiskBackendProxyFactory_test import PdiskBackendProxyFactory
+from stratuslab.pdiskbackend.ConfigHolder import ConfigHolder
+from stratuslab.pdiskbackend.PdiskBackendProxyFactory import PdiskBackendProxyFactory
 
 # Keys are supported actions, values are the number of arguments required for the each action
 VALID_ACTIONS = {'check':1, 'create':2, 'delete':1, 'rebase':1,
