@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
@@ -19,6 +20,7 @@ import javax.persistence.Query;
 
 import org.simpleframework.xml.ElementMap;
 
+import eu.stratuslab.storage.disk.backend.BackEndStorage;
 import eu.stratuslab.storage.disk.resources.BaseResource.DiskVisibility;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
@@ -192,6 +194,11 @@ public class Disk implements Serializable {
 	@ElementMap(name = "mounts", required = false, data = true, valueType = Mount.class)
 	private Map<String, Mount> mounts = new HashMap<String, Mount>(); // key is
 																		// vmId
+	/**
+	 * Comma separated list of backenend proxy names where the LUN is physically stored.
+	 * The values are the ones from the list as defined by disk.store.iscsi.proxies property.
+	 */
+	private String backenproxies = "";
 
 	public String getUuid() {
 		return uuid;
@@ -255,10 +262,10 @@ public class Disk implements Serializable {
 	/**
 	 * Sets the size of the disk, where the size is assumed to be in GB if size
 	 * <= 1000 and in bytes otherwise.
-	 * 
+	 *
 	 * @param size
 	 *            in GB if < 1000, in bytes otherwise
-	 * 
+	 *
 	 */
 	public void setSize(long size) {
 		this.size = size;
@@ -362,6 +369,35 @@ public class Disk implements Serializable {
 			}
 		}
 		group_ = list;
+	}
+
+	public String getBackendProxies() {
+		return backenproxies;
+	}
+
+	public String[] getBackendProxiesArray() {
+		return getBackendProxies().split(",");
+	}
+
+	public String getRandomBackendProxy() {
+		String[] proxies = getBackendProxiesArray();
+		if (proxies.length <= 1) {
+			return backenproxies;
+		}
+		int ind = new Random().nextInt(proxies.length);
+		return proxies[ind];
+	}
+
+	public void setBackendProxies(String proxies) {
+		this.backenproxies = proxies.replaceAll(" ", "");
+	}
+
+	public void addBackendProxy(String proxyName) {
+		if (this.backenproxies.isEmpty()) {
+			this.backenproxies = proxyName.trim();
+		} else {
+			this.backenproxies += "," + proxyName.trim();
+		}
 	}
 
 }

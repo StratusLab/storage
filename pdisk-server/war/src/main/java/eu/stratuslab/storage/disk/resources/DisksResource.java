@@ -171,7 +171,8 @@ public class DisksResource extends DiskBaseResource {
             // FIXME: This provides the file information for the download
             // itself. It does NOT actually verify the data on disk. An
             // additional check should probably be added.
-            streamInfo = DiskUtils.copyUrlToVolume(uuid, url);
+        	String proxy = DiskUtils.getRandomBackendProxyFromConfig();
+            streamInfo = DiskUtils.copyUrlToVolume(uuid, proxy, url);
         } catch (IOException e) {
             String msg = "error initializing disk contents from " + url;
 

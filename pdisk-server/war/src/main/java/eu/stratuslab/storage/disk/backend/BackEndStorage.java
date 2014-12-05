@@ -2,6 +2,7 @@ package eu.stratuslab.storage.disk.backend;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.utils.ProcessUtils;
@@ -12,16 +13,19 @@ public final class BackEndStorage {
 	private String CONFIG = "/etc/stratuslab/pdisk-backend.cfg";
 	private String CMD = "/usr/sbin/persistent-disk-backend.py";
 
-	public void create(String uuid, long size) {
-		String errorMsg = "Unable to create volume on backend storage: " + uuid
-				+ " of size " + size;
+    public void create(String uuid, long size, String proxy) {
+		List<String> args = new ArrayList<String>();
+		args.add(uuid);
+		args.add(String.valueOf(size));
+		prependIscsiProxyParamToArgs(args, proxy);
 
-		String[] args = { uuid, String.valueOf(size) };
+		String errorMsg = "Unable to create volume on backend storage: " + uuid
+				+ " of size " + size + " on backend " + proxy;
 		execute("create", errorMsg, args);
 	}
 
 	protected String execute(String action, String errorMsg,
-			String... arguments) {
+			List<String> arguments) {
 		String[] preArgs = { CMD, "--config", CONFIG, "--action", action };
 		List<String> args = new ArrayList<String>();
 		for (String s : preArgs) {
@@ -42,40 +46,67 @@ public final class BackEndStorage {
 
 	// TODO: expose this
 	protected String checkDiskExists(String baseUuid) {
+		List<String> args = new ArrayList<String>();
+		args.add(baseUuid);
 
-		String[] args = { baseUuid };
+		condRandomPrependIscsiProxyParamToArgs(args, baseUuid);
+
 		return execute("check", "Volume does not exist on backend storage: " + baseUuid,
 				args);
 	}
 
 	public String getTurl(String baseUuid) {
+		List<String> args = new ArrayList<String>();
+		args.add(baseUuid);
 
-		String[] args = { baseUuid };
+		condRandomPrependIscsiProxyParamToArgs(args, baseUuid);
+
 		return execute("getturl", "Cannot find transport URL (turl) for uuid: "
 				+ baseUuid, args).trim();
+
 	}
 
-	public String rebase(Disk disk) {
+	public String getTurl(String baseUuid, String proxy) {
+		List<String> args = new ArrayList<String>();
+		args.add(baseUuid);
+		prependIscsiProxyParamToArgs(args, proxy);
 
-		String[] args = { disk.getUuid() };
-		String errorMsg = "Cannot rebase image on backend storage: " + disk.getUuid();
+		return execute("getturl", "Cannot find TURL for uuid: "
+				+ baseUuid + " on backend " + proxy, args).trim();
+
+	}
+
+	public String rebase(String uuid, String proxy) {
+		List<String> args = new ArrayList<String>();
+		args.add(uuid);
+		prependIscsiProxyParamToArgs(args, proxy);
+
+		String errorMsg = "Cannot rebase image: " + uuid + " on backend " + proxy;
 		String rebasedUuid = execute("rebase", errorMsg, args);
-		
+
 		return rebasedUuid;
 	}
 
-	public String createCopyOnWrite(String baseUuid, String cowUuid, long size) {
+	public String createCopyOnWrite(String baseUuid, String cowUuid, long size, String proxy) {
 
-		String[] args = { baseUuid, cowUuid, Long.toString(size) };
+		List<String> args = new ArrayList<String>();
+		args.add(baseUuid);
+		args.add(cowUuid);
+		args.add(Long.toString(size));
+		prependIscsiProxyParamToArgs(args, proxy);
+
 		String errorMsg = "Cannot create copy on write volume: " + baseUuid
-				+ " " + cowUuid + " " + size;
+				+ " " + cowUuid + " " + size + " on backend " + proxy;
 		return execute("snapshot", errorMsg, args);
 	}
 
-	public void delete(String uuid) {
+	public void delete(String uuid, String proxy) {
+		List<String> args = new ArrayList<String>();
+		args.add(uuid);
+		args.add("0");
+		prependIscsiProxyParamToArgs(args, proxy);
 
-		String[] args = { uuid, "0" };
-		String errorMsg = "Unable to delete volume on backend storage: " + uuid;
+		String errorMsg = "Unable to delete volume: " + uuid + " on backend " + proxy;
 
 		execute("delete", errorMsg, args);
 	}
@@ -86,16 +117,34 @@ public final class BackEndStorage {
 		return attachedDisk;
 	}
 
-	public void map(String uuid) {
-		String[] args = { uuid };
+	public void map(String uuid, String proxy) {
+		List<String> args = new ArrayList<String>();
+		args.add(uuid);
+		prependIscsiProxyParamToArgs(args, proxy);
 
-		execute("map", "Unable to map: " + uuid, args);
+		execute("map", "Unable to map: " + uuid + " on backend " + proxy,
+				args);
 	}
 
-	public void unmap(String uuid) {
-		String[] args = { uuid };
+	public void unmap(String uuid, String proxy) {
+		List<String> args = new ArrayList<String>();
+		args.add(uuid);
+		prependIscsiProxyParamToArgs(args, proxy);
 
-		execute("unmap", "Unable to unmap: " + uuid, args);
+		execute("unmap", "Unable to unmap: " + uuid + " from " + proxy, args);
 	}
 
+	private void condRandomPrependIscsiProxyParamToArgs(List<String> args, String uuid) {
+		Disk disk = Disk.load(uuid);
+		String[] proxies = disk.getBackendProxiesArray();
+		if (proxies.length != 0) {
+			int ind = new Random().nextInt(proxies.length);
+			prependIscsiProxyParamToArgs(args, proxies[ind]);
+		}
+	}
+
+	private void prependIscsiProxyParamToArgs(List<String> args, String proxy) {
+		args.add(0, proxy);
+		args.add(0, "--iscsi-proxy");
+	}
 }

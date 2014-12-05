@@ -15,4 +15,7 @@
     "size": "${disk.size}",
     "type": "${disk.type}",
     "visibility": "${disk.visibility}"
+    <#if disk.backenproxies?has_content>
+    "backenproxies": "${disk.backenproxies}",
+    </#if>
 }

@@ -37,6 +37,7 @@ import org.restlet.resource.Post;
 import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
 
+import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
@@ -130,6 +131,7 @@ public class DiskResource extends DiskBaseResource {
 
 		Disk newDisk = null;
 		if (disk.getType() == DiskType.MACHINE_IMAGE_LIVE) {
+			// Create new image out of the existing live one.
 			newDisk = rebase(disk);
 		} else if (disk.getType() == DiskType.MACHINE_IMAGE_ORIGIN) {
 			newDisk = createMachineImageCoW(disk);
@@ -145,6 +147,15 @@ public class DiskResource extends DiskBaseResource {
 		return DiskUtils.createMachineImageCoWDisk(disk);
 	}
 
+	/**
+	 * Create an origin image out of the live machine image snapshot.
+	 * NB! The rebase is made and then the new origin is copied to all
+	 * the backends.  All the backends the new volume was copied to
+	 * get set on it.
+	 *
+	 * @param disk
+	 * @return
+	 */
 	private Disk rebase(Disk disk) {
 
 		String rebasedUuid = DiskUtils.rebaseDisk(disk);
@@ -158,13 +169,17 @@ public class DiskResource extends DiskBaseResource {
 			newDisk = initializeDisk();
 			newDisk.setUuid(rebasedUuid);
 		}
-		
+
+		newDisk.setBackendProxies(disk.getBackendProxies());
+
 		newDisk.setType(DiskType.MACHINE_IMAGE_ORIGIN);
 		newDisk.setSize(disk.getSize());
 		newDisk.setSeed(true);
 		newDisk.setQuarantine("");
-
 		newDisk.store();
+
+		// TODO: Redistribute the new volume to other backends.
+		DiskUtils.distributeAmongAllBackends(newDisk);
 
 		return newDisk;
 	}
@@ -243,7 +258,17 @@ public class DiskResource extends DiskBaseResource {
 
 	private void compressImage() {
 		getLogger().info("Creating compressed disk");
-		DiskUtils.createCompressedDisk(getDiskId());
+		String uuid = getDiskId();
+		String proxy = getBackendProxy(Disk.load(uuid));
+		DiskUtils.createCompressedDisk(uuid, proxy);
+	}
+
+	private String getBackendProxy(Disk disk) {
+		String proxy = disk.getRandomBackendProxy();
+		if (proxy.isEmpty()) {
+			proxy = DiskUtils.getFirstBackendProxyFromConfig();
+		}
+		return proxy;
 	}
 
 	@Delete("html")

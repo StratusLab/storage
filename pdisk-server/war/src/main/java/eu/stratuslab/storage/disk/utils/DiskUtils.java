@@ -7,9 +7,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -25,7 +27,7 @@ import eu.stratuslab.storage.persistence.Disk.DiskType;
 
 /**
  * For unit tests see {@link DiskUtilsTest}
- * 
+ *
  */
 public final class DiskUtils {
 
@@ -51,15 +53,62 @@ public final class DiskUtils {
 		return backend.getTurl(diskUuid);
 	}
 
+	public static String getTurl(String diskUuid, String proxy) {
+		BackEndStorage backend = getDiskStorage();
+		return backend.getTurl(diskUuid, proxy);
+	}
+
+	/**
+	 * Create volume on the backend(s).
+	 * MACHINE_IMAGE_ORIGIN volume
+	 *   - created on all backends
+	 *   - not mapped.
+	 * Volumes for all other disk types are created on random
+	 * backend and are mapped.
+	 * @param disk
+	 */
 	public static void createDisk(Disk disk) {
 
-		BackEndStorage diskStorage = getDiskStorage();
-
-		diskStorage.create(disk.getUuid(), disk.getSize());
-		diskStorage.map(disk.getUuid());
-
+		if (DiskType.MACHINE_IMAGE_ORIGIN == disk.getType()) {
+			// Create volume on each backend.
+			for (String proxy : getBackendProxiesFromConfig()) {
+				createDisk(disk, proxy);
+			}
+		} else {
+			// Create volume only on one randomly chosen backend.
+			BackEndStorage diskStorage = getDiskStorage();
+			String proxy = getRandomBackendProxyFromConfig();
+    		diskStorage.create(disk.getUuid(), disk.getSize(), proxy);
+    		diskStorage.map(disk.getUuid(), proxy);
+    		disk.setBackendProxies(proxy);
+		}
 		disk.store();
+	}
 
+	/**
+	 * Create volume on the backed.  The volume is not mapped.
+	 * @param disk
+	 * @param proxy
+	 */
+	public static void createDisk(Disk disk, String proxy) {
+		BackEndStorage diskStorage = getDiskStorage();
+		diskStorage.create(disk.getUuid(), disk.getSize(), proxy);
+		//diskStorage.map(disk.getUuid(), proxy);
+		disk.addBackendProxy(proxy);
+	}
+
+	private static List<String> getBackendProxiesFromConfig() {
+		return ServiceConfiguration.getInstance().BACKEND_PROXIES;
+	}
+
+	public static String getRandomBackendProxyFromConfig() {
+		List<String> proxies = getBackendProxiesFromConfig();
+		int ind = new Random().nextInt(proxies.size());
+		return proxies.get(ind);
+	}
+
+	public static String getFirstBackendProxyFromConfig() {
+		return getBackendProxiesFromConfig().get(0);
 	}
 
 	public static Disk createMachineImageCoWDisk(Disk disk) {
@@ -68,11 +117,14 @@ public final class DiskUtils {
 
 		Disk cowDisk = createCowDisk(disk);
 
+		String proxy = disk.getRandomBackendProxy();
 		diskStorage.createCopyOnWrite(disk.getUuid(), cowDisk.getUuid(),
-				disk.getSize());
+				disk.getSize(), proxy);
 
 		cowDisk.setType(DiskType.MACHINE_IMAGE_LIVE);
-		diskStorage.map(cowDisk.getUuid());
+		diskStorage.map(cowDisk.getUuid(), proxy);
+		// MACHINE_IMAGE_LIVE can only be on one backed.
+		cowDisk.setBackendProxies(proxy);
 
 		cowDisk.store();
 
@@ -88,16 +140,99 @@ public final class DiskUtils {
 		return cowDisk;
 	}
 
+	/**
+	 * Rebase of the live disk.  Only one backend is assumed to be set on the
+	 * disk, or none.  The latter happens with the running VMs during the transitional
+	 * period.  In this case we take the first backend proxy from the configuration file.
+	 * @param disk
+	 * @return
+	 */
 	public static String rebaseDisk(Disk disk) {
+
+		String uuid = disk.getUuid();
+
+		BackEndStorage diskStorage = getDiskStorage();
+		String[] proxies = disk.getBackendProxiesArray();
+
+		if (DiskType.MACHINE_IMAGE_LIVE == disk.getType()) {
+    		if (proxies.length == 1) {
+    			return diskStorage.rebase(uuid, proxies[0]);
+    		} else if (proxies.length == 0) {
+    			// Get first proxy from configuration. This is the case with the
+    			// running VMs during the transitional period.
+    			return diskStorage.rebase(uuid, getBackendProxiesFromConfig().get(0));
+    		}
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, "Failed rebasing disk: " + uuid
+			        + ". Expected less than two backends, but got: " + disk.getBackendProxies());
+		}
+		throw new ResourceException(Status.SERVER_ERROR_INTERNAL, "Failed rebasing disk: " + uuid
+		        + ". Only live machine image can be rebased. Given: " + disk.getType().toString());
+	}
+
+	/**
+	 * Copy the volume from the current backend(s) to all the others found
+	 * in the configuration.
+	 * @param disk
+	 */
+	public static void distributeAmongAllBackends(Disk disk) {
 
 		BackEndStorage diskStorage = getDiskStorage();
 
-		return diskStorage.rebase(disk);
+		String[] currentProxies = disk.getBackendProxiesArray();
+		String baseProxy = currentProxies[0];
+		String uuid = disk.getUuid();
+
+		// map the initial re-based origin
+		diskStorage.map(uuid, baseProxy);
+
+		// attach to the local machine
+		String linkBaseDisk = attachDiskToThisHost(uuid, baseProxy);
+
+		// on all other backends
+		List<String> proxies = getBackendProxiesFromConfig();
+		proxies.removeAll(Arrays.asList(currentProxies));
+		for (String proxy : proxies) {
+			// create volume of the same size on another proxy
+			createDisk(disk, proxy);
+
+			// attach new volume to the local machine - linkNewDisk
+			String linkNewDisk = attachDiskToThisHost(uuid, proxy);
+
+			try {
+				try {
+					// copy from localBaseDisk to new linkNewDisk
+					FileUtils.copyFile(linkBaseDisk, linkNewDisk);
+				} finally {
+					// detach linkNewDisk
+					detachDiskFromThisHost(uuid, proxy);
+					// unmap linkNewDisk
+					getDiskStorage().unmap(uuid, proxy);
+					// delete linkNewDisk
+					File linkNewDiskFile = new File(linkNewDisk);
+					if (!linkNewDiskFile.delete()) {
+						LOGGER.warning("Failed to delete: " + linkNewDisk);
+					}
+				}
+			} catch (ResourceException e) {
+				removeDisk(disk.getUuid());
+			}
+
+			disk.addBackendProxy(proxy);
+
+		}
+		// detach localRebasedDisk
+		detachDiskFromThisHost(uuid, baseProxy);
+
+		// unmap
+		diskStorage.unmap(uuid, baseProxy);
 	}
 
 	public static void removeDisk(String uuid) {
-		getDiskStorage().unmap(uuid);
-		getDiskStorage().delete(uuid);
+		Disk disk = Disk.load(uuid);
+		for (String proxy : disk.getBackendProxiesArray()) {
+			getDiskStorage().unmap(uuid, proxy);
+			getDiskStorage().delete(uuid, proxy);
+		}
 	}
 
 	public static String getDiskId(String host, int port, String uuid) {
@@ -254,21 +389,29 @@ public final class DiskUtils {
 		return "";// RootApplication.CONFIGURATION.LVM_GROUP_PATH + "/";
 	}
 
+	/**
+	 * DATA_IMAGE_RAW_READONLY volume gets created.
+	 * @param disk
+	 */
 	public static void createAndPopulateDiskLocal(Disk disk) {
 
 		String uuid = disk.getUuid();
 
 		File cachedDiskFile = FileUtils.getCachedDiskFile(uuid);
 		String cachedDisk = cachedDiskFile.getAbsolutePath();
+
 		try {
+
+			disk.setType(DiskType.DATA_IMAGE_RAW_READONLY);
 
 			createDisk(disk);
 
+			String proxy = disk.getBackendProxies();
+
 			try {
-				copyContentsToVolume(uuid, cachedDisk);
+				copyContentsToVolume(uuid, proxy, cachedDisk);
 
 				// Size has already been set on the disk.
-				disk.setType(DiskType.DATA_IMAGE_RAW_READONLY);
 				disk.setSeed(true);
 
 			} catch (RuntimeException e) {
@@ -283,25 +426,25 @@ public final class DiskUtils {
 		}
 	}
 
-	private static void copyContentsToVolume(String uuid, String cachedDisk) {
-		String diskLocation = attachDiskToThisHost(uuid);
+	private static void copyContentsToVolume(String uuid, String proxy, String cachedDisk) {
+		String diskLocation = attachDiskToThisHost(uuid, proxy);
 		try {
 			FileUtils.copyFile(cachedDisk, diskLocation);
 		} finally {
-			detachDiskFromThisHost(uuid);
-			getDiskStorage().unmap(uuid);
+			detachDiskFromThisHost(uuid, proxy);
+			getDiskStorage().unmap(uuid, proxy);
 		}
 	}
 
-	public static Map<String, BigInteger> copyUrlToVolume(String uuid,
+	public static Map<String, BigInteger> copyUrlToVolume(String uuid, String proxy,
 			String url) throws IOException {
 
-		File diskLocation = new File(attachDiskToThisHost(uuid));
+		File diskLocation = new File(attachDiskToThisHost(uuid, proxy));
 		try {
 			return DownloadUtils.copyUrlContentsToFile(url, diskLocation);
 		} finally {
-			detachDiskFromThisHost(uuid);
-			getDiskStorage().unmap(uuid);
+			detachDiskFromThisHost(uuid, proxy);
+			getDiskStorage().unmap(uuid, proxy);
 		}
 	}
 
@@ -309,7 +452,7 @@ public final class DiskUtils {
 	 * Returns the minimum number of whole GibiBytes (2^30 bytes) that contains
 	 * at least the number of bytes given as the argument. If the argument is
 	 * not positive, then the return value is 1L.
-	 * 
+	 *
 	 * @param sizeInBytes
 	 */
 	public static long convertBytesToGibiBytes(long sizeInBytes) {
@@ -317,9 +460,9 @@ public final class DiskUtils {
 		return (inGiB <= 0 ? 1L : inGiB);
 	}
 
-	public static void createCompressedDisk(String uuid) {
+	public static void createCompressedDisk(String uuid, String proxy) {
 
-		String diskLocation = attachDiskToThisHost(uuid);
+		String diskLocation = attachDiskToThisHost(uuid, proxy);
 
 		ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c",
 				RootApplication.CONFIGURATION.GZIP_CMD + " -f -c "
@@ -327,44 +470,45 @@ public final class DiskUtils {
 						+ getCompressedDiskLocation(uuid));
 		ProcessUtils.execute(pb, "Unable to compress disk " + uuid);
 
-		detachDiskFromThisHost(uuid);
+		detachDiskFromThisHost(uuid, proxy);
 	}
 
-	private static String attachDiskToThisHost(String uuid) {
+	private static String attachDiskToThisHost(String uuid, String proxy) {
 
 		String host = "localhost";
 		int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
 
-		String linkName = getLinkedVolumeInDownloadCache(uuid);
+		String linkName = getLinkedVolumeInDownloadCache(uuid, proxy);
 
-		String turl = getTurl(uuid);
+		String turl = getTurl(uuid, proxy);
 
 		List<String> cmd = getCommandAttachAndLinkLocal(uuid, host, port,
 				linkName, turl);
 
 		ProcessBuilder pb = new ProcessBuilder(cmd);
-		ProcessUtils.execute(pb, "Unable to attach persistent disk");
+		ProcessUtils.execute(pb, "Unable to attach persistent disk " + uuid +
+				" on backend " + proxy);
 
 		return linkName;
 	}
 
-	private static void detachDiskFromThisHost(String uuid) {
-		unlinkVolumeFromDownloadCache(uuid);
+	private static void detachDiskFromThisHost(String uuid, String proxy) {
+		unlinkVolumeFromDownloadCache(uuid, proxy);
 
 		String host = "localhost";
 		int port = ServiceConfiguration.getInstance().PDISK_SERVER_PORT;
 
 		BackEndStorage backend = getDiskStorage();
-		String turl = backend.getTurl(uuid);
+		String turl = backend.getTurl(uuid, proxy);
 
 		List<String> cmd = getCommandDetachLocal(uuid, host, port, turl);
 
 		ProcessBuilder pb = new ProcessBuilder(cmd);
-		ProcessUtils.execute(pb, "Unable to detach persistent disk");
+		ProcessUtils.execute(pb, "Unable to detach persistent disk " + uuid);
 	}
 
-	private static void unlinkVolumeFromDownloadCache(String uuid) {
-		String linkName = getLinkedVolumeInDownloadCache(uuid);
+	private static void unlinkVolumeFromDownloadCache(String uuid, String proxy) {
+		String linkName = getLinkedVolumeInDownloadCache(uuid, proxy);
 		File file = new File(linkName);
 		if (!file.delete()) {
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
@@ -415,9 +559,9 @@ public final class DiskUtils {
 		return cmd;
 	}
 
-	private static String getLinkedVolumeInDownloadCache(String uuid) {
+	private static String getLinkedVolumeInDownloadCache(String uuid, String proxy) {
 		return RootApplication.CONFIGURATION.CACHE_LOCATION + "/" + uuid
-				+ ".link";
+				+ "-" + proxy + ".link";
 	}
 
 	public static String getCompressedDiskLocation(String uuid) {

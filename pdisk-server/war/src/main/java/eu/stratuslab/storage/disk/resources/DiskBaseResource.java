@@ -150,11 +150,13 @@ public class DiskBaseResource extends BaseResource {
 
 		long gigabytes = disk.getSize();
 
+		int maxSize = ServiceConfiguration.getInstance().DISK_SIZE_MAX;
+
 		if (gigabytes < ServiceConfiguration.DISK_SIZE_MIN
-				|| gigabytes > ServiceConfiguration.DISK_SIZE_MAX) {
+				|| gigabytes > maxSize) {
 			String error = "Size must be an integer between "
 					+ ServiceConfiguration.DISK_SIZE_MIN + " and "
-					+ ServiceConfiguration.DISK_SIZE_MAX;
+					+ maxSize;
 			throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, error);
 		}
 
@@ -203,21 +205,21 @@ public class DiskBaseResource extends BaseResource {
 		defaults.put(Disk.DISK_SIZE_KEY, 1);
 		defaults.put(Disk.DISK_VISIBILITY_KEY,
 				DiskVisibility.PRIVATE.toString());
-	
+
 		info.put("values", defaults);
-		
+
 		List<String> visibilities = new LinkedList<String>();
 		for (DiskVisibility visibility : DiskVisibility.values()) {
 			visibilities.add(visibility.toString());
 		}
-	
+
 		info.put("visibilities", visibilities);
-		
+
 		List<String> types = new LinkedList<String>();
 		for (DiskType type : DiskType.values()) {
 			types.add(type.toString());
 		}
-	
+
 		info.put("types", types);
 	}
 

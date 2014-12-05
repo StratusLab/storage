@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 import org.restlet.data.Status;
@@ -25,7 +28,7 @@ public class ServiceConfiguration {
 
     // Disk size limits (in GiBs)
     public static final int DISK_SIZE_MIN = 1;
-    public static final int DISK_SIZE_MAX = 1024;
+    public final int DISK_SIZE_MAX;
 
     public static final int CACHE_EXPIRATION_DURATION = 2000;
 
@@ -39,6 +42,8 @@ public class ServiceConfiguration {
     public final String CACHE_LOCATION;
 
     public final String GZIP_CMD;
+
+    public final List<String> BACKEND_PROXIES;
 
     public final int UPLOAD_COMPRESSED_IMAGE_MAX_BYTES;
 
@@ -54,6 +59,10 @@ public class ServiceConfiguration {
         CLOUD_NODE_VM_DIR = getConfigValue("disk.store.cloud.node.vm_dir");
         CLOUD_SERVICE_USER = getConfigValue("disk.store.cloud.service.user");
 
+        BACKEND_PROXIES = getBackendProxies();
+
+        DISK_SIZE_MAX = getDiskSizeMax();
+
         CACHE_LOCATION = getCacheLocation();
 
         GZIP_CMD = getCommand("disk.store.utils.gzip");
@@ -61,7 +70,7 @@ public class ServiceConfiguration {
         UPLOAD_COMPRESSED_IMAGE_MAX_BYTES = 10240000;
     }
 
-    public static ServiceConfiguration getInstance() {
+	public static ServiceConfiguration getInstance() {
         return instance;
     }
 
@@ -144,6 +153,26 @@ public class ServiceConfiguration {
         }
 
         return configValue;
+    }
+
+    private List<String> getBackendProxies() {
+    	String[] backendProxies = getConfigValue("disk.store.iscsi.proxies").split(",\\s+?");
+    	if (backendProxies.length == 0) {
+    		throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+    				"disk.store.iscsi.proxies should not be empty.");
+    	}
+    	return new ArrayList<String>(Arrays.asList(backendProxies));
+    }
+
+    private int getDiskSizeMax() {
+        try {
+        	return Integer.valueOf(getConfigValue("disk.store.size.max"));
+        } catch (ResourceException ex) {
+        	return 1024;
+        } catch (NumberFormatException ex) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "disk.store.size.max configuration property should be an integer.");
+        }
     }
 
 }
