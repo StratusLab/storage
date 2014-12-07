@@ -89,15 +89,10 @@ else:
     parser.print_help()
     abort("")
 
-backend_proxy = PdiskBackendProxyFactory.createBackendProxy(ch)
-
 if options.iscsi_proxy:
-    if not ch._config.has_section(options.iscsi_proxy):
-        print_detail("Config should have same name section as the name "
-                     "provided with --iscsi-proxy option.\n")
-        parser.print_help()
-        abort("")
-    ch._config.set(defaults.CONFIG_MAIN_SECTION, 'iscsi_proxies', options.iscsi_proxy)
+    ch.force_iscsi_proxy(options.iscsi_proxy)
+
+backend_proxy = PdiskBackendProxyFactory.createBackendProxy(ch)
 
 # Execute requested action
 
