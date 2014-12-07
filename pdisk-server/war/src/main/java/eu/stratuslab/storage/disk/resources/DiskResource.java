@@ -346,10 +346,10 @@ public class DiskResource extends DiskBaseResource {
 	}
 
 	private void deleteDisk(Disk disk) {
-		disk.remove();
 
 		try {
-			DiskUtils.removeDisk(disk.getUuid());
+			DiskUtils.removeDisk(disk);
+			disk.remove();
 		} catch (ResourceException ex) {
 			disk.store(); // store it back since remove failed
 			throw (ex);

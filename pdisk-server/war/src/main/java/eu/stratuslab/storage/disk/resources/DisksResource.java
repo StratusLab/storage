@@ -242,7 +242,7 @@ public class DisksResource extends DiskBaseResource {
     }
 
     protected void removeDisk(Disk disk) {
-        DiskUtils.removeDisk(disk.getUuid());
+        DiskUtils.removeDisk(disk);
     }
 
     private Disk saveAndInflateFiles() {

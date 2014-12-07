@@ -214,7 +214,7 @@ public final class DiskUtils {
 					}
 				}
 			} catch (ResourceException e) {
-				removeDisk(disk.getUuid());
+				removeDisk(disk);
 			}
 
 			disk.addBackendProxy(proxy);
@@ -227,12 +227,12 @@ public final class DiskUtils {
 		diskStorage.unmap(uuid, baseProxy);
 	}
 
-	public static void removeDisk(String uuid) {
-		Disk disk = Disk.load(uuid);
-		for (String proxy : disk.getBackendProxiesArray()) {
-			getDiskStorage().unmap(uuid, proxy);
-			getDiskStorage().delete(uuid, proxy);
-		}
+	public static void removeDisk(Disk disk) {
+    	String uuid = disk.getUuid();
+    	for (String proxy : disk.getBackendProxiesArray()) {
+    		getDiskStorage().unmap(uuid, proxy);
+    		getDiskStorage().delete(uuid, proxy);
+    	}
 	}
 
 	public static String getDiskId(String host, int port, String uuid) {
@@ -415,7 +415,7 @@ public final class DiskUtils {
 				disk.setSeed(true);
 
 			} catch (RuntimeException e) {
-				removeDisk(disk.getUuid());
+				removeDisk(disk);
 			}
 
 		} finally {
