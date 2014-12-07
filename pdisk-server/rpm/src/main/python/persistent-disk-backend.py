@@ -97,7 +97,7 @@ if options.iscsi_proxy:
                      "provided with --iscsi-proxy option.\n")
         parser.print_help()
         abort("")
-    ch._config.set(CONFIG_MAIN_SECTION, 'iscsi_proxies', options.iscsi_proxy)
+    ch._config.set(defaults.CONFIG_MAIN_SECTION, 'iscsi_proxies', options.iscsi_proxy)
 
 # Execute requested action
 
