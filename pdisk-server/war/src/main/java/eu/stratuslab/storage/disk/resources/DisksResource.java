@@ -51,6 +51,7 @@ import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.persistence.Disk;
+import eu.stratuslab.storage.persistence.Disk.DiskType;
 import eu.stratuslab.storage.persistence.DiskView;
 
 public class DisksResource extends DiskBaseResource {
@@ -131,23 +132,38 @@ public class DisksResource extends DiskBaseResource {
 
         validateNewDisk(disk);
 
-        createDisk(disk);
-
-        getLogger().info(
-                String.format("DisksResource created new disk: %s",
-                        disk.getUuid()));
-
         try {
-            initializeContents(disk.getUuid(), form);
+        	createDisk(disk);
         } catch (ResourceException e) {
             removeDisk(disk);
             throw e;
         }
 
+        getLogger().info(
+                String.format("DisksResource created new disk: %s",
+                        disk.getUuid()));
+
+        if (disk.getBackendProxiesArray().length != 1) {
+        	removeDisk(disk);
+        	throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+        			"At most one backend proxy should be set on newly created disk.");
+        }
+        String proxy = disk.getBackendProxiesArray()[0];
+        try {
+            initializeContents(disk.getUuid(), proxy, form);
+        } catch (ResourceException e) {
+            removeDisk(disk);
+            throw e;
+        }
+
+        if (DiskType.MACHINE_IMAGE_ORIGIN == disk.getType()) {
+        	DiskUtils.distributeAmongAllBackends(disk);
+        }
+
         return disk;
     }
 
-    private void initializeContents(String uuid, Form form)
+    private void initializeContents(String uuid, String proxy, Form form)
             throws ResourceException {
 
         Map<String, BigInteger> streamInfo = null;
@@ -171,7 +187,6 @@ public class DisksResource extends DiskBaseResource {
             // FIXME: This provides the file information for the download
             // itself. It does NOT actually verify the data on disk. An
             // additional check should probably be added.
-        	String proxy = DiskUtils.getRandomBackendProxyFromConfig();
             streamInfo = DiskUtils.copyUrlToVolume(uuid, proxy, url);
         } catch (IOException e) {
             String msg = "error initializing disk contents from " + url;

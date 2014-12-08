@@ -59,41 +59,19 @@ public final class DiskUtils {
 	}
 
 	/**
-	 * Create volume on the backend(s).
-	 * MACHINE_IMAGE_ORIGIN volume
-	 *   - created on all backends
-	 *   - not mapped.
-	 * Volumes for all other disk types are created on random
-	 * backend and are mapped.
+	 * Create volume only on one randomly chosen backend.
 	 * @param disk
 	 */
 	public static void createDisk(Disk disk) {
-
-		if (DiskType.MACHINE_IMAGE_ORIGIN == disk.getType()) {
-			// Create volume on each backend.
-			for (String proxy : getBackendProxiesFromConfig()) {
-				createDisk(disk, proxy);
-			}
-		} else {
-			// Create volume only on one randomly chosen backend.
-			BackEndStorage diskStorage = getDiskStorage();
-			String proxy = getRandomBackendProxyFromConfig();
-    		diskStorage.create(disk.getUuid(), disk.getSize(), proxy);
-    		diskStorage.map(disk.getUuid(), proxy);
-    		disk.setBackendProxies(proxy);
-		}
+		String proxy = getRandomBackendProxyFromConfig();
+		createDisk(disk, proxy);
 		disk.store();
 	}
 
-	/**
-	 * Create volume on the backed.  The volume is not mapped.
-	 * @param disk
-	 * @param proxy
-	 */
 	public static void createDisk(Disk disk, String proxy) {
 		BackEndStorage diskStorage = getDiskStorage();
 		diskStorage.create(disk.getUuid(), disk.getSize(), proxy);
-		//diskStorage.map(disk.getUuid(), proxy);
+		diskStorage.map(disk.getUuid(), proxy);
 		disk.addBackendProxy(proxy);
 	}
 
