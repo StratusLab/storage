@@ -2,6 +2,7 @@ package eu.stratuslab.storage.persistence;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -401,6 +402,15 @@ public class Disk implements Serializable {
 			this.backenproxies = proxyName.trim();
 		} else {
 			this.backenproxies += "," + proxyName.trim();
+		}
+	}
+
+	public void removeBackendProxy(String proxy) {
+		List<String> proxies = new ArrayList<String>(Arrays.asList(getBackendProxiesArray()));
+		proxies.remove(proxy);
+		setBackendProxies("");
+		for (String p : proxies) {
+			addBackendProxy(p);
 		}
 	}
 
