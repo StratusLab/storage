@@ -24,6 +24,8 @@ public class DiskTest {
     	disk.setBackendProxies("p1,p2");
     	assertEquals("p1,p2", disk.getBackendProxies());
     	disk.addBackendProxy("p3");
+    	disk.addBackendProxy("p2");
+    	disk.addBackendProxy("p1");
     	assertEquals("p1,p2,p3", disk.getBackendProxies());
     	disk.removeBackendProxy("p2");
     	assertEquals("p1,p3", disk.getBackendProxies());

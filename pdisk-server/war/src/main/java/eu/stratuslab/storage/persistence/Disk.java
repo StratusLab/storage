@@ -401,7 +401,8 @@ public class Disk implements Serializable {
 		if (this.backenproxies.isEmpty()) {
 			this.backenproxies = proxyName.trim();
 		} else {
-			this.backenproxies += "," + proxyName.trim();
+			if (!this.backenproxies.contains(proxyName.trim()))
+				this.backenproxies += "," + proxyName.trim();
 		}
 	}
 
