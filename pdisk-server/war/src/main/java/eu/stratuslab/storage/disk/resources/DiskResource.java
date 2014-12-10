@@ -260,6 +260,7 @@ public class DiskResource extends DiskBaseResource {
 		getLogger().info("Creating compressed disk");
 		String uuid = getDiskId();
 		String proxy = getBackendProxy(Disk.load(uuid));
+		DiskUtils.map(uuid, proxy);
 		DiskUtils.createCompressedDisk(uuid, proxy);
 	}
 
