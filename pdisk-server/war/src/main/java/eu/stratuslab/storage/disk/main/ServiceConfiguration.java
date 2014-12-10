@@ -30,6 +30,9 @@ public class ServiceConfiguration {
     public static final int DISK_SIZE_MIN = 1;
     public final int DISK_SIZE_MAX;
 
+    // Download buffer size in Bytes.
+    public final int DOWNLOAD_STREAM_BUFFER_SIZE;
+
     public static final int CACHE_EXPIRATION_DURATION = 2000;
 
     public final Properties CONFIGURATION;
@@ -68,6 +71,19 @@ public class ServiceConfiguration {
         GZIP_CMD = getCommand("disk.store.utils.gzip");
 
         UPLOAD_COMPRESSED_IMAGE_MAX_BYTES = 10240000;
+
+        DOWNLOAD_STREAM_BUFFER_SIZE = getDownloadStreamBufferSize();
+    }
+
+	private int getDownloadStreamBufferSize() {
+        try {
+        	return Integer.valueOf(getConfigValue("disk.store.download.stream.buffer.size"));
+        } catch (ResourceException ex) {
+        	return 0;
+        } catch (NumberFormatException ex) {
+            throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+                    "disk.store.size.max configuration property should be an integer.");
+        }
     }
 
 	public static ServiceConfiguration getInstance() {
