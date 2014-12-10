@@ -112,6 +112,10 @@ public final class DiskUtils {
 		Disk cowDisk = createCowDisk(disk);
 
 		String proxy = disk.getRandomBackendProxy();
+		// All old origins are on the first backend.
+		if (proxy.isEmpty()) {
+			proxy = getFirstBackendProxyFromConfig();
+		}
 		diskStorage.createCopyOnWrite(disk.getUuid(), cowDisk.getUuid(),
 				disk.getSize(), proxy);
 
