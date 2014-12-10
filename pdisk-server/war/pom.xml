@@ -37,17 +37,17 @@
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
     </dependency>
-    <dependency>  
-      <groupId>eu.stratuslab.metadata</groupId>  
-      <artifactId>metadata</artifactId>  
-    </dependency>  
-    <dependency>  
-      <groupId>org.restlet.jee</groupId>  
-      <artifactId>org.restlet</artifactId>  
-    </dependency>  
-    <dependency>  
-      <groupId>org.restlet.jee</groupId>  
-      <artifactId>org.restlet.ext.xml</artifactId>  
+    <dependency>
+      <groupId>eu.stratuslab.metadata</groupId>
+      <artifactId>metadata</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.restlet.jee</groupId>
+      <artifactId>org.restlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.restlet.jee</groupId>
+      <artifactId>org.restlet.ext.xml</artifactId>
     </dependency>
     <dependency>
       <groupId>org.restlet.jee</groupId>
@@ -95,7 +95,7 @@
     </dependency>
 
   </dependencies>
-  
+
   <build>
 
     <resources>
@@ -110,53 +110,6 @@
     </resources>
 
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>hibernate3-maven-plugin</artifactId>
-        <configuration>
-          <components>
-            <component>
-              <name>hbm2ddl</name>
-            </component>
-          </components>
-          <componentProperties>
-            <implementation>jpaconfiguration</implementation>
-            <drop>false</drop>
-            <create>true</create>
-            <export>false</export>
-            <format>true</format>
-          </componentProperties>
-        </configuration>
-        <executions>
-          <execution>
-            <id>mysql-schema-generation</id>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>hbm2ddl</goal>
-            </goals>
-            <configuration>
-              <componentProperties>
-                <persistenceunit>mysql-schema</persistenceunit>
-                <outputfilename>stratuslab.storage.mysql.ddl</outputfilename>
-              </componentProperties>
-            </configuration>
-          </execution>
-          <execution>
-            <id>hsqldb-schema-generation</id>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>hbm2ddl</goal>
-            </goals>
-            <configuration>
-              <componentProperties>
-                <persistenceunit>hsqldb-schema</persistenceunit>
-                <outputfilename>stratuslab.storage.hsqldb.ddl</outputfilename>
-              </componentProperties>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
@@ -203,6 +156,19 @@
                   <action>
                     <ignore />
                   </action>
+                </pluginExecution>
+                <pluginExecution>
+                	<pluginExecutionFilter>
+                		<groupId>org.codehaus.mojo</groupId>
+                		<artifactId>hibernate3-maven-plugin</artifactId>
+                		<versionRange>[2.2,)</versionRange>
+                		<goals>
+                			<goal>hbm2ddl</goal>
+                		</goals>
+                	</pluginExecutionFilter>
+                	<action>
+                		<ignore></ignore>
+                	</action>
                 </pluginExecution>
               </pluginExecutions>
             </lifecycleMappingMetadata>
