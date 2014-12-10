@@ -2,6 +2,8 @@ package eu.stratuslab.storage.disk.utils;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -42,6 +44,10 @@ public final class MiscUtils {
 			sb.append(item);
 		}
 		return sb.toString();
+	}
+
+	public static String join(String[] list, String conjunction) {
+		return join(Arrays.asList(list), conjunction);
 	}
 
 	public static String sub(String pattern, String replace, String string) {

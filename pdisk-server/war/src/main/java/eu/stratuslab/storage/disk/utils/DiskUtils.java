@@ -48,6 +48,11 @@ public final class DiskUtils {
 
 	}
 
+	public static void map(String uuid, String proxy) {
+		BackEndStorage backend = getDiskStorage();
+		backend.map(uuid, proxy);
+	}
+
 	public static String getTurl(String diskUuid) {
 		BackEndStorage backend = getDiskStorage();
 		return backend.getTurl(diskUuid);
@@ -86,18 +91,18 @@ public final class DiskUtils {
 		}
 	}
 
-	public static List<String> getBackendProxiesFromConfig() {
+	public static String[] getBackendProxiesFromConfig() {
 		return ServiceConfiguration.getInstance().BACKEND_PROXIES;
 	}
 
 	public static String getRandomBackendProxyFromConfig() {
-		List<String> proxies = getBackendProxiesFromConfig();
-		int ind = new Random().nextInt(proxies.size());
-		return proxies.get(ind);
+		String[] proxies = getBackendProxiesFromConfig();
+		int ind = new Random().nextInt(proxies.length);
+		return proxies[ind];
 	}
 
 	public static String getFirstBackendProxyFromConfig() {
-		return getBackendProxiesFromConfig().get(0);
+		return getBackendProxiesFromConfig()[0];
 	}
 
 	public static Disk createMachineImageCoWDisk(Disk disk) {
@@ -149,7 +154,7 @@ public final class DiskUtils {
     		} else if (proxies.length == 0) {
     			// Get first proxy from configuration. This is the case with the
     			// running VMs during the transitional period.
-    			return diskStorage.rebase(uuid, getBackendProxiesFromConfig().get(0));
+    			return diskStorage.rebase(uuid, getFirstBackendProxyFromConfig());
     		}
 			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, "Failed rebasing disk: " + uuid
 			        + ". Expected less than two backends, but got: " + disk.getBackendProxies());
@@ -171,32 +176,23 @@ public final class DiskUtils {
 		String baseProxy = currentProxies[0];
 		String uuid = disk.getUuid();
 
-		// map the initial re-based origin
 		diskStorage.map(uuid, baseProxy);
 
-		// attach to the local machine
 		String linkBaseDisk = attachDiskToThisHost(uuid, baseProxy);
 
-		// on all other backends
-		List<String> proxies = getBackendProxiesFromConfig();
+		List<String> proxies = new ArrayList<String>(Arrays.asList(getBackendProxiesFromConfig()));
 		proxies.removeAll(Arrays.asList(currentProxies));
 		for (String proxy : proxies) {
-			// create volume of the same size on another proxy
 			createDisk(disk, proxy);
 
-			// attach new volume to the local machine - linkNewDisk
 			String linkNewDisk = attachDiskToThisHost(uuid, proxy);
 
 			try {
 				try {
-					// copy from localBaseDisk to new linkNewDisk
 					FileUtils.copyFile(linkBaseDisk, linkNewDisk);
 				} finally {
-					// detach linkNewDisk
 					detachDiskFromThisHost(uuid, proxy);
-					// unmap linkNewDisk
 					getDiskStorage().unmap(uuid, proxy);
-					// delete linkNewDisk
 					File linkNewDiskFile = new File(linkNewDisk);
 					if (!linkNewDiskFile.delete()) {
 						LOGGER.warning("Failed to delete: " + linkNewDisk);
@@ -209,10 +205,10 @@ public final class DiskUtils {
 			disk.addBackendProxy(proxy);
 
 		}
-		// detach localRebasedDisk
-		detachDiskFromThisHost(uuid, baseProxy);
 
-		// unmap
+		disk.store();
+
+		detachDiskFromThisHost(uuid, baseProxy);
 		diskStorage.unmap(uuid, baseProxy);
 	}
 

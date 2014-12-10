@@ -46,7 +46,7 @@ public class ServiceConfiguration {
 
     public final String GZIP_CMD;
 
-    public final List<String> BACKEND_PROXIES;
+    public final String[] BACKEND_PROXIES;
 
     public final int UPLOAD_COMPRESSED_IMAGE_MAX_BYTES;
 
@@ -171,13 +171,13 @@ public class ServiceConfiguration {
         return configValue;
     }
 
-    private List<String> getBackendProxies() {
+    private String[] getBackendProxies() {
     	String[] backendProxies = getConfigValue("disk.store.iscsi.proxies").split(",");
     	if (backendProxies.length == 0) {
     		throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
     				"disk.store.iscsi.proxies should not be empty.");
     	}
-    	return new ArrayList<String>(Arrays.asList(backendProxies));
+    	return backendProxies;
     }
 
     private int getDiskSizeMax() {

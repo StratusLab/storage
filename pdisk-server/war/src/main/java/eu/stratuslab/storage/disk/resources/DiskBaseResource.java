@@ -19,6 +19,7 @@
  */
 package eu.stratuslab.storage.disk.resources;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -228,12 +229,12 @@ public class DiskBaseResource extends BaseResource {
 	protected void checkNumberOfBackendsDiskWasCreatedOn(Disk disk) {
 	    int proxiesUsed = disk.getBackendProxiesArray().length;
 	    if (DiskType.MACHINE_IMAGE_ORIGIN == disk.getType()) {
-	    	if (DiskUtils.getBackendProxiesFromConfig().size() != proxiesUsed) {
+	    	if (DiskUtils.getBackendProxiesFromConfig().length != proxiesUsed) {
 	    		String backedns = MiscUtils.join(DiskUtils.getBackendProxiesFromConfig(), ",");
 	    		throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 	    			DiskType.MACHINE_IMAGE_ORIGIN.toString() +
 	    			" should have been created on all the configured backends (" + backedns +
-	    			"), but was created only on " + disk.getBackendProxies());
+	    			"), but was created on " + disk.getBackendProxies());
 	    	}
 	    } else {
 	    	if (proxiesUsed != 1) {
