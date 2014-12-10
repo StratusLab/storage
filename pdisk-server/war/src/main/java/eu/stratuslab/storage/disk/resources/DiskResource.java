@@ -24,6 +24,7 @@ import static org.restlet.data.MediaType.TEXT_HTML;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.restlet.data.Disposition;
 import org.restlet.data.Form;
@@ -48,6 +49,8 @@ public class DiskResource extends DiskBaseResource {
 	public static final String EDIT_QUERY_VALUE = "edit";
 	private static final String UUID_KEY_NAME = Disk.UUID_KEY;
 	private boolean isEdit = false;
+
+	private static final Logger LOGGER = Logger.getLogger("org.restlet");
 
 	@Override
 	protected void doInit() throws ResourceException {
@@ -139,6 +142,7 @@ public class DiskResource extends DiskBaseResource {
 					"Invalid disk state: " + disk.getType()
 							+ ". Cannot create copy or save as new image."));
 		}
+		LOGGER.info("createCopyOnWriteOrRebase: created newDisk on backends: " + newDisk.getBackendProxies());
 		checkNumberOfBackendsDiskWasCreatedOn(newDisk);
 		return newDisk;
 	}

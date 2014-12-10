@@ -237,9 +237,10 @@ public class DiskBaseResource extends BaseResource {
 	    			"), but was created on " + disk.getBackendProxies());
 	    	}
 	    } else {
-	    	if (proxiesUsed != 1) {
+	    	if (1 != proxiesUsed) {
 				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-					disk.getType().toString() + " disk should have been created only one backend.");
+					disk.getType().toString() + " disk should have been created on one backend, " +
+					"but was created on '" + disk.getBackendProxies() + "'.");
 	    	}
 	    }
 	}
