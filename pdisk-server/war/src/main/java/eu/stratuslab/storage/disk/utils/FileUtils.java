@@ -158,7 +158,7 @@ public final class FileUtils {
     }
 
     public static void copyFile(String src, String dst) {
-        ProcessBuilder pb = new ProcessBuilder("dd", "if=" + src, "of=" + dst);
+        ProcessBuilder pb = new ProcessBuilder("dd", "if=" + src, "of=" + dst, "bs=1G");
         ProcessUtils.execute(pb, "Unable to copy file " + src + " to " + dst);
     }
 

@@ -9,7 +9,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
@@ -88,6 +90,56 @@ public class DownloadUtils {
         }
 
         return streamInfo;
+    }
+
+    public static Map<String, BigInteger> copyUrlContentsToFiles(String url, List<File> files,
+    		int bufferSize) throws IOException {
+
+    	Map<String, BigInteger> streamInfo = new HashMap<String, BigInteger>();
+
+    	DefaultHttpClient client = getHttpClientWithProxy(url);
+
+    	try {
+
+    		HttpGet get = new HttpGet(url);
+
+    		HttpResponse response = client.execute(get);
+
+    		HttpEntity entity = response.getEntity();
+
+    		if (entity != null) {
+
+    			InputStream is = null;
+    			List<FileOutputStream> oss = new ArrayList<FileOutputStream>();
+
+    			try {
+    				is = entity.getContent();
+
+    				// FIXME: This information should be passed as a parameter.
+    				// FIXME: This should also support BZ2 compression.
+    				if (url.endsWith(".gz")) {
+    					is = new GZIPInputStream(is);
+    				}
+
+    				for (File file : files) {
+    					oss.add(new FileOutputStream(file));
+    				}
+    				streamInfo = MetadataUtils.copyWithStreamInfo(is, oss, bufferSize);
+
+    			} finally {
+    				FileUtils.closeIgnoringError(is);
+    				for (FileOutputStream os : oss) {
+    					FileUtils.closeIgnoringError(os);
+    				}
+    			}
+
+    		}
+
+    	} finally {
+    		client.getConnectionManager().shutdown();
+    	}
+
+    	return streamInfo;
     }
 
 	private static class GzipRequestInterceptor implements

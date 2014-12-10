@@ -59,23 +59,34 @@ public final class DiskUtils {
 	}
 
 	/**
-	 * Create volume only on one randomly chosen backend.
+	 * Create volume.  If the disk is MACHINE_IMAGE_ORIGIN the volume is
+	 * created on all the backends.  Otherwise, the volume is created only
+	 * on one randomly chosen backend.
 	 * @param disk
 	 */
 	public static void createDisk(Disk disk) {
-		String proxy = getRandomBackendProxyFromConfig();
-		createDisk(disk, proxy);
-		disk.store();
+		if (DiskType.MACHINE_IMAGE_ORIGIN == disk.getType()) {
+			createDiskOnAllBackends(disk);
+		} else {
+			createDisk(disk, getRandomBackendProxyFromConfig());
+		}
 	}
 
 	public static void createDisk(Disk disk, String proxy) {
 		BackEndStorage diskStorage = getDiskStorage();
 		diskStorage.create(disk.getUuid(), disk.getSize(), proxy);
 		diskStorage.map(disk.getUuid(), proxy);
+		LOGGER.info("createDisk: Adding backend proxy " + proxy + " to " + disk.getBackendProxies());
 		disk.addBackendProxy(proxy);
 	}
 
-	private static List<String> getBackendProxiesFromConfig() {
+	public static void createDiskOnAllBackends(Disk disk) {
+		for (String proxy : getBackendProxiesFromConfig()) {
+			createDisk(disk, proxy);
+		}
+	}
+
+	public static List<String> getBackendProxiesFromConfig() {
 		return ServiceConfiguration.getInstance().BACKEND_PROXIES;
 	}
 
@@ -207,9 +218,11 @@ public final class DiskUtils {
 
 	public static void removeDisk(Disk disk) {
     	String uuid = disk.getUuid();
+    	LOGGER.info("removeDisk: removing " + uuid + " from backends " + disk.getBackendProxies());
     	for (String proxy : disk.getBackendProxiesArray()) {
     		getDiskStorage().unmap(uuid, proxy);
     		getDiskStorage().delete(uuid, proxy);
+    		disk.removeBackendProxy(proxy);
     	}
 	}
 
@@ -425,6 +438,33 @@ public final class DiskUtils {
 			getDiskStorage().unmap(uuid, proxy);
 		}
 	}
+
+	public static Map<String, BigInteger> copyUrlToVolumes(String uuid, String[] proxies,
+			String url) throws IOException {
+
+		List<File> diskLocations = new ArrayList<File>();
+		for (String proxy : proxies) {
+			diskLocations.add(new File(attachDiskToThisHost(uuid, proxy)));
+		}
+		try {
+			int bufferSize = getUrlDownloadBufferSize();
+			return DownloadUtils.copyUrlContentsToFiles(url, diskLocations, bufferSize);
+		} finally {
+			for (String proxy : proxies) {
+    			detachDiskFromThisHost(uuid, proxy);
+    			getDiskStorage().unmap(uuid, proxy);
+			}
+		}
+	}
+
+	private static int getUrlDownloadBufferSize() {
+		// Zero forces stream downloader to use its own default.
+		try {
+			return ServiceConfiguration.getInstance().DOWNLOAD_STREAM_BUFFER_SIZE;
+		} catch (Exception e){
+			return 0;
+		}
+    }
 
 	/**
 	 * Returns the minimum number of whole GibiBytes (2^30 bytes) that contains

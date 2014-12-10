@@ -37,7 +37,6 @@ import org.restlet.resource.Post;
 import org.restlet.resource.Put;
 import org.restlet.resource.ResourceException;
 
-import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
@@ -140,6 +139,7 @@ public class DiskResource extends DiskBaseResource {
 					"Invalid disk state: " + disk.getType()
 							+ ". Cannot create copy or save as new image."));
 		}
+		checkNumberOfBackendsDiskWasCreatedOn(newDisk);
 		return newDisk;
 	}
 
@@ -149,9 +149,9 @@ public class DiskResource extends DiskBaseResource {
 
 	/**
 	 * Create an origin image out of the live machine image snapshot.
-	 * NB! The rebase is made and then the new origin is copied to all
+	 * NB! The rebase is made and then the new origin is replicated to all
 	 * the backends.  All the backends the new volume was copied to
-	 * get set on it.
+	 * are set on the disk.
 	 *
 	 * @param disk
 	 * @return

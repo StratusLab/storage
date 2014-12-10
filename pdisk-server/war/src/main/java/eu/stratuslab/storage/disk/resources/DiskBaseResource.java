@@ -30,6 +30,8 @@ import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.CompressedDiskRemoval;
+import eu.stratuslab.storage.disk.utils.DiskUtils;
+import eu.stratuslab.storage.disk.utils.MiscUtils;
 import eu.stratuslab.storage.persistence.Disk;
 import eu.stratuslab.storage.persistence.Disk.DiskType;
 
@@ -221,6 +223,24 @@ public class DiskBaseResource extends BaseResource {
 		}
 
 		info.put("types", types);
+	}
+
+	protected void checkNumberOfBackendsDiskWasCreatedOn(Disk disk) {
+	    int proxiesUsed = disk.getBackendProxiesArray().length;
+	    if (DiskType.MACHINE_IMAGE_ORIGIN == disk.getType()) {
+	    	if (DiskUtils.getBackendProxiesFromConfig().size() != proxiesUsed) {
+	    		String backedns = MiscUtils.join(DiskUtils.getBackendProxiesFromConfig(), ",");
+	    		throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+	    			DiskType.MACHINE_IMAGE_ORIGIN.toString() +
+	    			" should have been created on all the configured backends (" + backedns +
+	    			"), but was created only on " + disk.getBackendProxies());
+	    	}
+	    } else {
+	    	if (proxiesUsed != 1) {
+				throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
+					disk.getType().toString() + " disk should have been created only one backend.");
+	    	}
+	    }
 	}
 
 }

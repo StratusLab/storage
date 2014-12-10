@@ -143,14 +143,10 @@ public class DisksResource extends DiskBaseResource {
                 String.format("DisksResource created new disk: %s",
                         disk.getUuid()));
 
-        if (disk.getBackendProxiesArray().length != 1) {
-        	removeDisk(disk);
-        	throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
-        			"At most one backend proxy should be set on newly created disk.");
-        }
-        String proxy = disk.getBackendProxiesArray()[0];
+        disk.store();
+
         try {
-            initializeContents(disk.getUuid(), proxy, form);
+            initializeContents(disk.getUuid(), disk.getBackendProxiesArray(), form);
         } catch (ResourceException e) {
             removeDisk(disk);
             throw e;
@@ -160,10 +156,12 @@ public class DisksResource extends DiskBaseResource {
         	DiskUtils.distributeAmongAllBackends(disk);
         }
 
+        disk.store();
+
         return disk;
     }
 
-    private void initializeContents(String uuid, String proxy, Form form)
+    private void initializeContents(String uuid, String[] proxies, Form form)
             throws ResourceException {
 
         Map<String, BigInteger> streamInfo = null;
@@ -187,7 +185,7 @@ public class DisksResource extends DiskBaseResource {
             // FIXME: This provides the file information for the download
             // itself. It does NOT actually verify the data on disk. An
             // additional check should probably be added.
-            streamInfo = DiskUtils.copyUrlToVolume(uuid, proxy, url);
+            streamInfo = DiskUtils.copyUrlToVolumes(uuid, proxies, url);
         } catch (IOException e) {
             String msg = "error initializing disk contents from " + url;
 
@@ -254,9 +252,10 @@ public class DisksResource extends DiskBaseResource {
 
     protected void createDisk(Disk disk) {
         DiskUtils.createDisk(disk);
+        checkNumberOfBackendsDiskWasCreatedOn(disk);
     }
 
-    protected void removeDisk(Disk disk) {
+	protected void removeDisk(Disk disk) {
         DiskUtils.removeDisk(disk);
     }
 
