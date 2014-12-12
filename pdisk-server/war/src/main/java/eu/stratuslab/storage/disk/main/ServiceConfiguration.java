@@ -29,6 +29,7 @@ public class ServiceConfiguration {
     // Disk size limits (in GiBs)
     public static final int DISK_SIZE_MIN = 1;
     public final int DISK_SIZE_MAX;
+    public static final int DISK_SIZE_MAX_DEFAULT = 1024;
 
     // Download buffer size in Bytes.
     public final int DOWNLOAD_STREAM_BUFFER_SIZE;
@@ -184,7 +185,7 @@ public class ServiceConfiguration {
         try {
         	return Integer.valueOf(getConfigValue("disk.store.size.max"));
         } catch (ResourceException ex) {
-        	return 1024;
+        	return DISK_SIZE_MAX_DEFAULT;
         } catch (NumberFormatException ex) {
             throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
                     "disk.store.size.max configuration property should be an integer.");
