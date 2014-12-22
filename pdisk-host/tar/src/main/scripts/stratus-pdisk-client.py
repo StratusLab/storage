@@ -561,7 +561,8 @@ class IscsiPersistentDisk(PersistentDisk):
     def _image2iqn(self, s):
         _iqn = re.match(r"(?P<iqn>.*:.*):(?P<lun>.*)", s)
         self.iqn = _iqn.group('iqn')
-        self.lun = _iqn.group('lun')
+        lun_id = int(_iqn.group('lun'))
+        self.lun = lun_id >= 256 and ('0x%04x000000000000' % lun_id) or str(lun_id)
 
 
 class FilePersistentDisk(PersistentDisk):
