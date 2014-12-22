@@ -29,7 +29,13 @@ import ssl
 from StringIO import StringIO
 from urllib import urlencode
 from subprocess import call
+from subprocess import Popen, PIPE
 from time import sleep, gmtime, strftime
+
+def call_with_output(cmd_list):
+    p = Popen(cmd_list, stdout=PIPE)
+    out, err = p.communicate()
+    return out
 
 import sys
 sys.path.append('/var/lib/stratuslab/python')
@@ -205,7 +211,10 @@ class VolumeManagement(object):
     def deleteVolume(self, target, turl):
         _turl = turl.replace('/', '-')
         f = '%s/%s/%s' % (self.directory, target, _turl)
-        os.rmdir(f)
+        try:
+            os.rmdir(f)
+        except:
+            pass
 
     def insertVolume(self, target, turl):
         _turl = turl.replace('/', '-')
@@ -435,23 +444,33 @@ class IscsiPersistentDisk(PersistentDisk):
     _unix_device_path = '/dev/disk/by-path/'
 
     ISCSI_SUCCESS = 0
-    ISCSI_ERR_SESS_EXISTS = 15 # session is logged in
-    ISCSI_ERR_NO_OBJS_FOUND = 21 # no records/targets/sessions/portals found to execute operation on
-    
+    ISCSI_ERR_SESS_EXISTS = 15  # session is logged in
+    ISCSI_ERR_NO_OBJS_FOUND = 21  # no records/targets/sessions/portals found to execute operation on
+
     detach_retcodes_ok = [ISCSI_SUCCESS, ISCSI_ERR_SESS_EXISTS, ISCSI_ERR_NO_OBJS_FOUND]
-    
-    @staticmethod
-    def _rescan_sessions():
-        return call("sudo %s --mode session --rescan" % (iscsiadm), 
-                    shell=True)    
 
     def __init__(self, pdisk_class, turl):
         self.__copy__(pdisk_class)
+        self.iqn = ''
+        self.lun = ''
+        self.sids = []
         self._image2iqn(pdisk_class.image)
         _portal = re.match(r"(?P<server>.*):(?P<port>.*)", self.server)
         self._portal_host = _portal.group('server')
         self._portal_port = _portal.group('port')
         self._hostname = socket.gethostname()
+
+    def _rescan_sessions(self):
+        if not self.sids:
+            call("sudo %s --mode session --rescan" % (iscsiadm),
+                 shell=True)
+        else:
+            for sid in self.sids:
+                self._rescan_session(sid)
+
+    def _rescan_session(self, id):
+        call("sudo %s --mode session --rescan -r %s" % (iscsiadm, id),
+             shell=True)
 
     def _wait_lun_appears(self):
         path = self.image_storage()
@@ -487,17 +506,18 @@ class IscsiPersistentDisk(PersistentDisk):
 
     def attach(self):
         self._login_to_iscsi_target()
+        self._set_sids()
         # Seems to be a problem with the device by path being instantly available.
         self._wait_lun_appears()
 
     def _login_to_iscsi_target(self):
-        self._register_new_target()        
+        self._register_new_target()
         self._login_to_target()
 
     def _register_new_target(self):
-        self._iscsiadm('-o new', 
+        self._iscsiadm('-o new',
                        'attach: error registering iSCSI disk with hypervisor %s' %
-                                                                    self._hostname)        
+                                                                    self._hostname)
 
     def _login_to_target(self):
         cmd = "%s --login" % self._get_iscsiadm_cmd_base()
@@ -524,6 +544,7 @@ class IscsiPersistentDisk(PersistentDisk):
         self.volumeCheck.deleteVolume(filename, options.turl)
 
         if self.volumeCheck.isFree(filename):
+            self._set_sids()
             self._logout_from_iscsi_target()
             # Seems to be a problem with the device by path being instantly unavailable.
             self._wait_lun_disappears()
@@ -536,17 +557,17 @@ class IscsiPersistentDisk(PersistentDisk):
         self._logout_from_target()
         sleep(2)
         self._delete_target_from_db()
-        
+
     def _logout_from_target(self):
-        self._iscsiadm('--logout', 
-                       'detach: error detaching iSCSI disk from hypervisor %s' % self._hostname, 
+        self._iscsiadm('--logout',
+                       'detach: error detaching iSCSI disk from hypervisor %s' % self._hostname,
                        retcodes_ok=self.detach_retcodes_ok)
 
     def _delete_target_from_db(self):
-        self._iscsiadm('-o delete', 
-                       'detach: error unregistering iSCSI disk from hypervisor %s' % self._hostname, 
+        self._iscsiadm('-o delete',
+                       'detach: error unregistering iSCSI disk from hypervisor %s' % self._hostname,
                        retcodes_ok=self.detach_retcodes_ok)
-    
+
     def _get_iscsiadm_cmd_base(self):
         return "sudo %s --mode node --portal %s:%s --target %s" % (
             iscsiadm, self._portal_host, self._portal_port, self.iqn)
@@ -563,6 +584,19 @@ class IscsiPersistentDisk(PersistentDisk):
         self.iqn = _iqn.group('iqn')
         lun_id = int(_iqn.group('lun'))
         self.lun = lun_id >= 256 and ('0x%04x000000000000' % lun_id) or str(lun_id)
+
+    def _set_sids(self):
+        """Set session IDs.  Where the session string:
+        tcp: [8] [hniscsi2]:3260,1063 iqn.1992-08.com.netapp:sn.0c63b0ec631011e39a04123478563412:vs.23
+        and the sessin ID is '[8]' (w/o brakets).
+        """
+        sessions = call_with_output(['sudo', 'iscsiadm', '--mode', 'session'])
+        self.sids = []
+        for session in sessions.split('\n'):
+            session = session.strip()
+            if session.endswith(self.iqn):
+                sid = session.split()[1]
+                self.sids.append(sid.strip('[').strip(']'))
 
 
 class FilePersistentDisk(PersistentDisk):
