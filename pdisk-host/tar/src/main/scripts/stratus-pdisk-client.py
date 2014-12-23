@@ -756,6 +756,9 @@ def do_up_operations(pdisk):
             print >> sys.stderr, "Marking pdisk in volume list file..."
             pdisk.addToVolumeUriList()
         if options.link_to:
+            snapshot_dir = os.path.dirname(options.link_to)
+            if not os.path.exists(snapshot_dir):
+                os.makedirs(snapshot_dir)
             print >> sys.stderr, "Linking disk to %s" % options.link_to
             src = pdisk.image_storage()
             pdisk.link(src, options.link_to)
