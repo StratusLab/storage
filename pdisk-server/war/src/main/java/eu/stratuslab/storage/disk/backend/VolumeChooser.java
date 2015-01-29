@@ -62,7 +62,7 @@ public final class VolumeChooser {
 		if (newValue < 0) {
 			newValue = 0;
 		}
-		volumes.replace(volumeName, newValue);
+		volumes.put(volumeName, newValue);
 	}
 
 	public synchronized void updateVolumes(Map<String, Integer> newVolumes) {
