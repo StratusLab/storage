@@ -10,7 +10,7 @@ import java.util.Set;
 * The state as updated by an external Checker takes precedence over the one internally maintained.
 *
 * The representation of the state is a map (String, Integer):
-* {volumeName1 nbLogicalUnits1, volumeName2 nbLogicalUnits2, ...} 
+* {volumeName1 nbLogicalUnits1, volumeName2 nbLogicalUnits2, ...}
 *
 * Please see Unit tests for exact behavior.
 */
@@ -18,7 +18,7 @@ public final class VolumeChooser {
 
 	private static final int MAX_LUN = 512;
 	// TODO read in config file in constructor
-	
+
 	private static VolumeChooser instance = new VolumeChooser(MAX_LUN);
 
 	protected Map<String, Integer> volumes;
@@ -31,7 +31,7 @@ public final class VolumeChooser {
 
 	public static VolumeChooser getInstance() {
 		return instance;
-	}	
+	}
 
 	public synchronized String requestVolumeName() {
 		checkVolumesKnown();
@@ -45,7 +45,7 @@ public final class VolumeChooser {
 			noResultException();
 		}
 
-		volumes.replace(bestCandidate, volumes.get(bestCandidate) + 1);
+		volumes.put(bestCandidate, volumes.get(bestCandidate) + 1);
 		return bestCandidate;
 	}
 
@@ -83,10 +83,10 @@ public final class VolumeChooser {
 			double percentage = (double)consumed/(double)fullCapacity;
 			return percentage;
 		} else {
-			return -1;	
-		}		
+			return -1;
+		}
 	}
-	
+
 	private String findVolumeNameLeastFilledIn(Set<String> volumeNames) {
 		String result = null;
 		int best = 0;
