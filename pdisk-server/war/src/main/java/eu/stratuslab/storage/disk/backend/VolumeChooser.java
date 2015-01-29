@@ -45,7 +45,7 @@ public final class VolumeChooser {
 			noResultException();
 		}
 
-		volumes.replace(bestCandidate, volumes.get(bestCandidate) + 1);
+		volumes.put(bestCandidate, volumes.get(bestCandidate) + 1);
 		return bestCandidate;
 	}
 
