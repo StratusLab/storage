@@ -8,15 +8,14 @@ import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 public class BackendChecker implements Runnable {
 
-	private final static long UPDATE_SLEEP = 6000;
+	private final static long UPDATE_SLEEP = 60000;
 	private Map<String, Integer> volumes = new HashMap<String, Integer>();
 
-	private static final Logger logger = Logger.getLogger("org.restlet");
+	private static final Logger logger = Logger.getLogger("BackendChecker");
+
+	private BackEndStorage backEndStorage = DiskUtils.getDiskStorage();
 
 	public BackendChecker() {
-		log("Starting...");
-		update();
-		log("Started.");
 	}
 
 	@Override
@@ -27,7 +26,7 @@ public class BackendChecker implements Runnable {
 		}
 	}
 
-	private void update() {
+	public void update() {
 		getMappedLunsInVolumes();
 		updateVolumeChooser();
 	}
@@ -40,16 +39,26 @@ public class BackendChecker implements Runnable {
 
 	private void getMappedLunsInVolumes() {
 		log("Getting mapped LUNs in volumes...");
-		BackEndStorage backend = new BackEndStorage();
-		for (String volume : DiskUtils.getBackendProxiesFromConfig()) {
-			volume = volume.trim();
-			if (volume != null && !volume.isEmpty()) {
-				log("Volume '" + volume + "'");
-    			int luns = backend.getNumberOfMappedLuns(volume);
-    			log("Volume  " + volume + " has " + luns + " mapped LUNs.");
-    			volumes.put(volume, luns);
+		for (String volume : getBackendProxiesFromConfig()) {
+			if (volume != null) {
+				volume = volume.trim();
+				if (!volume.isEmpty()) {
+					int luns = getNumberOfMappedLuns(volume);
+					log("Volume '" + volume + "' has " + luns + " mapped LUNs.");
+					volumes.put(volume, luns);
+				}
 			}
 		}
+		log("Found Vol/mappedLUNs: " + volumes);
+	}
+
+	protected Integer getNumberOfMappedLuns(String volume) {
+		log("Getting # of mapped LUNs in volume '" + volume + "'");
+		return backEndStorage.getNumberOfMappedLuns(volume);
+	}
+
+	protected String[] getBackendProxiesFromConfig() {
+		return DiskUtils.getBackendProxiesFromConfig();
 	}
 
 	private void sleep() {
@@ -63,5 +72,5 @@ public class BackendChecker implements Runnable {
 
 	private void log(String msg) {
 		logger.info("::: BackendChecker: " + msg);
-    }
+	}
 }
