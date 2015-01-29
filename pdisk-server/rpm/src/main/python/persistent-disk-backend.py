@@ -37,7 +37,7 @@ from stratuslab.pdiskbackend.PdiskBackendProxyFactory import PdiskBackendProxyFa
 
 # Keys are supported actions, values are the number of arguments required for the each action
 VALID_ACTIONS = {'check':1, 'create':2, 'delete':1, 'rebase':1,
-                 'snapshot':3, 'getturl':1 , 'map':1 , 'unmap':1}
+                 'snapshot':3, 'getturl':1 , 'map':1 , 'unmap':1, 'mappedluns':0}
 VALID_ACTIONS_STR = ', '.join(VALID_ACTIONS.keys())
 
 def parse_args(parser):
@@ -52,6 +52,7 @@ Parameters:
     action=rebase:   LUN_UUID (will return the rebased LUN UUID on stdout)
     action=snapshot: LUN_UUID New_LUN_UUID Snapshot_Size
     action=unmap:    LUN_UUID
+    action=mappedluns:
 """
     parser.set_usage(usage_text)
     parser.add_option('--config', dest='config_file', action='store',
@@ -146,6 +147,11 @@ elif options.action == 'unmap':
     print_detail("Unmapping LUN...", 1)
     lun = LUN(args[0], proxy=backend_proxy)
     status = lun.unmap()
+elif options.action == 'mappedluns':
+    print_detail("Getting number of mapped LUNs...", 1)
+    lun = LUN(None, proxy=backend_proxy)
+    number_mappedluns = lun.mappedluns()
+    print number_mappedluns
 else:
     abort("Internal error: unimplemented action (%s)" % options.action)
 
