@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.net.URL;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
@@ -15,7 +14,6 @@ import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.FileUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
 
-@Ignore
 public class GZipRequestTest {
 
     String uuid = "junitTest";

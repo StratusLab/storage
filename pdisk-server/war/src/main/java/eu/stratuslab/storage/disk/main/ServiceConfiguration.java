@@ -23,6 +23,7 @@ public class ServiceConfiguration {
     // Configuration file
     public static final String PDISK_SERVER_PORT_PARAM_NAME = "disk.store.server.port";
     public final int PDISK_SERVER_PORT;
+    public final String PDISK_SERVER_PORT_DEFAULT = "8445";
     public static final String DEFAULT_CFG_FILENAME = "pdisk.cfg";
     public static final String DEFAULT_CFG_LOCATION = "/etc/stratuslab/";
 
@@ -56,7 +57,7 @@ public class ServiceConfiguration {
         CONFIGURATION = readConfigFile();
 
         PDISK_SERVER_PORT = Integer
-                .parseInt(getConfigValue(PDISK_SERVER_PORT_PARAM_NAME));
+                .parseInt(getConfigValue(PDISK_SERVER_PORT_PARAM_NAME, PDISK_SERVER_PORT_DEFAULT));
 
         CLOUD_NODE_SSH_KEY = getConfigValue("disk.store.cloud.node.ssh_keyfile");
         CLOUD_NODE_ADMIN = getConfigValue("disk.store.cloud.node.admin");
@@ -113,8 +114,18 @@ public class ServiceConfiguration {
 
     private static File locateConfigFile() {
 
+    	File cfgFile = null;
+    	try {
+        	cfgFile = new File(System.getProperty("pdisk.config.filename", null));
+        	if (cfgFile.exists()) {
+        		return cfgFile;
+        	}
+    	} catch (NullPointerException ex){
+    		//
+    	}
+
         // Default to a local filename, then one in the /etc/stratuslab/ area.
-        File cfgFile = new File(DEFAULT_CFG_FILENAME);
+        cfgFile = new File(DEFAULT_CFG_FILENAME);
         if (!cfgFile.exists()) {
             cfgFile = new File(DEFAULT_CFG_LOCATION + DEFAULT_CFG_FILENAME);
             if (!cfgFile.exists()) {
@@ -132,6 +143,14 @@ public class ServiceConfiguration {
         }
 
         return CONFIGURATION.getProperty(key);
+    }
+
+    private String getConfigValue(String key, String defaultValue) {
+    	try {
+    		return getConfigValue(key);
+    	} catch (ResourceException ex) {
+    		return defaultValue;
+    	}
     }
 
     private String getCacheLocation() {

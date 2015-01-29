@@ -38,6 +38,7 @@ import org.restlet.routing.Router;
 import org.restlet.routing.TemplateRoute;
 import org.restlet.security.ChallengeAuthenticator;
 
+import eu.stratuslab.storage.disk.backend.BackendChecker;
 import eu.stratuslab.storage.disk.resources.DiskResource;
 import eu.stratuslab.storage.disk.resources.DisksResource;
 import eu.stratuslab.storage.disk.resources.HomeResource;
@@ -93,7 +94,14 @@ public class RootApplication extends Application {
 
 		getMetadataService().addExtension("gzip",
 				MediaType.APPLICATION_GNU_ZIP, true);
+
+		startBackendChecker();
 	}
+
+	private void startBackendChecker() {
+		Thread checker = new Thread(new BackendChecker());
+		checker.start();
+    }
 
 	@Override
 	public Restlet createInboundRoot() {

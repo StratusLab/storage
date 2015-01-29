@@ -42,7 +42,7 @@ public final class DiskUtils {
 
 	}
 
-	private static BackEndStorage getDiskStorage() {
+	public static BackEndStorage getDiskStorage() {
 
 		return new BackEndStorage();
 
