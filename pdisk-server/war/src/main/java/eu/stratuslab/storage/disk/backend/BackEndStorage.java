@@ -134,6 +134,14 @@ public final class BackEndStorage {
 		execute("unmap", "Unable to unmap: " + uuid + " from " + proxy, args);
 	}
 
+	public Integer getNumberOfMappedLuns(String proxy) {
+		List<String> args = new ArrayList<String>();
+		prependIscsiProxyParamToArgs(args, proxy);
+
+		String errorMsg = "Failed to get number of mapped LUNs in volume: " + proxy;
+		return Integer.parseInt(execute("mappedluns", errorMsg, args));
+	}
+
 	private void condRandomPrependIscsiProxyParamToArgs(List<String> args, String uuid) {
 		Disk disk = Disk.load(uuid);
 		String[] proxies = disk.getBackendProxiesArray();
