@@ -42,7 +42,7 @@ public final class VolumeChooser {
 		checkVolumesKnown();
 		String bestCandidate = findVolumeNameLeastFilledIn(volumeNames);
 		if (volumes.get(bestCandidate) >= maxLUN) {
-			noResultException();
+			noResultException(bestCandidate + " volume is already full.");
 		}
 
 		volumes.put(bestCandidate, volumes.get(bestCandidate) + 1);
@@ -99,7 +99,7 @@ public final class VolumeChooser {
 		}
 
 		if (result == null) {
-			noResultException();
+			noResultException("Unable to find any free volume for LUN allocation.");
 		}
 
 		return result;
@@ -111,8 +111,8 @@ public final class VolumeChooser {
 		}
 	}
 
-	private void noResultException() {
-		throw new IllegalStateException("Unable to fullfill request");
+	private void noResultException(String msg) {
+		throw new IllegalStateException(msg);
 	}
 
 }
