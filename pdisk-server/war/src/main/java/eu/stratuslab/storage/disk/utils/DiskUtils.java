@@ -20,6 +20,7 @@ import org.restlet.resource.ResourceException;
 
 import eu.stratuslab.marketplace.metadata.MetadataUtils;
 import eu.stratuslab.storage.disk.backend.BackEndStorage;
+import eu.stratuslab.storage.disk.backend.VolumeChooser;
 import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.persistence.Disk;
@@ -73,7 +74,23 @@ public final class DiskUtils {
 		if (DiskType.MACHINE_IMAGE_ORIGIN == disk.getType()) {
 			createDiskOnAllBackends(disk);
 		} else {
-			createDisk(disk, getRandomBackendProxyFromConfig());
+			String proxy;
+			try {
+				proxy = VolumeChooser.getInstance().requestVolumeName();
+			} catch (RuntimeException ex) {
+				try {
+	                Thread.sleep(2000);
+                } catch (InterruptedException e) {
+	                e.printStackTrace();
+                }
+				proxy = VolumeChooser.getInstance().requestVolumeName();
+			}
+			try {
+			createDisk(disk, proxy);
+			} catch (Throwable ex) {
+				VolumeChooser.getInstance().releaseVolume(proxy);
+
+			}
 		}
 	}
 

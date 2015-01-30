@@ -116,7 +116,11 @@ public class DisksResource extends DiskBaseResource {
 
         Disk disk = saveAndInflateFiles();
 
-        DiskUtils.createAndPopulateDiskLocal(disk);
+        try {
+	        DiskUtils.createAndPopulateDiskLocal(disk);
+        } catch (Throwable ex) {
+			throw new ResourceException(Status.SERVER_ERROR_INTERNAL, ex);
+        }
         disk.store();
 
         redirectSeeOther(getBaseUrl() + "/disks/" + disk.getUuid());
