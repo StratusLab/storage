@@ -384,21 +384,10 @@ public class Disk implements Serializable {
 		return getBackendProxies().split(",");
 	}
 
-	public String getRandomBackendProxy() {
+	public String getBackendProxy() {
 		return VolumeChooser.getInstance().requestVolumeNameWithRetryFrom(getBackendProxiesArray());		
 	}
 
-	// TODO remove?
-	public String getRandomBackendProxy2() {
-		String[] proxies = getBackendProxiesArray();
-		if (proxies.length == 0) {
-			return "";
-		} else {
-    		int ind = new Random().nextInt(proxies.length);
-    		return proxies[ind];
-		}
-	}
-	
 	public void setBackendProxies(String proxies) {
 		this.backenproxies = proxies.replaceAll(" ", "");
 	}
