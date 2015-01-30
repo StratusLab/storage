@@ -99,7 +99,9 @@ public class RootApplication extends Application {
 	}
 
 	private void startBackendChecker() {
-		Thread checker = new Thread(new BackendChecker());
+		BackendChecker bc = new BackendChecker();
+		bc.update();
+		Thread checker = new Thread(bc);
 		checker.start();
     }
 
