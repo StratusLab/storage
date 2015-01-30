@@ -132,6 +132,7 @@ public final class BackEndStorage {
 		prependIscsiProxyParamToArgs(args, proxy);
 
 		execute("unmap", "Unable to unmap: " + uuid + " from " + proxy, args);
+		VolumeChooser.getInstance().releaseVolume(proxy);
 	}
 
 	public Integer getNumberOfMappedLuns(String proxy) {

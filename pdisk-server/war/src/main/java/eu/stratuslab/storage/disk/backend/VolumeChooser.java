@@ -2,7 +2,7 @@ package eu.stratuslab.storage.disk.backend;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.logging.Logger;
 
 /**
 * Chooses the least filled volume (according to its own known state).
@@ -16,6 +16,11 @@ import java.util.Set;
 */
 public final class VolumeChooser {
 
+	private static final Logger logger = Logger.getLogger(VolumeChooser.class.getName());
+	
+	private static final int MIN_RETRY_WAIT_MS = 500; 
+	private static final int MAX_RETRY_WAIT_MS = 1500; 
+	
 	private static final int MAX_LUN = 512;
 	// TODO read in config file in constructor
 
@@ -33,12 +38,32 @@ public final class VolumeChooser {
 		return instance;
 	}
 
+	public String requestVolumeNameWithRetry() {		
+		return requestVolumeNameWithRetryFrom(volumes.keySet().toArray(new String[0]));		
+	}
+	
+	public String requestVolumeNameWithRetryFrom(String[] volumeNames) {
+		try {
+			return requestVolumeNameFrom(volumeNames);
+		} catch (IllegalStateException ise) {
+			
+			long randomTimeToWait = (long)(MIN_RETRY_WAIT_MS + Math.random()*(MAX_RETRY_WAIT_MS-MIN_RETRY_WAIT_MS));			
+			logger.info("Failed, will retry in "+ randomTimeToWait + " ms");			
+			try {
+				Thread.sleep(randomTimeToWait);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			return requestVolumeNameFrom(volumeNames);			
+		}
+	}
+	
 	public synchronized String requestVolumeName() {
-		checkVolumesKnown();
-		return requestVolumeNameFrom(volumes.keySet());
+		checkVolumesKnown();		
+		return requestVolumeNameFrom(volumes.keySet().toArray(new String[0]));
 	}
 
-	public synchronized String requestVolumeNameFrom(Set<String> volumeNames) {
+	public synchronized String requestVolumeNameFrom(String[] volumeNames) {
 		checkVolumesKnown();
 		String bestCandidate = findVolumeNameLeastFilledIn(volumeNames);
 		if (volumes.get(bestCandidate) >= maxLUN) {
@@ -53,7 +78,7 @@ public final class VolumeChooser {
 		checkVolumesKnown();
 
 		if (!volumes.containsKey(volumeName)) {
-			// log ignored request
+			logger.info("Releasing unknown volume '" + volumeName + "'");
 			return;
 		}
 
@@ -63,6 +88,7 @@ public final class VolumeChooser {
 			newValue = 0;
 		}
 		volumes.put(volumeName, newValue);
+		logger.info("Released '" + volumeName + "'");
 	}
 
 	public synchronized void updateVolumes(Map<String, Integer> newVolumes) {
@@ -87,7 +113,7 @@ public final class VolumeChooser {
 		}
 	}
 
-	private String findVolumeNameLeastFilledIn(Set<String> volumeNames) {
+	private String findVolumeNameLeastFilledIn(String[] volumeNames) {
 		String result = null;
 		int best = 0;
 		for (String volumeName : volumeNames) {

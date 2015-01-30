@@ -161,7 +161,7 @@ public class MountsResource extends BaseResource {
 			BackEndStorage backEndStorage = new BackEndStorage();
 			DiskUtils.attachHotplugDisk(serviceName(), servicePort(), node,
 					vmId, disk.getUuid(), target,
-					backEndStorage.getTurl(disk.getUuid(), disk.getRandomBackendProxy()));
+					backEndStorage.getTurl(disk.getUuid(), disk.getBackendProxy()));
 		}
 
 		// Add this metadata only AFTER the device has been successfully added.

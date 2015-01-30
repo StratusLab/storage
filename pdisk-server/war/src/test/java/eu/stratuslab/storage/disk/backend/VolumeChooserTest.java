@@ -5,10 +5,8 @@ import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -28,7 +26,7 @@ public class VolumeChooserTest {
 
 	@Test(expected = IllegalStateException.class)
 	public void requestVolumeNameFromWhenNoUpdatesWasDoneShouldFail() throws Exception {
-		VolumeChooser.getInstance().requestVolumeNameFrom(toSet("v1", "v2"));
+		VolumeChooser.getInstance().requestVolumeNameFrom(new String[]{"v1", "v2"});
 	}
 
 	@Test
@@ -54,7 +52,7 @@ public class VolumeChooserTest {
 	public void requestVolumeNamesFromShouldChooseLeastFilledInGivenSet() throws Exception {
 		VolumeChooser vc = vc(20, Arrays.asList("v1", "v2", "v3"), Arrays.asList(10, 5, 7));
 
-		Set<String> v1v3 = toSet("v1", "v3");
+		String[] v1v3 = new String[]{"v1", "v3"};
 
 		// 10 5 7
 		assertEquals("v3", vc.requestVolumeNameFrom(v1v3));
@@ -66,7 +64,7 @@ public class VolumeChooserTest {
 	@Test(expected = IllegalStateException.class)
 	public void requestVolumeNamesFromWhenVolumeNotKnown() throws Exception {
 		VolumeChooser vc = vc(20, Arrays.asList("v1", "v2"), Arrays.asList(3, 4));
-		vc.requestVolumeNameFrom(toSet("vXXX"));
+		vc.requestVolumeNameFrom(new String[]{"vXXX"});
 	}
 
 	@Test
@@ -145,7 +143,4 @@ public class VolumeChooserTest {
 		return vc;
 	}
 
-	private static Set<String> toSet(String... names) {
-		return new HashSet<String>(Arrays.asList(names));
-	}
 }
