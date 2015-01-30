@@ -99,7 +99,7 @@ public final class VolumeChooser {
 		}
 	}
 
-	public double percentageConsumed() {
+	public synchronized double percentageConsumed() {
 		if (volumes!=null) {
 			int fullCapacity = volumes.size() * maxLUN;
 			int consumed = 0;
