@@ -269,11 +269,7 @@ public class DiskResource extends DiskBaseResource {
 	}
 
 	private String getBackendProxy(Disk disk) {
-		String proxy = disk.getRandomBackendProxy();
-		if (proxy.isEmpty()) {
-			proxy = DiskUtils.getFirstBackendProxyFromConfig();
-		}
-		return proxy;
+		return disk.getBackendProxy();		
 	}
 
 	@Delete("html")

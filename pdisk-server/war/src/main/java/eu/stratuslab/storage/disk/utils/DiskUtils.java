@@ -74,22 +74,13 @@ public final class DiskUtils {
 		if (DiskType.MACHINE_IMAGE_ORIGIN == disk.getType()) {
 			createDiskOnAllBackends(disk);
 		} else {
-			String proxy;
+
+			String proxy = VolumeChooser.getInstance()
+					.requestVolumeNameWithRetry();
 			try {
-				proxy = VolumeChooser.getInstance().requestVolumeName();
-			} catch (RuntimeException ex) {
-				try {
-	                Thread.sleep(2000);
-                } catch (InterruptedException e) {
-	                e.printStackTrace();
-                }
-				proxy = VolumeChooser.getInstance().requestVolumeName();
-			}
-			try {
-			createDisk(disk, proxy);
+				createDisk(disk, proxy);
 			} catch (Throwable ex) {
 				VolumeChooser.getInstance().releaseVolume(proxy);
-
 			}
 		}
 	}
@@ -126,13 +117,10 @@ public final class DiskUtils {
 
 		BackEndStorage diskStorage = getDiskStorage();
 
-		Disk cowDisk = createCowDisk(disk);
+		Disk cowDisk = defineCowDisk(disk);
 
-		String proxy = disk.getRandomBackendProxy();
-		// All old origins are on the first backend.
-		if (proxy.isEmpty()) {
-			proxy = getFirstBackendProxyFromConfig();
-		}
+		String proxy = disk.getBackendProxy();		
+		
 		diskStorage.createCopyOnWrite(disk.getUuid(), cowDisk.getUuid(),
 				disk.getSize(), proxy);
 
@@ -146,7 +134,7 @@ public final class DiskUtils {
 		return cowDisk;
 	}
 
-	protected static Disk createCowDisk(Disk disk) {
+	protected static Disk defineCowDisk(Disk disk) {
 		Disk cowDisk = new Disk();
 		cowDisk.setType(DiskType.DATA_IMAGE_LIVE);
 		cowDisk.setBaseDiskUuid(disk.getUuid());
@@ -213,7 +201,7 @@ public final class DiskUtils {
 					FileUtils.copyFile(linkBaseDisk, linkNewDisk);
 				} finally {
 					detachDiskFromThisHost(uuid, proxy);
-					getDiskStorage().unmap(uuid, proxy);
+					getDiskStorage().unmap(uuid, proxy);					
 					File linkNewDiskFile = new File(linkNewDisk);
 					if (!linkNewDiskFile.delete()) {
 						LOGGER.warning("Failed to delete: " + linkNewDisk);
@@ -239,7 +227,7 @@ public final class DiskUtils {
     	for (String proxy : disk.getBackendProxiesArray()) {
     		getDiskStorage().unmap(uuid, proxy);
     		getDiskStorage().delete(uuid, proxy);
-    		disk.removeBackendProxy(proxy);
+    		disk.removeBackendProxy(proxy);    		
     	}
 	}
 
@@ -440,7 +428,7 @@ public final class DiskUtils {
 			FileUtils.copyFile(cachedDisk, diskLocation);
 		} finally {
 			detachDiskFromThisHost(uuid, proxy);
-			getDiskStorage().unmap(uuid, proxy);
+			getDiskStorage().unmap(uuid, proxy);			
 		}
 	}
 
@@ -452,7 +440,7 @@ public final class DiskUtils {
 			return DownloadUtils.copyUrlContentsToFile(url, diskLocation);
 		} finally {
 			detachDiskFromThisHost(uuid, proxy);
-			getDiskStorage().unmap(uuid, proxy);
+			getDiskStorage().unmap(uuid, proxy);			
 		}
 	}
 
@@ -469,7 +457,7 @@ public final class DiskUtils {
 		} finally {
 			for (String proxy : proxies) {
     			detachDiskFromThisHost(uuid, proxy);
-    			getDiskStorage().unmap(uuid, proxy);
+    			getDiskStorage().unmap(uuid, proxy);    			
 			}
 		}
 	}

@@ -21,6 +21,7 @@ import javax.persistence.Query;
 
 import org.simpleframework.xml.ElementMap;
 
+import eu.stratuslab.storage.disk.backend.VolumeChooser;
 import eu.stratuslab.storage.disk.resources.BaseResource.DiskVisibility;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 import eu.stratuslab.storage.disk.utils.MiscUtils;
@@ -384,6 +385,11 @@ public class Disk implements Serializable {
 	}
 
 	public String getRandomBackendProxy() {
+		return VolumeChooser.getInstance().requestVolumeNameWithRetryFrom(getBackendProxiesArray());		
+	}
+
+	// TODO remove?
+	public String getRandomBackendProxy2() {
 		String[] proxies = getBackendProxiesArray();
 		if (proxies.length == 0) {
 			return "";
@@ -392,7 +398,7 @@ public class Disk implements Serializable {
     		return proxies[ind];
 		}
 	}
-
+	
 	public void setBackendProxies(String proxies) {
 		this.backenproxies = proxies.replaceAll(" ", "");
 	}
