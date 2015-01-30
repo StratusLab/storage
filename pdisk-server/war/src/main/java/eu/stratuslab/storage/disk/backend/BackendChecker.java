@@ -6,6 +6,11 @@ import java.util.logging.Logger;
 
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
+/**
+ * Instantiate and call update() to fully initiate the instance, then feed it to
+ * a thread runner.
+ *
+ */
 public class BackendChecker implements Runnable {
 
 	private final static long UPDATE_SLEEP = 60000;
