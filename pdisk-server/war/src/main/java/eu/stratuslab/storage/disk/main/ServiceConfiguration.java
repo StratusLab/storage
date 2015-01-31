@@ -20,7 +20,7 @@ public class ServiceConfiguration {
     // Configuration file
     public static final String PDISK_SERVER_PORT_PARAM_NAME = "disk.store.server.port";
     public final int PDISK_SERVER_PORT;
-    public final String PDISK_SERVER_PORT_DEFAULT = "8445";
+    public static final String PDISK_SERVER_PORT_DEFAULT = "8445";
     public static final String DEFAULT_CFG_FILENAME = "pdisk.cfg";
     public static final String DEFAULT_CFG_LOCATION = "/etc/stratuslab/";
 
