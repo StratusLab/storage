@@ -1,8 +1,6 @@
 package eu.stratuslab.storage.disk.backend;
 
-import static org.junit.Assert.*;
-
-import java.util.Map;
+import java.net.URL;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -12,6 +10,9 @@ public class BackendCheckerTest {
 
 	@Before
 	public void resetVolumeChooser() {
+		URL configFile = this.getClass().getResource("/pdisk.test.cfg");
+		System.setProperty("pdisk.config.filename", configFile.getFile());
+		
 		VolumeChooser.getInstance().volumes = null;
 	}
 

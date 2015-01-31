@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 import eu.stratuslab.storage.disk.utils.DiskUtils;
 
 /**
@@ -13,7 +14,7 @@ import eu.stratuslab.storage.disk.utils.DiskUtils;
  */
 public class BackendChecker implements Runnable {
 
-	private final static long UPDATE_SLEEP = 60000;
+	private final static long UPDATE_SLEEP = ServiceConfiguration.getInstance().ISCSI_CHECKER_UPDATE_SLEEP;
 	private Map<String, Integer> volumes = new HashMap<String, Integer>();
 
 	private static final Logger logger = Logger.getLogger("BackendChecker");

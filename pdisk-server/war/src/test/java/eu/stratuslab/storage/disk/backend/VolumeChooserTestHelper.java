@@ -6,9 +6,8 @@ import java.util.Map;
 
 public class VolumeChooserTestHelper {
 
-	public static VolumeChooser vc(int threshold, List<String> names, List<Integer> values) {
-		VolumeChooser vc = VolumeChooser.getInstance();
-		vc.maxLUN = threshold;
+	public static VolumeChooser vc(List<String> names, List<Integer> values) {
+		VolumeChooser vc = VolumeChooser.getInstance();		
 		vc.updateVolumes(volumes(names, values));
 		return vc;
 	}

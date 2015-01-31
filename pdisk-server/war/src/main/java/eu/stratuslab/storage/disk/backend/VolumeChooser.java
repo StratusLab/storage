@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import eu.stratuslab.storage.disk.main.ServiceConfiguration;
+
 /**
 * Chooses the least filled volume (according to its own known state).
 * The state must first be updated (by a "Checker") before any request.
@@ -18,11 +20,9 @@ public final class VolumeChooser {
 
 	private static final Logger logger = Logger.getLogger(VolumeChooser.class.getName());
 	
-	private static final int MIN_RETRY_WAIT_MS = 500; 
-	private static final int MAX_RETRY_WAIT_MS = 1500; 
-	
-	private static final int MAX_LUN = 512;
-	// TODO read in config file in constructor
+	private static final int MIN_RETRY_WAIT_MS = ServiceConfiguration.getInstance().CHOOSER_MIN_RETRY_WAIT_MS; 
+	private static final int MAX_RETRY_WAIT_MS = ServiceConfiguration.getInstance().CHOOSER_MAX_RETRY_WAIT_MS; 
+	private static final int MAX_LUN = ServiceConfiguration.getInstance().ISCSI_MAX_LUN;
 
 	private static VolumeChooser instance = new VolumeChooser(MAX_LUN);
 
@@ -32,6 +32,9 @@ public final class VolumeChooser {
 
 	private VolumeChooser(int maxLun) {
 		this.maxLUN = maxLun;
+		logger.info("VolumeChooser::Max LUNs =" + maxLun);
+		logger.info("VolumeChooser::min/max retry wait in ms="
+				+ MIN_RETRY_WAIT_MS + "/" + MAX_RETRY_WAIT_MS);
 	}
 
 	public static VolumeChooser getInstance() {

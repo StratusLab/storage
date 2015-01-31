@@ -6,9 +6,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 
 import org.restlet.data.Status;
@@ -52,10 +49,26 @@ public class ServiceConfiguration {
 
     public final int UPLOAD_COMPRESSED_IMAGE_MAX_BYTES;
 
-    private ServiceConfiguration() {
-
+    // ISCI
+    public final int ISCSI_MAX_LUN;
+    private static final String ISCSI_MAX_LUN_PARAM_NAME="disk.store.iscsi.max.lun";
+    private static final String ISCSI_MAX_LUN_DEFAULT = "505";
+    
+    public final int ISCSI_CHECKER_UPDATE_SLEEP; 
+    private static final String ISCSI_CHECKER_UPDATE_SLEEP_PARAM_NAME = "disk.store.iscsi.checker.update.sleep";
+    private static final String ISCSI_CHECKER_UPDATE_SLEEP_DEFAULT = "60000";
+    
+    public final int CHOOSER_MIN_RETRY_WAIT_MS;
+    private static final String CHOOSER_MIN_RETRY_WAIT_MS_PARAM_NAME = "disk.store.iscsi.chooser.min.retry.wait.ms";
+    private static final String CHOOSER_MIN_RETRY_WAIT_MS_DEFAULT = "500";
+    
+    public final int CHOOSER_MAX_RETRY_WAIT_MS; 
+    private static final String CHOOSER_MAX_RETRY_WAIT_MS_PARAM_NAME = "disk.store.iscsi.chooser.max.retry.wait.ms";
+    private static final String CHOOSER_MAX_RETRY_WAIT_MS_DEFAULT = "1200";
+    
+    private ServiceConfiguration() {    	
         CONFIGURATION = readConfigFile();
-
+        
         PDISK_SERVER_PORT = Integer
                 .parseInt(getConfigValue(PDISK_SERVER_PORT_PARAM_NAME, PDISK_SERVER_PORT_DEFAULT));
 
@@ -69,12 +82,24 @@ public class ServiceConfiguration {
         DISK_SIZE_MAX = getDiskSizeMax();
 
         CACHE_LOCATION = getCacheLocation();
-
+        
         GZIP_CMD = getCommand("disk.store.utils.gzip");
 
         UPLOAD_COMPRESSED_IMAGE_MAX_BYTES = 10240000;
 
         DOWNLOAD_STREAM_BUFFER_SIZE = getDownloadStreamBufferSize();
+        
+        ISCSI_MAX_LUN = Integer.parseInt(getConfigValue(ISCSI_MAX_LUN_PARAM_NAME, ISCSI_MAX_LUN_DEFAULT));
+		ISCSI_CHECKER_UPDATE_SLEEP = Integer.parseInt(getConfigValue(
+				ISCSI_CHECKER_UPDATE_SLEEP_PARAM_NAME,
+				ISCSI_CHECKER_UPDATE_SLEEP_DEFAULT));
+		
+		CHOOSER_MIN_RETRY_WAIT_MS = Integer.parseInt(getConfigValue(
+				CHOOSER_MIN_RETRY_WAIT_MS_PARAM_NAME,
+				CHOOSER_MIN_RETRY_WAIT_MS_DEFAULT));
+		CHOOSER_MAX_RETRY_WAIT_MS = Integer.parseInt(getConfigValue(
+				CHOOSER_MAX_RETRY_WAIT_MS_PARAM_NAME,
+				CHOOSER_MAX_RETRY_WAIT_MS_DEFAULT));		
     }
 
 	private int getDownloadStreamBufferSize() {
@@ -92,9 +117,8 @@ public class ServiceConfiguration {
         return instance;
     }
 
-    private static Properties readConfigFile() {
-        File cfgFile = locateConfigFile();
-
+    private static Properties readConfigFile() {    	
+        File cfgFile = locateConfigFile();      
         Properties properties = new Properties();
 
         Reader reader = null;
@@ -113,10 +137,10 @@ public class ServiceConfiguration {
     }
 
     private static File locateConfigFile() {
-
+    	
     	File cfgFile = null;
-    	try {
-        	cfgFile = new File(System.getProperty("pdisk.config.filename", null));
+    	try {    		
+        	cfgFile = new File(System.getProperty("pdisk.config.filename", null));        	
         	if (cfgFile.exists()) {
         		return cfgFile;
         	}

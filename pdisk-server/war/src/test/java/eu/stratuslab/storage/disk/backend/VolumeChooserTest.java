@@ -1,11 +1,12 @@
 package eu.stratuslab.storage.disk.backend;
 
+import static eu.stratuslab.storage.disk.backend.VolumeChooserTestHelper.vc;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
@@ -16,6 +17,9 @@ public class VolumeChooserTest {
 
 	@Before
 	public void resetVolumes() {
+		URL configFile = this.getClass().getResource("/pdisk.test.cfg");
+		System.setProperty("pdisk.config.filename", configFile.getFile());
+		
 		VolumeChooser.getInstance().volumes = null;
 	}
 
@@ -31,7 +35,7 @@ public class VolumeChooserTest {
 
 	@Test
 	public void requestVolumeNameShouldChooseLeastFilled() throws Exception {
-		VolumeChooser vc = vc(20, Arrays.asList("v1", "v2"), Arrays.asList(1, 0));
+		VolumeChooser vc = vc(Arrays.asList("v1", "v2"), Arrays.asList(1, 0));
 
 		assertEquals("v2", vc.requestVolumeName());
 
@@ -49,13 +53,13 @@ public class VolumeChooserTest {
 	}
 
 	@Test
-	public void requestVolumeNamesFromShouldChooseLeastFilledInGivenSet() throws Exception {
-		VolumeChooser vc = vc(20, Arrays.asList("v1", "v2", "v3"), Arrays.asList(10, 5, 7));
+	public void requestVolumeNameWithRetryFromShouldChooseLeastFilledInGivenSet() throws Exception {
+		VolumeChooser vc = vc(Arrays.asList("v1", "v2", "v3"), Arrays.asList(10, 5, 7));
 
 		String[] v1v3 = new String[]{"v1", "v3"};
 
 		// 10 5 7
-		assertEquals("v3", vc.requestVolumeNameFrom(v1v3));
+		assertEquals("v3", vc.requestVolumeNameWithRetryFrom(v1v3));
 		// 10 5 8
 		assertEquals("v2", vc.requestVolumeName());
 		// 10 6 8
@@ -63,13 +67,13 @@ public class VolumeChooserTest {
 
 	@Test(expected = IllegalStateException.class)
 	public void requestVolumeNamesFromWhenVolumeNotKnown() throws Exception {
-		VolumeChooser vc = vc(20, Arrays.asList("v1", "v2"), Arrays.asList(3, 4));
+		VolumeChooser vc = vc(Arrays.asList("v1", "v2"), Arrays.asList(3, 4));
 		vc.requestVolumeNameFrom(new String[]{"vXXX"});
 	}
 
 	@Test
 	public void requestVolumeShouldTakeIntoAccountUpdateVolumes() throws Exception {
-		VolumeChooser vc = vc(20, Arrays.asList("v1", "v2", "v3"), Arrays.asList(10, 5, 7));
+		VolumeChooser vc = vc(Arrays.asList("v1", "v2", "v3"), Arrays.asList(10, 5, 7));
 
 		// 10 5 7
 		assertEquals("v2", vc.requestVolumeName());
@@ -88,7 +92,7 @@ public class VolumeChooserTest {
 
 	@Test
 	public void releaseVolumeShouldActuallyMakePlace() throws Exception {
-		VolumeChooser vc = vc(20, Arrays.asList("v1", "v2"), Arrays.asList(1, 3));
+		VolumeChooser vc = vc(Arrays.asList("v1", "v2"), Arrays.asList(1, 3));
 		// 1 3
 		vc.releaseVolume("v2");
 		vc.releaseVolume("v2");
@@ -97,22 +101,22 @@ public class VolumeChooserTest {
 		assertEquals("v2", vc.requestVolumeName());
 		// 1 1
 	}
-
+	
 	@Test
 	public void unknownReleaseVolumeShouldBeIgnored() throws Exception {
-		VolumeChooser vc = vc(20, Arrays.asList("v1", "v2"), Arrays.asList(1, 3));
+		VolumeChooser vc = vc(Arrays.asList("v1", "v2"), Arrays.asList(1, 3));
 		vc.releaseVolume("v1234");
 		assertEquals("v1", vc.requestVolumeName());
 	}
 
 	@Test
 	public void whenFullShouldThrowException() throws Exception {
-		VolumeChooser vc = vc(10, Arrays.asList("v1"), Arrays.asList(0));
+		VolumeChooser vc = vc(Arrays.asList("v1"), Arrays.asList(0));
 		// 0
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < vc.maxLUN; i++) {
 			assertEquals("v1", vc.requestVolumeName());
 		}
-		// 10
+		// v1 is now full
 		try {
 			vc.requestVolumeName();
 			fail("should have raised an exception");
@@ -122,25 +126,8 @@ public class VolumeChooserTest {
 
 	@Test
 	public void showPercentage() throws Exception {
-		VolumeChooser vc = vc(10, Arrays.asList("v1", "v2", "v3"), Arrays.asList(50, 70, 65));
-		vc.maxLUN = 100;		
-		assertEquals((double)(50+70+65)/(3*100.0), vc.percentageConsumed(), 1e-6);		
-	}
-	
-	private Map<String, Integer> volumes(List<String> names, List<Integer> values) {
-		HashMap<String, Integer> result = new HashMap<String, Integer>();
-		int i = 0;
-		for (String name : names) {
-			result.put(name, values.get(i++));
-		}
-		return result;
-	}
-
-	private VolumeChooser vc(int threshold, List<String> names, List<Integer> values) {
-		VolumeChooser vc = VolumeChooser.getInstance();
-		vc.maxLUN = threshold;
-		vc.updateVolumes(volumes(names, values));
-		return vc;
+		VolumeChooser vc = vc(Arrays.asList("v1", "v2", "v3"), Arrays.asList(50, 70, 65));		
+		assertEquals((double)(50+70+65)/(3*vc.maxLUN), vc.percentageConsumed(), 1e-6);		
 	}
 
 }
