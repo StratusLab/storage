@@ -24,8 +24,15 @@ public class DiskView {
 
 	private String identifier;
 
+	private String type;
+	
 	public DiskView(String uuid, String tag, long size, int usersCount,
 			String owner, String quarantine, String identifier) {
+		this(uuid, tag, size, usersCount, owner, quarantine, identifier, "");
+	}
+
+	public DiskView(String uuid, String tag, long size, int usersCount,
+					String owner, String quarantine, String identifier, String type) {
 		this.uuid = uuid;
 		this.tag = tag;
 		this.size = size;
@@ -33,8 +40,9 @@ public class DiskView {
 		this.owner = owner;
 		this.quarantine = quarantine;
 		this.setIdentifier(identifier);
+		this.type = type;
 	}
-
+	
 	@Root(name = "list")
 	public static class DiskViewList {
 
@@ -90,8 +98,9 @@ public class DiskView {
 		this.identifier = identifier;
 	}
 
-	public String getIdentifier() {
-		return identifier;
-	}
+	public String getIdentifier() { return identifier; }
 
+	public void setType(String type) { this.type = type; }
+
+	public String getType() { return type; }
 }

@@ -127,7 +127,7 @@ public class Disk implements Serializable {
 		for (Disk d : disks) {
 			views.add(new DiskView(d.getUuid(), d.getTag(), d.getSize(), d
 					.getUsersCount(), d.getOwner(), d.getQuarantine(), d
-					.getIdentifier()));
+					.getIdentifier(), d.getType().name()));
 		}
 		return views;
 	}
