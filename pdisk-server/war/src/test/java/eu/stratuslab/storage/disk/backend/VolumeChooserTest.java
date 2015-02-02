@@ -72,6 +72,21 @@ public class VolumeChooserTest {
 	}
 
 	@Test
+	public void partialUpdateVolumes() throws Exception {
+		VolumeChooser vc = vc(Arrays.asList("v1"), Arrays.asList(0));		
+		// 0
+		assertEquals("v1", vc.requestVolumeName());
+		// 1
+		
+		Map<String, Integer> updateV2 = new HashMap<String, Integer>();
+		updateV2.put("v2", 0);
+		vc.updateVolumes(updateV2);
+		// 1 0
+		assertEquals("v2", vc.requestVolumeName());
+		// 1 1
+	}
+	
+	@Test
 	public void requestVolumeShouldTakeIntoAccountUpdateVolumes() throws Exception {
 		VolumeChooser vc = vc(Arrays.asList("v1", "v2", "v3"), Arrays.asList(10, 5, 7));
 
