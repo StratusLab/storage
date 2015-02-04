@@ -29,9 +29,10 @@ public class BackendChecker {
 	
 	public BackendChecker(BackEndStorage backEndStorage) {
 		this.backEndStorage = backEndStorage;
+		init();
 	}	
 	
-	public void init() {
+	private void init() {
 		createCheckers();
 		checkOnceAndWaitAllEnded();
 		checkContinous();

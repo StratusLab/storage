@@ -99,8 +99,7 @@ public class RootApplication extends Application {
 	}
 
 	private void startBackendChecker() {
-		BackendChecker bc = new BackendChecker();
-		bc.init();
+		new BackendChecker();		
     }
 
 	@Override

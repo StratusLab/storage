@@ -72,12 +72,11 @@ public class BackendCheckerTest {
 			final List<Integer> values) {
 		BackEndStorage backEnd = new BackEndStorageMock(volumes, values);
 
-		BackendChecker bc = new BackendChecker(backEnd) {
+		new BackendChecker(backEnd) {
 			protected String[] getBackendProxiesFromConfig() {
 				return volumes.toArray(new String[0]);
 			}
-		};
-		bc.init();
+		};		
 	}
 
 }
