@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.eclipse.jetty.util.log.Log;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
 
@@ -83,7 +82,12 @@ public final class VolumeChooser {
 			noResultException(bestCandidate + " volume is already full.");
 		}
 
-		volumes.put(bestCandidate, volumes.get(bestCandidate) + 1);
+		int newValue = volumes.get(bestCandidate) + 1;
+		volumes.put(bestCandidate, newValue);
+		
+		logger.info("Serving volume '" + bestCandidate + "', current LUN="
+				+ newValue);
+		
 		return bestCandidate;
 	}
 
