@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.restlet.resource.ResourceException;
 
 public class VolumeChooserStressTest {
 
@@ -220,7 +221,7 @@ public class VolumeChooserStressTest {
 						.requestVolumeNameWithRetry();
 				assertNotNull(volumeName);
 				collector.success();
-			} catch (IllegalStateException isa) {
+			} catch (ResourceException isa) {
 				collector.fail();
 			}
 		}
@@ -274,7 +275,7 @@ public class VolumeChooserStressTest {
 					assertNotNull(volumeName);
 					collector.success();
 					collector.recordDuration(elapsed);
-				} catch (IllegalStateException isa) {
+				} catch (ResourceException re) {
 					collector.fail();
 				}
 			}

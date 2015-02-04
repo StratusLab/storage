@@ -11,6 +11,7 @@ import java.util.HashMap;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.restlet.resource.ResourceException;
 
 public class VolumeChooserTest {
 
@@ -22,12 +23,12 @@ public class VolumeChooserTest {
 		VolumeChooser.getInstance().volumes = new HashMap<String, Integer>();
 	}
 
-	@Test(expected = IllegalStateException.class)
+	@Test(expected = ResourceException.class)
 	public void requestVolumeNameWhenNoUpdatesWasDoneShouldFail() throws Exception {
 		VolumeChooser.getInstance().requestVolumeName();
 	}
 
-	@Test(expected = IllegalStateException.class)
+	@Test(expected = ResourceException.class)
 	public void requestVolumeNameFromWhenNoUpdatesWasDoneShouldFail() throws Exception {
 		VolumeChooser.getInstance().requestVolumeNameFrom(new String[]{"v1", "v2"});
 	}
@@ -64,7 +65,7 @@ public class VolumeChooserTest {
 		// 10 6 8
 	}
 
-	@Test(expected = IllegalStateException.class)
+	@Test(expected = ResourceException.class)
 	public void requestVolumeNamesFromWhenVolumeNotKnown() throws Exception {
 		VolumeChooser vc = vc(Arrays.asList("v1", "v2"), Arrays.asList(3, 4));
 		vc.requestVolumeNameFrom(new String[]{"vXXX"});
@@ -130,7 +131,7 @@ public class VolumeChooserTest {
 		try {
 			vc.requestVolumeName();
 			fail("should have raised an exception");
-		} catch (IllegalStateException iaeIgnore) {
+		} catch (ResourceException iaeIgnore) {
 		}
 	}
 

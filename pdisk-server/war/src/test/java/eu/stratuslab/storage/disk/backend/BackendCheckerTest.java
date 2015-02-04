@@ -9,6 +9,7 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.restlet.resource.ResourceException;
 
 public class BackendCheckerTest {
 
@@ -36,7 +37,7 @@ public class BackendCheckerTest {
 		}
 	}
 
-	@Test(expected = IllegalStateException.class)
+	@Test(expected = ResourceException.class)
 	public void testBackendCheckerEmpty() {
 
 		final List<String> volumes = Arrays.asList();
