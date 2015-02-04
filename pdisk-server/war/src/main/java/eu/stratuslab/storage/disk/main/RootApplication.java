@@ -100,9 +100,7 @@ public class RootApplication extends Application {
 
 	private void startBackendChecker() {
 		BackendChecker bc = new BackendChecker();
-		bc.update();
-		Thread checker = new Thread(bc);
-		checker.start();
+		bc.init();
     }
 
 	@Override

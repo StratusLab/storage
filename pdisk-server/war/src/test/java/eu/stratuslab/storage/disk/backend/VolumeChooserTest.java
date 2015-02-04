@@ -20,7 +20,7 @@ public class VolumeChooserTest {
 		URL configFile = this.getClass().getResource("/pdisk.test.cfg");
 		System.setProperty("pdisk.config.filename", configFile.getFile());
 		
-		VolumeChooser.getInstance().volumes = null;
+		VolumeChooser.getInstance().volumes = new HashMap<String, Integer>();
 	}
 
 	@Test(expected = IllegalStateException.class)

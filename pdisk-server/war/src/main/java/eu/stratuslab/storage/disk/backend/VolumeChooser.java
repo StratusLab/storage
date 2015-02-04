@@ -26,7 +26,7 @@ public final class VolumeChooser {
 
 	private static VolumeChooser instance = new VolumeChooser(MAX_LUN);
 
-	protected Map<String, Integer> volumes;
+	protected Map<String, Integer> volumes = new HashMap<String, Integer>();
 
 	protected int maxLUN;
 
@@ -95,15 +95,11 @@ public final class VolumeChooser {
 	}
 
 	public synchronized void updateVolumes(Map<String, Integer> newVolumes) {
-		if (volumes == null) {
-			this.volumes = new HashMap<String, Integer>(newVolumes);
-		} else {
-			this.volumes.putAll(newVolumes);
-		}
-	}
-
+		volumes.putAll(newVolumes);		
+	}	
+	
 	public synchronized double percentageConsumed() {
-		if (volumes!=null) {
+		if (!volumes.isEmpty()) {
 			int fullCapacity = volumes.size() * maxLUN;
 			int consumed = 0;
 			for (Integer v : volumes.values()) {
@@ -135,7 +131,7 @@ public final class VolumeChooser {
 	}
 
 	private void checkVolumesKnown() {
-		if (this.volumes == null || this.volumes.isEmpty()) {
+		if (volumes.isEmpty()) {
 			throw new IllegalStateException("Volumes states unknown");
 		}
 	}

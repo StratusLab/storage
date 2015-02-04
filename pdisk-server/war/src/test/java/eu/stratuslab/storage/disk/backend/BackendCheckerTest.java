@@ -1,6 +1,10 @@
 package eu.stratuslab.storage.disk.backend;
 
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -12,19 +16,32 @@ public class BackendCheckerTest {
 	public void resetVolumeChooser() {
 		URL configFile = this.getClass().getResource("/pdisk.test.cfg");
 		System.setProperty("pdisk.config.filename", configFile.getFile());
-		
-		VolumeChooser.getInstance().volumes = null;
+
+		VolumeChooser.getInstance().volumes = new HashMap<String, Integer>();
+	}
+
+	private class BackEndStorageMock extends BackEndStorage {
+
+		private Map<String, Integer> mockData = new HashMap<String, Integer>();
+
+		public BackEndStorageMock(List<String> volumes, List<Integer> values) {
+			for (int i = 0; i < volumes.size(); i++) {
+				mockData.put(volumes.get(i), values.get(i));
+			}
+		}
+
+		@Override
+		public Integer getNumberOfMappedLuns(String volume) {
+			return mockData.get(volume);
+		}
 	}
 
 	@Test(expected = IllegalStateException.class)
-	public void testBackendChecker() {
+	public void testBackendCheckerEmpty() {
 
-		BackendChecker bc = new BackendChecker() {
-			protected String[] getBackendProxiesFromConfig() {
-				return new String[] {};
-			}
-		};
-		bc.update();
+		final List<String> volumes = Arrays.asList();
+		final List<Integer> values = Arrays.asList();
+		mockBackend(volumes, values);
 
 		VolumeChooser.getInstance().requestVolumeName();
 	}
@@ -32,40 +49,35 @@ public class BackendCheckerTest {
 	@Test
 	public void testBackendCheckerWithOneVolume() {
 
-		BackendChecker bc = new BackendChecker() {
-			protected Integer getNumberOfMappedLuns(String volume) {
-				return 10;
-			}
+		final List<String> volumes = Arrays.asList("v1");
+		final List<Integer> values = Arrays.asList(1);
+		mockBackend(volumes, values);
 
-			protected String[] getBackendProxiesFromConfig() {
-				return new String[] { "v1" };
-			}
-		};
-		bc.update();
-
-		Assert.assertEquals("v1", VolumeChooser.getInstance().requestVolumeName());
+		Assert.assertEquals("v1", VolumeChooser.getInstance()
+				.requestVolumeName());
 	}
 
 	@Test
-    public void leastFilledVolumeIsReturned() throws Exception {
-		BackendChecker bc = new BackendChecker() {
-			protected Integer getNumberOfMappedLuns(String volume) {
-				if ("v1".equals(volume)) {
-	                return 10;
-                } else if ("v2".equals(volume)){
-                	return 5;
-                } else {
-                	throw new IllegalArgumentException();
-                }
-			}
+	public void leastFilledVolumeIsReturned() throws Exception {
+
+		final List<String> volumes = Arrays.asList("v10", "v20");
+		final List<Integer> values = Arrays.asList(3, 1);
+		mockBackend(volumes, values);
+
+		Assert.assertEquals("v20", VolumeChooser.getInstance()
+				.requestVolumeName());
+	}
+
+	private void mockBackend(final List<String> volumes,
+			final List<Integer> values) {
+		BackEndStorage backEnd = new BackEndStorageMock(volumes, values);
+
+		BackendChecker bc = new BackendChecker(backEnd) {
 			protected String[] getBackendProxiesFromConfig() {
-				return new String[] { "v1", "v2" };
+				return volumes.toArray(new String[0]);
 			}
 		};
-		bc.update();
-
-		Assert.assertEquals("v2", VolumeChooser.getInstance().requestVolumeName());
-
-    }
+		bc.init();
+	}
 
 }

@@ -8,7 +8,7 @@ import eu.stratuslab.storage.disk.main.RootApplication;
 import eu.stratuslab.storage.disk.utils.ProcessUtils;
 import eu.stratuslab.storage.persistence.Disk;
 
-public final class BackEndStorage {
+public class BackEndStorage {
 
 	private String CONFIG = "/etc/stratuslab/pdisk-backend.cfg";
 	private String CMD = "/usr/sbin/persistent-disk-backend.py";

@@ -1,7 +1,7 @@
 package eu.stratuslab.storage.disk.backend;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
@@ -12,71 +12,73 @@ import eu.stratuslab.storage.disk.utils.DiskUtils;
  * a thread runner.
  *
  */
-public class BackendChecker implements Runnable {
+public class BackendChecker {
 
-	private final static long UPDATE_SLEEP = ServiceConfiguration.getInstance().ISCSI_CHECKER_UPDATE_SLEEP;
-	private Map<String, Integer> volumes = new HashMap<String, Integer>();
-
-	private static final Logger logger = Logger.getLogger("BackendChecker");
-
-	private BackEndStorage backEndStorage = DiskUtils.getDiskStorage();
-
+	private static final Logger logger = Logger.getLogger(BackendChecker.class
+			.getName());
+	
+	private List<VolumeChecker> checkers = new ArrayList<VolumeChecker>();
+	
+	private BackEndStorage backEndStorage;
+	
+	private static long CHECKER_STARTUP_SPREAD_DELAY_MILLIS = ServiceConfiguration.getInstance().ISCSI_CHECKER_UPDATE_SLEEP / 2;
+	
 	public BackendChecker() {
+		this(DiskUtils.getDiskStorage());
+	}
+	
+	public BackendChecker(BackEndStorage backEndStorage) {
+		this.backEndStorage = backEndStorage;
+	}	
+	
+	public void init() {
+		createCheckers();
+		checkOnceAndWaitAllEnded();
+		checkContinous();
 	}
 
-	@Override
-	public void run() {
-		while (true) {
-			update();
-			sleep();
+	private void checkOnceAndWaitAllEnded() {
+		
+		List<Thread> threadCheckers = new ArrayList<Thread>();
+		
+		for (VolumeChecker checker : checkers) {			
+			threadCheckers.add(new Thread(new VolumeCheckerSingleRun(checker)));
+		}		
+		for (Thread thread : threadCheckers) {
+			thread.start();
 		}
+		for (Thread thread : threadCheckers) {
+			try {
+				thread.join();
+			} catch (InterruptedException e) {			
+				e.printStackTrace();
+			}
+		}
+		logger.info("First update done, volumes=" + VolumeChooser.getInstance().volumes);
 	}
 
-	public void update() {
-		getMappedLunsInVolumes();
-		updateVolumeChooser();
+	private void checkContinous() {		
+		int i = 0;		
+		for (VolumeChecker checker : checkers) {
+			long startupDelay = (CHECKER_STARTUP_SPREAD_DELAY_MILLIS / checkers.size())*i;
+			(new Thread(new VolumeCheckerContinuousRun(checker, startupDelay))).start();
+			i++;
+		}		
 	}
-
-	private void updateVolumeChooser() {
-		log("Updating VolumeChooser.");
-		VolumeChooser vc = VolumeChooser.getInstance();
-		vc.updateVolumes(volumes);
-	}
-
-	private void getMappedLunsInVolumes() {
-		log("Getting mapped LUNs in volumes...");
+	
+	private void createCheckers() {
 		for (String volume : getBackendProxiesFromConfig()) {
 			if (volume != null) {
 				volume = volume.trim();
-				if (!volume.isEmpty()) {
-					int luns = getNumberOfMappedLuns(volume);
-					log("Volume '" + volume + "' has " + luns + " mapped LUNs.");
-					volumes.put(volume, luns);
-				}
-			}
-		}
-		log("Found Vol/mappedLUNs: " + volumes);
-	}
 
-	protected Integer getNumberOfMappedLuns(String volume) {
-		log("Getting # of mapped LUNs in volume '" + volume + "'");
-		return backEndStorage.getNumberOfMappedLuns(volume);
+				VolumeChecker checker = new VolumeChecker(backEndStorage, volume);
+				checkers.add(checker);
+			}
+		}		
 	}
 
 	protected String[] getBackendProxiesFromConfig() {
 		return DiskUtils.getBackendProxiesFromConfig();
 	}
 
-	private void sleep() {
-		try {
-			log("Sleeping " + UPDATE_SLEEP / 1000 + " sec.");
-			Thread.sleep(UPDATE_SLEEP);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private void log(String msg) {
-		logger.info("::: BackendChecker: " + msg);
-	}
 }
