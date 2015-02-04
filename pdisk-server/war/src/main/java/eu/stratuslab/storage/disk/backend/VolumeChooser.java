@@ -105,7 +105,7 @@ public final class VolumeChooser {
 			newValue = 0;
 		}
 		volumes.put(volumeName, newValue);
-		logger.info("Released '" + volumeName + "'");
+		logger.info("Released '" + volumeName + "', current LUN=" + newValue);
 	}
 
 	public synchronized void updateVolume(String volume, Integer lun) {
