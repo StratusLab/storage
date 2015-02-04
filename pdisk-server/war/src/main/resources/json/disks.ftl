@@ -14,7 +14,7 @@
     <#if disk.identifier?has_content>
     "identifier": "${disk.identifier}",
     </#if>
-    "size": "${disk.size}"
+    "size": "${disk.size}",
     "type": "${disk.type}"
   }<#if disk_index < disks?size-1>,</#if>
   </#list>
