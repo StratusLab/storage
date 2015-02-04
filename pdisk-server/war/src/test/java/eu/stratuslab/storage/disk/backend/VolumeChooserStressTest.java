@@ -84,7 +84,7 @@ public class VolumeChooserStressTest {
 		assertEquals(nbRequesters * nbRequestsPerRequester, c.nbSuccess);
 		assertEquals(0, c.nbFailures);
 
-		assertTrue(c.meanTime() > 0 && c.meanTime() < 1);
+		assertTrue(c.meanTime() > 0 && c.meanTime() < 100);
 	}
 
 	@Test

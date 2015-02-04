@@ -17,9 +17,13 @@ public class VolumeChecker {
 	}
 
 	public void update() {		
-		Integer nbLuns = backEndStorage.getNumberOfMappedLuns(volume);			
-		VolumeChooser.getInstance().updateVolume(volume, nbLuns);
-		logger.info("::: VolumeChecker: Volume '" + volume + "' was updated with " + nbLuns);
+		try {
+			Integer nbLuns = backEndStorage.getNumberOfMappedLuns(volume);			
+			VolumeChooser.getInstance().updateVolume(volume, nbLuns);
+			logger.info("::: VolumeChecker: Volume '" + volume + "' was updated with " + nbLuns);
+		} catch (Throwable th) {
+			logger.warning("Unable to periodically update: " + th);
+		}
 	}
 
 }
