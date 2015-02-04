@@ -140,7 +140,7 @@ public class BackEndStorage {
 		prependIscsiProxyParamToArgs(args, proxy);
 
 		String errorMsg = "Failed to get number of mapped LUNs in volume: " + proxy;
-		return Integer.parseInt(execute("mappedluns", errorMsg, args));
+		return Integer.parseInt(execute("mappedluns", errorMsg, args).trim());
 	}
 
 	private void condRandomPrependIscsiProxyParamToArgs(List<String> args, String uuid) {

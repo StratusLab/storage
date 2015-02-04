@@ -68,6 +68,11 @@ public class DisksResource extends DiskBaseResource {
         return createTemplateRepresentation("html/disks.ftl", info, TEXT_HTML);
     }
 
+    @Override
+    protected Disk initializeDisk() {
+        return super.initializeDisk();
+    }
+
     @Get("json")
     public Representation getAsJson() {
 
