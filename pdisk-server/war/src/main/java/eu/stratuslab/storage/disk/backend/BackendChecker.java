@@ -62,7 +62,9 @@ public class BackendChecker {
 		int i = 0;		
 		for (VolumeChecker checker : checkers) {
 			long startupDelay = (CHECKER_STARTUP_SPREAD_DELAY_MILLIS / checkers.size())*i;
-			(new Thread(new VolumeCheckerContinuousRun(checker, startupDelay))).start();
+			Thread thread = new Thread(new VolumeCheckerContinuousRun(checker, startupDelay));
+			thread.setName("volumeChecker-" + checker.getVolume());
+			thread.start();
 			i++;
 		}		
 	}

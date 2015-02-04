@@ -22,8 +22,13 @@ public class VolumeChecker {
 			VolumeChooser.getInstance().updateVolume(volume, nbLuns);
 			logger.info("::: VolumeChecker: Volume '" + volume + "' was updated with " + nbLuns);
 		} catch (Throwable th) {
-			logger.warning("Unable to periodically update: " + th);
+			logger.warning("Unable to periodically update volume '" + volume
+					+ "', cause: " + th);
 		}
+	}
+
+	public String getVolume() {
+		return volume;
 	}
 
 }
