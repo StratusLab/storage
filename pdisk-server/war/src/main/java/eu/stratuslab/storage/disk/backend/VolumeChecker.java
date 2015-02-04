@@ -1,7 +1,5 @@
 package eu.stratuslab.storage.disk.backend;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 
 public class VolumeChecker {
@@ -19,12 +17,8 @@ public class VolumeChecker {
 	}
 
 	public void update() {		
-		Integer nbLuns = backEndStorage.getNumberOfMappedLuns(volume);
-		
-		Map<String, Integer> singleUpdate = new HashMap<String, Integer>();
-		singleUpdate.put(this.volume, nbLuns);
-		
-		VolumeChooser.getInstance().updateVolumes(singleUpdate);
+		Integer nbLuns = backEndStorage.getNumberOfMappedLuns(volume);			
+		VolumeChooser.getInstance().updateVolume(volume, nbLuns);
 		logger.info("::: VolumeChecker: Volume '" + volume + "' was updated with " + nbLuns);
 	}
 

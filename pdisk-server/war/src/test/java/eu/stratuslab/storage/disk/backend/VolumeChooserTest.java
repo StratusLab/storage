@@ -7,7 +7,6 @@ import static org.junit.Assert.fail;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -77,10 +76,8 @@ public class VolumeChooserTest {
 		// 0
 		assertEquals("v1", vc.requestVolumeName());
 		// 1
-		
-		Map<String, Integer> updateV2 = new HashMap<String, Integer>();
-		updateV2.put("v2", 0);
-		vc.updateVolumes(updateV2);
+				
+		vc.updateVolume("v2", 0);
 		// 1 0
 		assertEquals("v2", vc.requestVolumeName());
 		// 1 1
@@ -96,9 +93,7 @@ public class VolumeChooserTest {
 		assertEquals("v2", vc.requestVolumeName());
 		// 10 7 7
 
-		Map<String, Integer> resetV1 = new HashMap<String, Integer>();
-		resetV1.put("v1", 0);
-		vc.updateVolumes(resetV1);
+		vc.updateVolume("v1", 0);
 
 		// 0 7 7
 		assertEquals("v1", vc.requestVolumeName());

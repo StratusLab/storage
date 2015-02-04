@@ -93,9 +93,9 @@ public final class VolumeChooser {
 		volumes.put(volumeName, newValue);
 		logger.info("Released '" + volumeName + "'");
 	}
-
-	public synchronized void updateVolumes(Map<String, Integer> newVolumes) {
-		volumes.putAll(newVolumes);		
+	
+	public synchronized void updateVolume(String volume, Integer lun) {
+		volumes.put(volume, lun);		
 	}	
 	
 	public synchronized double percentageConsumed() {
