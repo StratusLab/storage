@@ -33,6 +33,12 @@ public class VolumeChooserTest {
 		VolumeChooser.getInstance().requestVolumeNameFrom(new String[]{"v1", "v2"});
 	}
 
+	@Test(expected = ResourceException.class)
+	public void requestVolumeNameShouldForbidEmptyList() throws Exception {
+		vc(Arrays.asList("v1", "v2"), Arrays.asList(1, 0));
+		VolumeChooser.getInstance().requestVolumeNameFrom(new String[0]);
+	}
+	
 	@Test
 	public void requestVolumeNameShouldChooseLeastFilled() throws Exception {
 		VolumeChooser vc = vc(Arrays.asList("v1", "v2"), Arrays.asList(1, 0));

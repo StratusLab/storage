@@ -127,6 +127,11 @@ public final class VolumeChooser {
 	}
 
 	private String findVolumeNameLeastFilledIn(String[] volumeNames) {
+		
+		if (volumeNames==null || volumeNames.length==0) {
+			noResultException("Empty list of volumes provided.");
+		}
+		
 		String result = null;
 		int best = 0;
 		for (String volumeName : volumeNames) {
@@ -146,11 +151,12 @@ public final class VolumeChooser {
 
 	private void checkVolumesKnown() {
 		if (volumes.isEmpty()) {
-			noResultException("Volumes states unknown");
+			noResultException("Empty volumes");
 		}
 	}
 
 	private void noResultException(String msg) {
+		logger.warning("Current state:" + volumes);
 		logger.warning(msg);
 		throw new ResourceException(Status.SERVER_ERROR_INTERNAL,
 				"Unable to allocate new disk: backend full");
