@@ -1,6 +1,10 @@
 package eu.stratuslab.storage.disk.backend;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -127,14 +131,19 @@ public final class VolumeChooser {
 	}
 
 	private String findVolumeNameLeastFilledIn(String[] volumeNames) {
-		
-		if (volumeNames==null || volumeNames.length==0) {
+
+		if (volumeNames == null || volumeNames.length == 0) {
 			noResultException("Empty list of volumes provided.");
 		}
-		
+
 		String result = null;
 		int best = 0;
-		for (String volumeName : volumeNames) {
+
+		List<String> shuffledVolumeNames = new ArrayList<String>(
+				Arrays.asList(volumeNames));
+		Collections.shuffle(shuffledVolumeNames);
+
+		for (String volumeName : shuffledVolumeNames) {
 			Integer current = volumes.get(volumeName);
 			if (current != null && (result == null || best > current)) {
 				result = volumeName;

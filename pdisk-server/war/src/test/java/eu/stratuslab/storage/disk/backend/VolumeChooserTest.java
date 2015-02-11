@@ -1,12 +1,15 @@
 package eu.stratuslab.storage.disk.backend;
 
 import static eu.stratuslab.storage.disk.backend.VolumeChooserTestHelper.vc;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -139,6 +142,37 @@ public class VolumeChooserTest {
 			fail("should have raised an exception");
 		} catch (ResourceException iaeIgnore) {
 		}
+	}
+	
+	@Test
+	public void leastFilledVolumesShouldBeServedRandomly() throws Exception {
+		VolumeChooser vc = vc(Arrays.asList("v1", "v2", "v3"), Arrays.asList(0, 0, 0));
+		
+		Map<String, Integer> scorePerVolume = new HashMap<String, Integer>();
+		
+		int nbRequests = 100;		
+		for (int i = 0; i < nbRequests; i++) {
+			vc.updateVolume("v1", 0);
+			vc.updateVolume("v2", 0);
+			vc.updateVolume("v3", 0);
+						
+			String volumeWinner = vc.requestVolumeName();
+			Integer score = scorePerVolume.get(volumeWinner);
+			if (score==null) {
+				score = 0;
+			}
+			scorePerVolume.put(volumeWinner, score+1);
+		}		
+		
+		double idealDistribution = nbRequests / vc.volumes.size();
+		
+		List<Integer> values = new ArrayList<Integer>(scorePerVolume.values());
+		Collections.sort(values);
+		Collections.reverse(values);
+		
+		Integer biggest = values.get(0);
+		double toleratedRatio = 1.5;
+		assertTrue(biggest < idealDistribution * toleratedRatio);		 
 	}
 
 	@Test
