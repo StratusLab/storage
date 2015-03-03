@@ -136,22 +136,22 @@ public final class VolumeChooser {
 			noResultException("Empty list of volumes provided.");
 		}
 
-		String result = null;
 		List<String> shuffledVolumeNames = new ArrayList<String>(
 				Arrays.asList(volumeNames));
 		Collections.shuffle(shuffledVolumeNames);
 
+		String result = null;
 		for (String volumeName : shuffledVolumeNames) {
 			Integer current = volumes.get(volumeName);
 			if (current != null && current < maxLUN) {
-				return volumeName;				
+				result = volumeName;
+				break;
 			}
 		}
 
 		if (result == null) {
 			noResultException("Unable to find any free volume for LUN allocation.");
 		}
-
 		return result;
 	}
 
