@@ -90,8 +90,8 @@ public final class VolumeChooser {
 		volumes.put(bestCandidate, newValue);
 		
 		logger.info("Serving volume '" + bestCandidate + "', current LUN="
-				+ newValue);
-		
+				+ newValue + " from " + Arrays.asList(volumeNames));
+
 		return bestCandidate;
 	}
 
