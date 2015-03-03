@@ -3,13 +3,11 @@ package eu.stratuslab.storage.disk.backend;
 import static eu.stratuslab.storage.disk.backend.VolumeChooserTestHelper.vc;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,9 +55,9 @@ public class VolumeChooserTest {
 	public void partialUpdateVolumes() throws Exception {
 		VolumeChooser vc = vc(Arrays.asList("v1"), Arrays.asList(0));		
 		assertEquals("v1", vc.requestVolumeName());				
-		vc.updateVolume("v1", vc.maxLUN);
-		vc.updateVolume("v2", vc.maxLUN/2);
 		
+		vc.updateVolume("v1", vc.maxLUN);
+		vc.updateVolume("v2", vc.maxLUN/2);		
 		assertEquals("v2", vc.requestVolumeName());
 	}
 	
@@ -101,36 +99,35 @@ public class VolumeChooserTest {
 	}
 	
 	@Test
-	public void volumesShouldBeServedRandomly() throws Exception {
-		VolumeChooser vc = vc(Arrays.asList("v1", "v2", "v3"), Arrays.asList(0, 0, 0));
+	public void volumesShouldBeServedUniformly() throws Exception {
+		int nbVolumes = 20;
+		List<String> volumeNames = new ArrayList<String>();
+		List<Integer> values = new ArrayList<Integer>();		
+		for (int i = 0; i < nbVolumes; i++) {
+			volumeNames.add("v"+i);
+			values.add(0);
+		}
 		
+		VolumeChooser vc = vc(volumeNames, values);		
 		Map<String, Integer> scorePerVolume = new HashMap<String, Integer>();
 		
-		int nbRequests = 100;		
-		for (int i = 0; i < nbRequests; i++) {
-			vc.updateVolume("v1", 0);
-			vc.updateVolume("v2", 0);
-			vc.updateVolume("v3", 0);
-						
-			String volumeWinner = vc.requestVolumeName();
+		int idealDistribution = 4;
+		int nbRequests = nbVolumes * idealDistribution;	
+				
+		for (int i = 0; i < nbRequests; i++) {					
+			String volumeWinner = vc.requestVolumeNameWithRetryFrom(volumeNames.toArray(new String[0]));					
 			Integer score = scorePerVolume.get(volumeWinner);
 			if (score==null) {
 				score = 0;
 			}
 			scorePerVolume.put(volumeWinner, score+1);
 		}		
-		
-		double idealDistribution = nbRequests / vc.volumes.size();
-		
-		List<Integer> values = new ArrayList<Integer>(scorePerVolume.values());
-		Collections.sort(values);
-		Collections.reverse(values);
-		
-		Integer biggest = values.get(0);
-		double toleratedRatio = 1.5;
-		assertTrue(biggest < idealDistribution * toleratedRatio);		 
+						
+		for (Integer value : scorePerVolume.values()) {
+			Assert.assertEquals(idealDistribution, (int)value);
+		}		 
 	}
-
+	
 	@Test
 	public void showPercentage() throws Exception {
 		VolumeChooser vc = vc(Arrays.asList("v1", "v2", "v3"), Arrays.asList(50, 70, 65));		

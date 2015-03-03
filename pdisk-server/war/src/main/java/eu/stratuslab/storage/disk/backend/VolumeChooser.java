@@ -2,7 +2,6 @@ package eu.stratuslab.storage.disk.backend;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,13 +13,18 @@ import org.restlet.resource.ResourceException;
 import eu.stratuslab.storage.disk.main.ServiceConfiguration;
 
 /**
- * Chooses the least filled volume (according to its own known state). The state
- * must first be updated (by a "Checker") before any request. The state as
- * updated by an external Checker takes precedence over the one internally
- * maintained.
+ * Serves volume names to concurrent requesters so that the load on each served
+ * volume stays below a limit (maxLun). The strategy to serve these is to
+ * distribute them as uniformly as possible. When no place is available,
+ * exception is thrown.
+ * 
+ * Its initial state (the load for each volume) is updated by the backend
+ * checker. This state is continuously updated.
  *
  * The representation of the state is a map (String, Integer): {volumeName1
  * nbLogicalUnits1, volumeName2 nbLogicalUnits2, ...}
+ * 
+ * This class is thread safe (simple way: mutator methods are synchronized).
  *
  * Please see Unit tests for exact behavior.
  */
@@ -38,6 +42,8 @@ public final class VolumeChooser {
 	private static VolumeChooser instance = new VolumeChooser(MAX_LUN);
 
 	protected Map<String, Integer> volumes = new HashMap<String, Integer>();
+
+	private final Map<String, Long> volumeDateChosen = new HashMap<String, Long>();
 
 	protected int maxLUN;
 
@@ -81,18 +87,16 @@ public final class VolumeChooser {
 
 	public synchronized String requestVolumeNameFrom(String[] volumeNames) {
 		checkVolumesKnown();
-		String bestCandidate = findRandomVolumeNameBelowLimit(volumeNames);
-		if (volumes.get(bestCandidate) >= maxLUN) {
-			noResultException(bestCandidate + " volume is already full.");
-		}
+		String chosenVolume = findVolumeNameBelowLimitWithOldestAccess(volumeNames);
+		updateLoad(volumeNames, chosenVolume);
+		return chosenVolume;
+	}
 
-		int newValue = volumes.get(bestCandidate) + 1;
-		volumes.put(bestCandidate, newValue);
-		
-		logger.info("Serving volume '" + bestCandidate + "', current LUN="
+	private void updateLoad(String[] volumeNames, String chosenVolume) {
+		int newValue = volumes.get(chosenVolume) + 1;
+		volumes.put(chosenVolume, newValue);
+		logger.info("Serving volume '" + chosenVolume + "', current LUN="
 				+ newValue + " from " + Arrays.asList(volumeNames));
-
-		return bestCandidate;
 	}
 
 	public synchronized void releaseVolume(String volumeName) {
@@ -130,29 +134,55 @@ public final class VolumeChooser {
 		}
 	}
 
-	private String findRandomVolumeNameBelowLimit(String[] volumeNames) {
+	private String findVolumeNameBelowLimitWithOldestAccess(String[] volumeNames) {
+		checkValidRequest(volumeNames);
+		List<String> candidates = filterBelowLimit(volumeNames);
+		String result = findOldestAccess(candidates);
+		remember(result);
+		return result;
+	}
 
+	private String findOldestAccess(List<String> candidates) {
+		String result = null;
+		long oldestLastTimeChosen = -1;
+		for (String candidate : candidates) {
+			if (!volumeDateChosen.containsKey(candidate)) {
+				result = candidate;
+				break;
+			} else {
+				long lastTimeChosen = volumeDateChosen.get(candidate);
+				if (oldestLastTimeChosen < 0
+						|| lastTimeChosen < oldestLastTimeChosen) {
+					oldestLastTimeChosen = lastTimeChosen;
+					result = candidate;
+				}
+			}
+		}
+		return result;
+	}
+
+	private List<String> filterBelowLimit(String[] volumeNames) {
+		List<String> candidates = new ArrayList<String>();
+		for (String volumeName : volumeNames) {
+			Integer current = volumes.get(volumeName);
+			if (current != null && current < maxLUN) {
+				candidates.add(volumeName);
+			}
+		}
+		if (candidates.size() == 0) {
+			noResultException("Unable to find any free volume for LUN allocation.");
+		}
+		return candidates;
+	}
+
+	private void remember(String volumeName) {
+		volumeDateChosen.put(volumeName, System.nanoTime());
+	}
+
+	private void checkValidRequest(String[] volumeNames) {
 		if (volumeNames == null || volumeNames.length == 0) {
 			noResultException("Empty list of volumes provided.");
 		}
-
-		List<String> shuffledVolumeNames = new ArrayList<String>(
-				Arrays.asList(volumeNames));
-		Collections.shuffle(shuffledVolumeNames);
-
-		String result = null;
-		for (String volumeName : shuffledVolumeNames) {
-			Integer current = volumes.get(volumeName);
-			if (current != null && current < maxLUN) {
-				result = volumeName;
-				break;
-			}
-		}
-
-		if (result == null) {
-			noResultException("Unable to find any free volume for LUN allocation.");
-		}
-		return result;
 	}
 
 	private void checkVolumesKnown() {
