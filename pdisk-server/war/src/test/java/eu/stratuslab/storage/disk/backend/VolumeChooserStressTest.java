@@ -2,13 +2,13 @@ package eu.stratuslab.storage.disk.backend;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Level;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -19,7 +19,7 @@ public class VolumeChooserStressTest {
 
 	@Before
 	// 10 volumes named v1, v2, ..., v10 with each empty
-	// VolumeChooser singleton configured with 512 as threshold
+	// VolumeChooser singleton configured pdisk.test.cfg
 	public void setup() {
 
 		URL configFile = this.getClass().getResource("/pdisk.test.cfg");		
@@ -31,11 +31,12 @@ public class VolumeChooserStressTest {
 			volumeNames.add("v" + i);
 			values.add(0);
 		}
+		VolumeChooser.logger.setLevel(Level.SEVERE);		
 		VolumeChooserTestHelper.vc(volumeNames, values);
 	}
 
 	@Test
-	public void checkThatEachRequesterIsServedAndEverythingReleased()
+	public synchronized void checkThatEachRequesterIsServedAndEverythingReleased()
 			throws Exception {
 
 		int nbRequesters = 20;
@@ -48,7 +49,7 @@ public class VolumeChooserStressTest {
 		for (int i = 0; i < nbRequesters; i++) {
 			requesters[i].join();
 		}
-
+		
 		assertEquals(10, VolumeChooser.getInstance().volumes.size());
 		for (Integer value : VolumeChooser.getInstance().volumes.values()) {
 			assertEquals(0, (int) value);
@@ -60,35 +61,7 @@ public class VolumeChooserStressTest {
 	}
 
 	@Test
-	public void checkUniformityOfUsage() throws Exception {
-
-		int nbRequesters = 300;
-		int nbRequestsPerRequester = 10;
-
-		Thread[] requesters = new Thread[nbRequesters];
-		Collector c = new Collector();
-		for (int i = 0; i < nbRequesters; i++) {
-			requesters[i] = new Thread(new RequesterReq(i,
-					nbRequestsPerRequester, c));
-			requesters[i].start();
-		}
-		for (int i = 0; i < nbRequesters; i++) {
-			requesters[i].join();
-		}
-
-		int idealDistribution = nbRequesters * nbRequestsPerRequester
-				/ VolumeChooser.getInstance().volumes.size();
-		for (Integer value : VolumeChooser.getInstance().volumes.values()) {
-			assertEquals(idealDistribution, (int) value);
-		}
-		assertEquals(nbRequesters * nbRequestsPerRequester, c.nbSuccess);
-		assertEquals(0, c.nbFailures);
-
-		assertTrue(c.meanTime() > 0 && c.meanTime() < 100);
-	}
-
-	@Test
-	public void shouldFillUptoMaximumAndRejectAfter() throws Exception {
+	public synchronized void shouldFillUptoMaximumAndRejectAfter() throws Exception {
 
 		Map<String, Integer> volumes = VolumeChooser.getInstance().volumes;
 		for (Entry<String, Integer> volume : volumes.entrySet()) {
@@ -119,7 +92,7 @@ public class VolumeChooserStressTest {
 	}
 
 	@Test
-	public void shouldFillUptoMaximumThanksRelease() throws Exception {
+	public synchronized void shouldFillUptoMaximumThanksRelease() throws Exception {
 
 		Map<String, Integer> volumes = VolumeChooser.getInstance().volumes;
 		for (Entry<String, Integer> volume : volumes.entrySet()) {
@@ -169,19 +142,7 @@ public class VolumeChooserStressTest {
 
 		public synchronized void recordDuration(long duration) {
 			durations.add(duration);
-		}
-
-		public synchronized double meanTime() {
-			if (durations == null || durations.isEmpty()) {
-				return -1;
-			}
-
-			long sum = 0;
-			for (Long duration : durations) {
-				sum += duration;
-			}
-			return (double) sum / (double) durations.size();
-		}
+		}		
 	}
 
 	private static abstract class Requester implements Runnable {

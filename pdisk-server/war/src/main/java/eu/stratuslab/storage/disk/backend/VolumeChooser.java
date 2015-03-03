@@ -26,7 +26,7 @@ import eu.stratuslab.storage.disk.main.ServiceConfiguration;
  */
 public final class VolumeChooser {
 
-	private static final Logger logger = Logger.getLogger(VolumeChooser.class
+	protected static final Logger logger = Logger.getLogger(VolumeChooser.class
 			.getName());
 
 	private static final int MIN_RETRY_WAIT_MS = ServiceConfiguration
@@ -81,7 +81,7 @@ public final class VolumeChooser {
 
 	public synchronized String requestVolumeNameFrom(String[] volumeNames) {
 		checkVolumesKnown();
-		String bestCandidate = findVolumeNameLeastFilledIn(volumeNames);
+		String bestCandidate = findRandomVolumeNameBelowLimit(volumeNames);
 		if (volumes.get(bestCandidate) >= maxLUN) {
 			noResultException(bestCandidate + " volume is already full.");
 		}
@@ -130,24 +130,21 @@ public final class VolumeChooser {
 		}
 	}
 
-	private String findVolumeNameLeastFilledIn(String[] volumeNames) {
+	private String findRandomVolumeNameBelowLimit(String[] volumeNames) {
 
 		if (volumeNames == null || volumeNames.length == 0) {
 			noResultException("Empty list of volumes provided.");
 		}
 
 		String result = null;
-		int best = 0;
-
 		List<String> shuffledVolumeNames = new ArrayList<String>(
 				Arrays.asList(volumeNames));
 		Collections.shuffle(shuffledVolumeNames);
 
 		for (String volumeName : shuffledVolumeNames) {
 			Integer current = volumes.get(volumeName);
-			if (current != null && (result == null || best > current)) {
-				result = volumeName;
-				best = current;
+			if (current != null && current < maxLUN) {
+				return volumeName;				
 			}
 		}
 

@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -12,12 +13,13 @@ import org.junit.Test;
 import org.restlet.resource.ResourceException;
 
 public class BackendCheckerTest {
-
+	
 	@Before
 	public void resetVolumeChooser() {
 		URL configFile = this.getClass().getResource("/pdisk.test.cfg");
 		System.setProperty("pdisk.config.filename", configFile.getFile());
 
+		VolumeChooser.logger.setLevel(Level.SEVERE);		
 		VolumeChooser.getInstance().volumes = new HashMap<String, Integer>();
 	}
 
@@ -59,14 +61,15 @@ public class BackendCheckerTest {
 	}
 
 	@Test
-	public void leastFilledVolumeIsReturned() throws Exception {
+	public void randomVolumeIsReturned() throws Exception {
 
 		final List<String> volumes = Arrays.asList("v10", "v20");
 		final List<Integer> values = Arrays.asList(3, 1);
 		mockBackend(volumes, values);
 
-		Assert.assertEquals("v20", VolumeChooser.getInstance()
-				.requestVolumeName());
+		String requestVolumeName = VolumeChooser.getInstance()
+				.requestVolumeName();
+		Assert.assertTrue("v20".equals(requestVolumeName) || "v10".equals(requestVolumeName) );
 	}
 
 	private void mockBackend(final List<String> volumes,
