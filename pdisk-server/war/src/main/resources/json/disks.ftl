@@ -13,6 +13,7 @@
     "owner": "${disk.owner}",
     <#if disk.identifier?has_content>
     "identifier": "${disk.identifier}",
+    <#else>    "identifier": "",
     </#if>
     "size": "${disk.size}",
     "type": "${disk.type}"
